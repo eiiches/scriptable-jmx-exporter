@@ -1,0 +1,74 @@
+{
+  "value": [
+    [
+      {
+        "$type": "javax.management.openmbean.CompositeData",
+        "key1": "a",
+        "key2": 1,
+        "val1": "b",
+        "val2": {
+          "$type": "javax.management.openmbean.TabularData",
+          "tabular_type": {
+            "index_names": [
+              "key1",
+              "key2"
+            ]
+          },
+          "values": [
+            {
+              "$type": "javax.management.openmbean.CompositeData",
+              "key1": "c",
+              "key2": 2,
+              "val1": "d",
+              "val2": 3
+            },
+            {
+              "$type": "javax.management.openmbean.CompositeData",
+              "key1": "e",
+              "key2": 4,
+              "val1": "f",
+              "val2": 5
+            }
+          ]
+        }
+      },
+      {
+        "$type": "javax.management.openmbean.CompositeData",
+        "key1": "g",
+        "key2": 6,
+        "val1": "h",
+        "val2": {
+          "$type": "javax.management.openmbean.TabularData",
+          "tabular_type": {
+            "index_names": [
+              "key1",
+              "key2"
+            ]
+          },
+          "values": [
+            {
+              "$type": "javax.management.openmbean.CompositeData",
+              "key1": "i",
+              "key2": 7,
+              "val1": "j",
+              "val2": 8
+            },
+            {
+              "$type": "javax.management.openmbean.CompositeData",
+              "key1": "k",
+              "key2": 9,
+              "val1": "l",
+              "val2": 10
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  "domain": "java.lang",
+  "properties": {
+    "type": "GarbageCollector",
+    "name": "G1 Young Generation"
+  },
+  "attribute": "MemoryPoolNames"
+}

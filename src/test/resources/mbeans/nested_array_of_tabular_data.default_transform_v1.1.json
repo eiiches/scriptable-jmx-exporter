@@ -1,0 +1,6 @@
+{"name":"java.lang","value":1,"labels":{"index":"1","index_index":"1","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_key2"}}
+{"name":"java.lang","value":3,"labels":{"index":"1","index_index":"1","index_index_val2_key1":"c","index_index_val2_key2":"2","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_val2_val2"}}
+{"name":"java.lang","value":5,"labels":{"index":"1","index_index":"1","index_index_val2_key1":"e","index_index_val2_key2":"4","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_val2_val2"}}
+{"name":"java.lang","value":6,"labels":{"index":"1","index_index":"2","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_key2"}}
+{"name":"java.lang","value":8,"labels":{"index":"1","index_index":"2","index_index_val2_key1":"i","index_index_val2_key2":"7","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_val2_val2"}}
+{"name":"java.lang","value":10,"labels":{"index":"1","index_index":"2","index_index_val2_key1":"k","index_index_val2_key2":"9","type":"GarbageCollector","name":"G1 Young Generation","attribute":"MemoryPoolNames_val2_val2"}}

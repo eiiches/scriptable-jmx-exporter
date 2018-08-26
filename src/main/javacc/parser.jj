@@ -1,0 +1,146 @@
+options {
+	STATIC = false;
+	LOOKAHEAD = 1;
+	DEBUG_PARSER = false;
+	UNICODE_INPUT = true;
+	JDK_VERSION = "1.7";
+}
+
+PARSER_BEGIN(AttributeNamePatternParser)
+	package net.thisptr.java.prometheus.metrics.agent.javacc;
+
+	import java.io.StringReader;
+	import java.util.Map;
+	import java.util.Collections;
+	import java.util.HashMap;
+
+	import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
+
+	@SuppressWarnings("unused")
+	public class AttributeNamePatternParser {
+		public static AttributeNamePattern parse(final String patternText) {
+			try {
+				final AttributeNamePatternParser parser = new AttributeNamePatternParser(new StringReader(patternText));
+				return parser.Start();
+			} catch (final Throwable th) {
+				throw new RuntimeException("Unable to parse AttributeNamePattern", th);
+			}
+		}
+	}
+PARSER_END(AttributeNamePatternParser)
+
+TOKEN: {
+	<MBEAN_PATTERN_COLON: ":">
+	| <MBEAN_PATTERN_EQUAL: "=">
+	| <MBEAN_PATTERN_COMMA: ",">
+	| <MBEAN_PATTERN_VISIBLE_CHAR: ~["\\", ":", "=", ","]>
+}
+
+MORE: {
+	"\\": STATE_MBEAN_PATTERN_ESCAPE
+}
+
+<STATE_MBEAN_PATTERN_ESCAPE> TOKEN: {
+	<MBEAN_PATTERN_ESCAPE_CHAR: ["\\", ":", "=", ",", "b", "f", "r", "n", "t"]> : DEFAULT
+}
+
+AttributeNamePattern Start():
+{
+	AttributeNamePattern pattern;
+}
+{
+	pattern = AttributeNamePattern()
+	<EOF>
+	{ return pattern; }
+}
+
+AttributeNamePattern AttributeNamePattern():
+{
+	String domain = null;
+	Map<String, String> keys = Collections.emptyMap();
+	String attribute = null;
+}
+{
+	(
+		domain = AttributeNamePatternString()
+	)?
+	(
+		<MBEAN_PATTERN_COLON>
+		(
+			LOOKAHEAD(MetricPatternKeys() <MBEAN_PATTERN_COLON>)
+			keys = MetricPatternKeys()
+			<MBEAN_PATTERN_COLON>
+			(
+				attribute = AttributeNamePatternString()
+			)?
+		|
+			keys = MetricPatternKeys()
+		|
+			<MBEAN_PATTERN_COLON>
+			(
+				attribute = AttributeNamePatternString()
+			)?
+		)
+	)?
+	{ return new AttributeNamePattern(domain, keys, attribute); }
+}
+
+Map<String, String> MetricPatternKeys():
+{
+	String k, v;
+	final Map<String, String> keys = new HashMap<String, String>();
+}
+{
+	(
+		k = AttributeNamePatternString()
+		<MBEAN_PATTERN_EQUAL>
+		v = AttributeNamePatternString()
+		{ keys.put(k, v); }
+	)
+	(
+		<MBEAN_PATTERN_COMMA>
+		(
+			k = AttributeNamePatternString()
+			<MBEAN_PATTERN_EQUAL>
+			v = AttributeNamePatternString()
+			{ keys.put(k, v); }
+		)
+	)*
+	{ return keys; }
+}
+
+String AttributeNamePatternString():
+{
+	Token t;
+	final StringBuilder builder = new StringBuilder();
+}
+{
+	(
+		t = <MBEAN_PATTERN_VISIBLE_CHAR>
+		{ builder.append(t.image); }
+	|
+		t = <MBEAN_PATTERN_ESCAPE_CHAR>
+		{
+			if (t.image.charAt(0) != '\\')
+				throw new IllegalStateException("bug");
+			final char c = t.image.charAt(1);
+			switch (c)
+			{
+				case '\\':
+				case ':':
+				case '=':
+				case ',':
+					builder.append(c);
+					break;
+				case 'b': builder.append((char) 0x08); break;
+				case 'f': builder.append((char) 0x0c); break;
+				case 'r': builder.append((char) 0x0d); break;
+				case 't': builder.append((char) 0x09); break;
+				case 'n': builder.append((char) 0x0a); break;
+				default:
+					throw new IllegalStateException("bug: " + c);
+			}
+		}
+	)+
+	{ return builder.toString(); }
+}
