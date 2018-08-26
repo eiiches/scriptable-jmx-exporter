@@ -32,10 +32,10 @@ def default_transform_v1($name_keys; $attribute_as_name):
     | .properties as $properties
     | .attribute as $attribute
     | unfold_v1(.value; map(.//"index")|join("_"))
-	| .labels + $properties as $properties
-	| .name as $name
-	| ([$attribute, $name[] | values] | join("_")) as $attribute_name
-	| {
+    | .labels + $properties as $properties
+    | .name as $name
+    | ([$attribute, $name[] | values] | join("_")) as $attribute_name
+    | {
         name: ([$domain, $properties[$name_keys[]], (if $attribute_as_name then $attribute_name else empty end)] | join(":")),
         labels: (($properties | del(.[$name_keys[]])) + (if $attribute_as_name then {} else {attribute: $attribute_name} end)),
         value
@@ -43,10 +43,12 @@ def default_transform_v1($name_keys; $attribute_as_name):
 ;
 def default_transform_v1: default_transform_v1([]; false);
 def default_transform_v1($name_keys; $attribute_as_name; $label_remapping):
-	default_transform_v1($name_keys; $attribute_as_name)
-	| {
-		labels: (.labels | remap_keys($label_remapping)),
-		name,
-		value
-	}
+    default_transform_v1($name_keys; $attribute_as_name)
+    | {
+        labels: (.labels | remap_keys($label_remapping)),
+        name,
+        value
+    }
 ;
+
+# vim: et
