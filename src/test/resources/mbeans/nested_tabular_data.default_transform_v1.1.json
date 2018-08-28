@@ -1,0 +1,9 @@
+{"name":"java.lang","value":11,"labels":{"type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_GcThreadCount"}}
+{"name":"java.lang","value":2,"labels":{"type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_duration"}}
+{"name":"java.lang","value":1510857,"labels":{"type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_endTime"}}
+{"name":"java.lang","value":90,"labels":{"type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_id"}}
+{"name":"java.lang","value":3,"labels":{"memoryUsageAfterGc_key1":"a","memoryUsageAfterGc_key2":"1","memoryUsageAfterGc_val2_key1":"c","memoryUsageAfterGc_val2_key2":"2","type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_memoryUsageAfterGc_val2_val2"}}
+{"name":"java.lang","value":5,"labels":{"memoryUsageAfterGc_key1":"a","memoryUsageAfterGc_key2":"1","memoryUsageAfterGc_val2_key1":"e","memoryUsageAfterGc_val2_key2":"4","type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_memoryUsageAfterGc_val2_val2"}}
+{"name":"java.lang","value":8,"labels":{"memoryUsageAfterGc_key1":"g","memoryUsageAfterGc_key2":"6","memoryUsageAfterGc_val2_key1":"i","memoryUsageAfterGc_val2_key2":"7","type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_memoryUsageAfterGc_val2_val2"}}
+{"name":"java.lang","value":10,"labels":{"memoryUsageAfterGc_key1":"g","memoryUsageAfterGc_key2":"6","memoryUsageAfterGc_val2_key1":"k","memoryUsageAfterGc_val2_key2":"9","type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_memoryUsageAfterGc_val2_val2"}}
+{"name":"java.lang","value":1510855,"labels":{"type":"GarbageCollector","name":"G1 Young Generation","attribute":"LastGcInfo_startTime"}}
