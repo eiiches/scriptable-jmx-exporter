@@ -18,7 +18,9 @@ Clone this repository and run `mvn clean package`. A agent jar will be built and
 
 #### Download from Maven Central
 
-TBD
+```sh
+curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.1/java-prometheus-metrics-agent-0.0.1.jar'
+```
 
 Usage
 -----
