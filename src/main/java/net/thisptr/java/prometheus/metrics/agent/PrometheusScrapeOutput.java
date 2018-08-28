@@ -43,17 +43,11 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 
 	@Override
 	public void emit(final PrometheusScrapeRule rule, final JsonNode mbeanAttributeNode) {
-		final Scope childScope = Scope.newChildScope(scope);
-		childScope.setValue("type", mbeanAttributeNode.get("type"));
-		childScope.setValue("value", mbeanAttributeNode.get("value"));
-		childScope.setValue("domain", mbeanAttributeNode.get("domain"));
-		childScope.setValue("properties", mbeanAttributeNode.get("properties"));
-		childScope.setValue("attribute", mbeanAttributeNode.get("attribute"));
 		final JsonQuery transform = rule != null && rule.transform != null ? rule.transform : DEFAULT_TRANSFORM;
 
 		final List<JsonNode> metricNodes;
 		try {
-			metricNodes = transform.apply(childScope, mbeanAttributeNode);
+			metricNodes = transform.apply(scope, mbeanAttributeNode);
 		} catch (final Throwable th) {
 			LOG.log(Level.INFO, "Failed to transform a MBean attribute (" + mbeanAttributeNode + ") to Prometheus metrics.", th);
 			return;
