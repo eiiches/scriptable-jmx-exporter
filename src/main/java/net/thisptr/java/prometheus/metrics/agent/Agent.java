@@ -43,6 +43,7 @@ public class Agent {
 	}
 
 	public static void premain(final String args) throws Throwable {
+		LOG.log(Level.INFO, "Starting Prometheus Metrics Agent...");
 		try {
 			final Config config = loadConfig(args);
 			validateConfig(config);
@@ -50,7 +51,7 @@ public class Agent {
 			final PrometheusExporterServer server = new PrometheusExporterServer(config);
 			server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
 		} catch (final Throwable th) {
-			LOG.log(Level.SEVERE, "Failed to start Prometheus exporter.", th);
+			LOG.log(Level.SEVERE, "Failed to start Prometheus Metrics Agent.", th);
 			throw th;
 		}
 	}
