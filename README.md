@@ -3,11 +3,31 @@ java-prometheus-metrics-agent
 
 A javaagent for scraping and exposing MBeans to Prometheus
 
+
 Features
 --------
 
 - By default, this agent exposes all the MBeans available.
 - Scraping behavior can be customized using jq scripts.
+
+### Why yet another exporter when there's an official one?
+
+- The order of key properties of an MBean's `ObjectName` is not significant. In fact, some `ObjectName`s are constructed using a `Hashtable` and doesn't have a consistent order of the key properties.
+
+  - Writing a regular expression against a string representation of an `ObjectName` is tricky because the key properties part doesn't have a predictable ordering.
+
+  - The default metric name which includes a value of the first key property doesn't work well because being "the first" doesn't mean anything. This prevents me from using the default configuration and I have to write many regular expressions, which is difficult.
+
+- "Metric traceability" is crucial for me.
+
+  - I don't need the metrics such as `jvm_memory_bytes_used` which is just a renamed version of `java.lang:type=Memory:HeapMemoryUsage.used`. They are exposed automatically and can't be turned off. Renaming a metric obfuscates where the metric comes from and what the metric actually means.
+
+  - One generic rule that one-to-one maps all MBeans available to Prometheus metrics would be ideal.
+
+### Features missing
+
+- TYPE and HELP annotations.
+
 
 Installation
 ------------
@@ -40,6 +60,7 @@ java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_YAML> ...
 # Load configurations from PATH_TO_CONFIG_YAML
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 ```
+
 
 Configuration
 -------------
@@ -96,7 +117,7 @@ Rules are searched in order and a first match is used for each attribute.
 |-|-|-|
 | `rules[].pattern` | `null` | A pattern used to match MBean attributes this rule applies to. A rule with a `null` pattern applies to any attributes. See [Pattern Format](#pattern-format) for syntax details. |
 | `rules[].skip` | `false` | If `true`, skip exposition of the attribute to Prometheus. |
-| `rules[].transform` | `default_transform_v1` | A jq script to convert a MBean attribute to Prometheus metrics. See [Transform Script](#transform-script) for details. |
+| `rules[].transform` | `default_transform_v1` | A jq script to convert an MBean attribute to Prometheus metrics. See [Transform Script](#transform-script) for details. |
 
 #### Pattern Format
 
@@ -230,10 +251,12 @@ $ java -Djava.util.logging.config.file=logging.properties ...
 
 TBD
 
+
 References
 ----------
 
  - [Java Management Extensions (JMX) - Best Practices](http://www.oracle.com/technetwork/articles/java/best-practices-jsp-136021.html)
+
 
 License
 -------
