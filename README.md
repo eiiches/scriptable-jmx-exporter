@@ -13,8 +13,7 @@ Features
 
 ### Features missing
 
-- TYPE and HELP annotations.
-
+- TYPE annotations.
 
 Installation
 ------------
@@ -277,6 +276,7 @@ FAQ
   - I don't need the metrics such as `jvm_memory_bytes_used` which is just a renamed version of `java.lang:type=Memory:HeapMemoryUsage.used`. They are exposed automatically and can't be turned off. Renaming a metric obfuscates where the metric comes from and what the metric actually means.
 
   - One generic rule that one-to-one maps all MBeans available to Prometheus metrics would be ideal.
+
 
 
 References
