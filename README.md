@@ -103,6 +103,8 @@ rules:
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/Config.java) class using Jackson data-binding and validated by Hibernate validator.
 
+See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for more examples.
+
 ### Server Configuration
 
 | Key | Default | Description |
@@ -246,10 +248,6 @@ net.thisptr.java.prometheus.metrics.agent.shade.level = INFO
 
 $ java -Djava.util.logging.config.file=logging.properties ...
 ```
-
-### Real-world Examples
-
-TBD
 
 
 References
