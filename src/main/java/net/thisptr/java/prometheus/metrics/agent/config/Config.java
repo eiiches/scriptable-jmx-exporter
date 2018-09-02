@@ -14,6 +14,7 @@ import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.AttributeNamePatternDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.HostAndPortDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.JsonQueryDeserializer;
+import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.LabelsDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeRule;
 
@@ -59,4 +60,8 @@ public class Config {
 			return patterns;
 		}
 	}
+
+	@JsonProperty("labels")
+	@JsonDeserialize(using = LabelsDeserializer.class)
+	public JsonQuery labels;
 }

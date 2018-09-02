@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -12,7 +14,14 @@ import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.ReflectionException;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
+
 import fi.iki.elonen.NanoHTTPD.Response;
+import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -20,15 +29,35 @@ import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
  * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md
  */
 public class PrometheusExporterServerHandler {
-	private Scraper<PrometheusScrapeRule> scraper;
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules) {
+	private final Scraper<PrometheusScrapeRule> scraper;
+	private final JsonQuery labels;
+
+	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels) {
+		this.labels = labels;
 		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 	}
 
+	private Map<String, String> makeLabels() throws IOException {
+		if (labels == null)
+			return Collections.emptyMap();
+		final List<JsonNode> nodes = labels.apply(RootScope.getInstance(), NullNode.getInstance());
+		if (nodes.isEmpty())
+			return Collections.emptyMap();
+		try (JsonParser jp = MAPPER.treeAsTokens(nodes.get(nodes.size() - 1))) {
+			return MAPPER.readValue(jp, new TypeReference<Map<String, String>>() {});
+		}
+	}
+
 	public Response handleGetMetrics() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+		final Map<String, String> labels = makeLabels();
+
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
 		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {
+			if (metric.labels == null)
+				metric.labels = new HashMap<>();
+			metric.labels.putAll(labels);
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}));
 
@@ -44,6 +73,7 @@ public class PrometheusExporterServerHandler {
 				});
 			});
 		}
+
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", writer.toString());
 	}
 
