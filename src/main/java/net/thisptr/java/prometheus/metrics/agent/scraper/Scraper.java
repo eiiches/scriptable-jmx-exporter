@@ -30,7 +30,7 @@ import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
 
-	private final ObjectMapper jmxMapper = new ObjectMapper()
+	public static final ObjectMapper JMX_MAPPER = new ObjectMapper()
 			.registerModule(new JmxModule())
 			.disable(MapperFeature.AUTO_DETECT_GETTERS)
 			.disable(MapperFeature.AUTO_DETECT_FIELDS)
@@ -96,13 +96,13 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			throw e;
 		}
 
-		final JsonNode valueJson = jmxMapper.valueToTree(value);
+		final JsonNode valueJson = JMX_MAPPER.valueToTree(value);
 
-		final ObjectNode out = jmxMapper.createObjectNode();
+		final ObjectNode out = JMX_MAPPER.createObjectNode();
 		out.set("type", TextNode.valueOf(attribute.getType()));
 		out.set("value", valueJson);
 		out.set("domain", TextNode.valueOf(name.getDomain()));
-		final ObjectNode properties = jmxMapper.createObjectNode();
+		final ObjectNode properties = JMX_MAPPER.createObjectNode();
 		name.getKeyPropertyList().forEach((k, v) -> {
 			if (v.startsWith("\""))
 				v = ObjectName.unquote(v);
