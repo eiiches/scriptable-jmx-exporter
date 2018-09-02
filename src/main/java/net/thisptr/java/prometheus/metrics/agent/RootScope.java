@@ -12,6 +12,7 @@ import com.google.common.io.CharStreams;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.internal.javacc.JsonQueryParser;
+import net.thisptr.java.prometheus.metrics.misc.jq.JmxFunction;
 
 public class RootScope {
 	private static final Scope INSTANCE;
@@ -28,6 +29,7 @@ public class RootScope {
 		} catch (Throwable th) {
 			throw new RuntimeException(th);
 		}
+		INSTANCE.addFunction("jmx", 2, new JmxFunction());
 	}
 
 	public static Scope getInstance() {

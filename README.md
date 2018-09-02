@@ -39,7 +39,7 @@ Clone this repository and run `mvn clean package`. A agent jar will be built and
 #### Download from Maven Central
 
 ```sh
-curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.1/java-prometheus-metrics-agent-0.0.1.jar'
+curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.2/java-prometheus-metrics-agent-0.0.2.jar'
 ```
 
 Usage
@@ -101,7 +101,9 @@ rules:
     transform: default_transform_v1
 ```
 
-This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/Config.java) class using Jackson data-binding and validated by Hibernate validator.
+This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
+
+See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for more examples.
 
 ### Server Configuration
 
@@ -247,9 +249,6 @@ net.thisptr.java.prometheus.metrics.agent.shade.level = INFO
 $ java -Djava.util.logging.config.file=logging.properties ...
 ```
 
-### Real-world Examples
-
-TBD
 
 
 References

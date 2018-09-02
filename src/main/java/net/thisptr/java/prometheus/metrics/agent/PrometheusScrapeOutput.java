@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
-import net.thisptr.java.prometheus.metrics.agent.Config.PrometheusScrapeRule;
+import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 
 public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule> {
