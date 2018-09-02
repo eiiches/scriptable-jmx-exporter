@@ -1,74 +1,22 @@
 package net.thisptr.java.prometheus.metrics.agent;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
-import javax.management.ReflectionException;
+import com.google.common.net.HostAndPort;
 
 import fi.iki.elonen.NanoHTTPD;
-import net.thisptr.java.prometheus.metrics.agent.Config.PrometheusScrapeRule;
-import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
-/**
- * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md
- */
 public class PrometheusExporterServer extends NanoHTTPD {
 	private static final Logger LOG = Logger.getLogger(PrometheusExporterServer.class.getName());
 
-	private final Scraper<PrometheusScrapeRule> scraper;
+	private volatile PrometheusExporterServerHandler handler;
 
-	public PrometheusExporterServer(final Config config) {
-		super(config.server.bindAddress.getHost(), config.server.bindAddress.getPortOrDefault(18090));
-		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), config.rules);
-	}
-
-	public Response handleGetMetrics() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
-		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
-		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {
-			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
-		}));
-
-		final StringWriter writer = new StringWriter();
-		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer)) {
-			allMetrics.forEach((name, metrics) -> {
-				metrics.forEach((metric) -> {
-					try {
-						pwriter.write(metric);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				});
-			});
-		}
-		return newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", writer.toString());
-	}
-
-	public Response handleGetMBeans() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
-		final StringWriter writer = new StringWriter();
-		scraper.scrape((rule, value) -> {
-			writer.write(value.toString());
-			writer.write('\n');
-		});
-		return newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
-	}
-
-	public Response handleGetMetricsRaw() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
-		final StringWriter writer = new StringWriter();
-		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {}, (raw) -> {
-			writer.write(raw.toString());
-			writer.write('\n');
-		}));
-		return newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
+	public PrometheusExporterServer(final HostAndPort bindAddress, final PrometheusExporterServerHandler handler) {
+		super(bindAddress.getHost(), bindAddress.getPortOrDefault(18090));
+		this.handler = handler;
 	}
 
 	private Response dispatch(final IHTTPSession session) {
@@ -77,15 +25,15 @@ public class PrometheusExporterServer extends NanoHTTPD {
 				case "/metrics":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handleGetMetrics();
+					return handler.handleGetMetrics();
 				case "/mbeans":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handleGetMBeans();
+					return handler.handleGetMBeans();
 				case "/metrics-raw":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handleGetMetricsRaw();
+					return handler.handleGetMetricsRaw();
 			}
 		} catch (final Throwable th) {
 			return handleInternalError(th);
@@ -114,5 +62,9 @@ public class PrometheusExporterServer extends NanoHTTPD {
 		final Response response = dispatch(session);
 		LOG.log(Level.FINE, session.getRemoteIpAddress() + " " + session.getMethod() + " " + session.getUri() + " " + response.getStatus().getRequestStatus());
 		return response;
+	}
+
+	public void configure(final PrometheusExporterServerHandler handler) {
+		this.handler = handler;
 	}
 }

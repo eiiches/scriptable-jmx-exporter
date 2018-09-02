@@ -101,7 +101,7 @@ rules:
     transform: default_transform_v1
 ```
 
-This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/Config.java) class using Jackson data-binding and validated by Hibernate validator.
+This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
 
 See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for more examples.
 

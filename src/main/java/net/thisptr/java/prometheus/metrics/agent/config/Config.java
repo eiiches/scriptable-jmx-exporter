@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.agent;
+package net.thisptr.java.prometheus.metrics.agent.config;
 
 import java.util.ArrayList;
 import java.util.List;
