@@ -45,8 +45,11 @@ public class PrometheusExporterServerHandler {
 		final List<JsonNode> nodes = labels.apply(RootScope.getInstance(), NullNode.getInstance());
 		if (nodes.isEmpty())
 			return Collections.emptyMap();
-		try (JsonParser jp = MAPPER.treeAsTokens(nodes.get(nodes.size() - 1))) {
+		final JsonNode in = nodes.get(nodes.size() - 1);
+		try (JsonParser jp = MAPPER.treeAsTokens(in)) {
 			return MAPPER.readValue(jp, new TypeReference<Map<String, String>>() {});
+		} catch (final Exception e) {
+			throw new RuntimeException("Cannot deserialize labels from input: " + in, e);
 		}
 	}
 
