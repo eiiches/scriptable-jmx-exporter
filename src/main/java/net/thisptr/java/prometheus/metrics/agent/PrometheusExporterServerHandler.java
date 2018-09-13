@@ -9,10 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
-import javax.management.ReflectionException;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,6 +19,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 import fi.iki.elonen.NanoHTTPD.Response;
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -33,9 +31,11 @@ public class PrometheusExporterServerHandler {
 
 	private final Scraper<PrometheusScrapeRule> scraper;
 	private final JsonQuery labels;
+	private final OptionsConfig options;
 
-	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels) {
+	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels, final OptionsConfig options) {
 		this.labels = labels;
+		this.options = options;
 		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 	}
 
@@ -53,7 +53,7 @@ public class PrometheusExporterServerHandler {
 		}
 	}
 
-	public Response handleGetMetrics() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMetrics() throws InterruptedException, IOException {
 		final Map<String, String> labels = makeLabels();
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
@@ -62,10 +62,10 @@ public class PrometheusExporterServerHandler {
 				metric.labels = new HashMap<>();
 			metric.labels.putAll(labels);
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
-		}));
+		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
 		final StringWriter writer = new StringWriter();
-		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer)) {
+		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer, options.includeTimestamp)) {
 			allMetrics.forEach((name, metrics) -> {
 				metrics.forEach((metric) -> {
 					try {
@@ -80,16 +80,16 @@ public class PrometheusExporterServerHandler {
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", writer.toString());
 	}
 
-	public Response handleGetMBeans() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMBeans() throws InterruptedException {
 		final StringWriter writer = new StringWriter();
-		scraper.scrape((rule, value) -> {
+		scraper.scrape((rule, timestamp, value) -> {
 			writer.write(value.toString());
 			writer.write('\n');
 		});
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
 	}
 
-	public Response handleGetMetricsRaw() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMetricsRaw() throws InterruptedException {
 		final StringWriter writer = new StringWriter();
 		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {}, (raw) -> {
 			writer.write(raw.toString());

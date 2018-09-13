@@ -3,6 +3,9 @@ package net.thisptr.java.prometheus.metrics.agent.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -20,6 +23,7 @@ import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeRule;
 
 public class Config {
 
+	@Valid
 	@NotNull
 	@JsonProperty("server")
 	public ServerConfig server = new ServerConfig();
@@ -32,9 +36,25 @@ public class Config {
 		public HostAndPort bindAddress = HostAndPort.fromString("0.0.0.0:18090");
 	}
 
+	@Valid
+	@NotNull
+	@JsonProperty("options")
+	public OptionsConfig options = new OptionsConfig();
+
+	public static class OptionsConfig {
+
+		@JsonProperty("include_timestamp")
+		public boolean includeTimestamp = true;
+
+		@Min(0L)
+		@Max(60000L)
+		@JsonProperty("minimum_response_time")
+		public long minimumResponseTime = 0L;
+	}
+
 	@NotNull
 	@JsonProperty("rules")
-	public List<PrometheusScrapeRule> rules = new ArrayList<>();
+	public List<@Valid @NotNull PrometheusScrapeRule> rules = new ArrayList<>();
 
 	public static class PrometheusScrapeRule implements ScrapeRule {
 

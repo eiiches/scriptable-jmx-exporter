@@ -39,7 +39,7 @@ Clone this repository and run `mvn clean package`. A agent jar will be built and
 #### Download from Maven Central
 
 ```sh
-curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.2/java-prometheus-metrics-agent-0.0.2.jar'
+curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.3/java-prometheus-metrics-agent-0.0.3.jar'
 ```
 
 Usage
@@ -71,6 +71,9 @@ Configuration
 # You can omit `server` object if you use default `bind_address`.
 server:
     bind_address: '0.0.0.0:18090'
+options:
+    include_timestamp: true # This is the default value.
+    minimum_response_time: 3000 # Generate /metrics response slowly in 3 seconds to avoid CPU spikes.
 rules:
   - pattern:
       - 'com\\.sun\\.management:type=HotSpotDiagnostic:DiagnosticOptions'
@@ -99,6 +102,13 @@ rules:
   - pattern: 'procfs'
     # Default transform is default_transform_v1, so this rule is effectively a no-op. Just for a demo purpose.
     transform: default_transform_v1
+# Add os_version and jvm_version labels to all metrics.
+labels: |
+  {
+    os_version: jmx("java.lang:type=OperatingSystem"; "Version"),
+    jvm_version: jmx("java.lang:type=Runtime"; "VmVersion"),
+    app_version: "1.0.1"
+  }
 ```
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
@@ -111,6 +121,13 @@ See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for mo
 |-|-|-|
 | `server.bind_address` | `0.0.0.0:18090` | IP and port which this javaagent listens on. |
 
+### Handler Options
+
+| Key | Default | Description |
+|-|-|-|
+| `options.include_timestamp` | `true` | Specifies whether /metrics response should include a timestamp at which the metric is scraped. |
+| `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
+
 ### Rule Configuration
 
 Rules are searched in order and a first match is used for each attribute.
@@ -120,6 +137,12 @@ Rules are searched in order and a first match is used for each attribute.
 | `rules[].pattern` | `null` | A pattern used to match MBean attributes this rule applies to. A rule with a `null` pattern applies to any attributes. See [Pattern Format](#pattern-format) for syntax details. |
 | `rules[].skip` | `false` | If `true`, skip exposition of the attribute to Prometheus. |
 | `rules[].transform` | `default_transform_v1` | A jq script to convert an MBean attribute to Prometheus metrics. See [Transform Script](#transform-script) for details. |
+
+### Labels Configuration
+
+| Key | Default | Description |
+|-|-|-|
+| `labels` | `{}` | A static object containing labels or a jq expression (string) to generate labels at runtime. The labels are added to every metrics. |
 
 #### Pattern Format
 

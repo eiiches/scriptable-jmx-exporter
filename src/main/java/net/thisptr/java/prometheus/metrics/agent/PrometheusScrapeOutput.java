@@ -28,21 +28,26 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 	}
 
 	private final Scope scope;
-	private final Consumer<PrometheusMetric> output;
+	private final PrometheusMetricOutput output;
 	private final Consumer<JsonNode> debugOutput;
 
-	public PrometheusScrapeOutput(final Scope scope, final Consumer<PrometheusMetric> output) {
+	public interface PrometheusMetricOutput {
+
+		void emit(PrometheusMetric metric);
+	}
+
+	public PrometheusScrapeOutput(final Scope scope, final PrometheusMetricOutput output) {
 		this(scope, output, (raw) -> {});
 	}
 
-	public PrometheusScrapeOutput(final Scope scope, final Consumer<PrometheusMetric> output, final Consumer<JsonNode> debugOutput) {
+	public PrometheusScrapeOutput(final Scope scope, final PrometheusMetricOutput output, final Consumer<JsonNode> debugOutput) {
 		this.scope = scope;
 		this.output = output;
 		this.debugOutput = debugOutput;
 	}
 
 	@Override
-	public void emit(final PrometheusScrapeRule rule, final JsonNode mbeanAttributeNode) {
+	public void emit(final PrometheusScrapeRule rule, final long timestamp, final JsonNode mbeanAttributeNode) {
 		final JsonQuery transform = rule != null && rule.transform != null ? rule.transform : DEFAULT_TRANSFORM;
 
 		final List<JsonNode> metricNodes;
@@ -68,7 +73,11 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 				continue;
 			}
 
-			output.accept(metric);
+			if (metric.timestamp == null) {
+				metric.timestamp = timestamp;
+			}
+
+			output.emit(metric);
 		}
 	}
 }

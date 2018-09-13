@@ -9,7 +9,7 @@
 	<artifactId>java-prometheus-metrics-agent</artifactId>
 	<name>Prometheus Metrics Agent</name>
 	<packaging>jar</packaging>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<description>Java agent for collecting and reporting metrics to Prometheus</description>
 	<url>https://github.com/eiiches/java-prometheus-metrics-agent</url>
 
@@ -32,7 +32,7 @@
 		<connection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</connection>
 		<developerConnection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</developerConnection>
 		<url>git@github.com:eiiches/java-prometheus-metrics-agent.git</url>
-		<tag>java-prometheus-metrics-agent-0.0.2</tag>
+		<tag>java-prometheus-metrics-agent-0.0.3</tag>
 	</scm>
 
 	<distributionManagement>

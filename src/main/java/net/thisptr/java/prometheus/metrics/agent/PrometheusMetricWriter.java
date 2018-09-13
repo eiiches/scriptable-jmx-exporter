@@ -9,9 +9,11 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 public class PrometheusMetricWriter implements Closeable {
 	private final Writer writer;
+	private final boolean includeTimestamp;
 
-	public PrometheusMetricWriter(final Writer writer) {
+	public PrometheusMetricWriter(final Writer writer, final boolean includeTimestamp) {
 		this.writer = writer;
+		this.includeTimestamp = includeTimestamp;
 	}
 
 	/**
@@ -82,6 +84,10 @@ public class PrometheusMetricWriter implements Closeable {
 		}
 		writer.write(' ');
 		writer.write(String.valueOf(metric.value));
+		if (includeTimestamp && metric.timestamp != null) {
+			writer.write(' ');
+			writer.write(String.valueOf(metric.timestamp));
+		}
 		writer.write('\n');
 	}
 
