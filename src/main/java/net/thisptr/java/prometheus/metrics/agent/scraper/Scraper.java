@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
@@ -87,6 +88,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		if (rule != null && rule.skip())
 			return;
 
+		final long timestamp = System.currentTimeMillis();
 		final Object value;
 		try {
 			value = server.getAttribute(name, attribute.getName());
@@ -110,7 +112,8 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		});
 		out.set("properties", properties);
 		out.set("attribute", TextNode.valueOf(attribute.getName()));
+		out.set("timestamp", LongNode.valueOf(timestamp));
 
-		output.emit(rule, out);
+		output.emit(rule, timestamp, out);
 	}
 }

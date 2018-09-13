@@ -62,7 +62,7 @@ public class Agent {
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Prometheus Metrics Agent...");
-				final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(newConfig.rules, newConfig.labels);
+				final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(newConfig.rules, newConfig.labels, newConfig.options);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -78,7 +78,7 @@ public class Agent {
 			});
 
 			final Config initialConfig = watcher.config();
-			final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(initialConfig.rules, initialConfig.labels);
+			final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(initialConfig.rules, initialConfig.labels, initialConfig.options);
 			SERVER = new PrometheusExporterServer(initialConfig.server.bindAddress, handler);
 			safeStart(SERVER, NanoHTTPD.SOCKET_READ_TIMEOUT, true);
 			watcher.start();

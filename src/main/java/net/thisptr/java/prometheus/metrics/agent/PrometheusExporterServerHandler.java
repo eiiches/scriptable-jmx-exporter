@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 import fi.iki.elonen.NanoHTTPD.Response;
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -33,9 +34,11 @@ public class PrometheusExporterServerHandler {
 
 	private final Scraper<PrometheusScrapeRule> scraper;
 	private final JsonQuery labels;
+	private final OptionsConfig options;
 
-	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels) {
+	public PrometheusExporterServerHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels, final OptionsConfig options) {
 		this.labels = labels;
+		this.options = options;
 		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 	}
 
@@ -65,7 +68,7 @@ public class PrometheusExporterServerHandler {
 		}));
 
 		final StringWriter writer = new StringWriter();
-		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer)) {
+		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer, options.includeTimestamp)) {
 			allMetrics.forEach((name, metrics) -> {
 				metrics.forEach((metric) -> {
 					try {
@@ -82,7 +85,7 @@ public class PrometheusExporterServerHandler {
 
 	public Response handleGetMBeans() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
 		final StringWriter writer = new StringWriter();
-		scraper.scrape((rule, value) -> {
+		scraper.scrape((rule, timestamp, value) -> {
 			writer.write(value.toString());
 			writer.write('\n');
 		});

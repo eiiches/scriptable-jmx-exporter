@@ -44,7 +44,7 @@ public class ScraperTest {
 		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 
 		final Set<JsonNode> actual = new HashSet<>();
-		scraper.scrape((rule, out) -> {
+		scraper.scrape((rule, timestamp, out) -> {
 			actual.add(out);
 		});
 

@@ -33,6 +33,16 @@ public class Config {
 	}
 
 	@NotNull
+	@JsonProperty("options")
+	public OptionsConfig options = new OptionsConfig();
+
+	public static class OptionsConfig {
+
+		@JsonProperty("include_timestamp")
+		public boolean includeTimestamp = true;
+	}
+
+	@NotNull
 	@JsonProperty("rules")
 	public List<PrometheusScrapeRule> rules = new ArrayList<>();
 

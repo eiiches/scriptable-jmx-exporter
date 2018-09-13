@@ -11,7 +11,7 @@ public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithEmptyMetricAndLabelName() throws Exception {
 		final StringWriter sw = new StringWriter();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw, false)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "";
 			metric.value = 1.0;
@@ -25,21 +25,22 @@ public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithLabels() throws Exception {
 		final StringWriter sw = new StringWriter();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw, true)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "metricName_a:@";
 			metric.value = 1.0;
 			metric.labels = new HashMap<>();
 			metric.labels.put("labelName_b:@", "foo");
+			metric.timestamp = 10000000000000L;
 			writer.write(metric);
 		}
-		assertEquals("metricName_a:_{labelName_b__=\"foo\",} 1.0\n", sw.toString());
+		assertEquals("metricName_a:_{labelName_b__=\"foo\",} 1.0 10000000000000\n", sw.toString());
 	}
 
 	@Test
 	void testWriteWithEmptyLabels() throws Exception {
 		final StringWriter sw = new StringWriter();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(sw, false)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "metricName_a:@";
 			metric.value = 1.0;
