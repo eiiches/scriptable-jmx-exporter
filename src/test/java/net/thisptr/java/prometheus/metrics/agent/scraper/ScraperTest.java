@@ -1,12 +1,15 @@
 package net.thisptr.java.prometheus.metrics.agent.scraper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,5 +52,20 @@ public class ScraperTest {
 		});
 
 		assertEquals(1, actual.size());
+	}
+
+	@Test
+	void testSlowScrape() throws Exception {
+		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList());
+
+		final long start = System.currentTimeMillis();
+
+		final Set<JsonNode> actual = new HashSet<>();
+		scraper.scrape((rule, timestamp, out) -> {
+			actual.add(out);
+		}, 3, TimeUnit.SECONDS);
+
+		assertTrue(3000L <= System.currentTimeMillis() - start);
+		assertTrue(10 < actual.size());
 	}
 }

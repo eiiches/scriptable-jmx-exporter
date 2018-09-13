@@ -9,10 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
-import javax.management.ReflectionException;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,7 +53,7 @@ public class PrometheusExporterServerHandler {
 		}
 	}
 
-	public Response handleGetMetrics() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMetrics() throws InterruptedException, IOException {
 		final Map<String, String> labels = makeLabels();
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
@@ -65,7 +62,7 @@ public class PrometheusExporterServerHandler {
 				metric.labels = new HashMap<>();
 			metric.labels.putAll(labels);
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
-		}));
+		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
 		final StringWriter writer = new StringWriter();
 		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer, options.includeTimestamp)) {
@@ -83,7 +80,7 @@ public class PrometheusExporterServerHandler {
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", writer.toString());
 	}
 
-	public Response handleGetMBeans() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMBeans() throws InterruptedException {
 		final StringWriter writer = new StringWriter();
 		scraper.scrape((rule, timestamp, value) -> {
 			writer.write(value.toString());
@@ -92,7 +89,7 @@ public class PrometheusExporterServerHandler {
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
 	}
 
-	public Response handleGetMetricsRaw() throws IntrospectionException, InstanceNotFoundException, ReflectionException, IOException {
+	public Response handleGetMetricsRaw() throws InterruptedException {
 		final StringWriter writer = new StringWriter();
 		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {}, (raw) -> {
 			writer.write(raw.toString());

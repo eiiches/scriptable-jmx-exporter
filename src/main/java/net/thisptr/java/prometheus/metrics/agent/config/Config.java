@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -43,6 +45,11 @@ public class Config {
 
 		@JsonProperty("include_timestamp")
 		public boolean includeTimestamp = true;
+
+		@Min(0L)
+		@Max(60000L)
+		@JsonProperty("minimum_response_time")
+		public long minimumResponseTime = 0L;
 	}
 
 	@NotNull
