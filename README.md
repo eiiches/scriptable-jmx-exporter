@@ -114,6 +114,8 @@ See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for mo
 | `options.include_timestamp` | `true` | Specifies whether /metrics response should include a timestamp at which the metric is scraped. |
 | `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
 
+These options can also be specified as /metrics parameters. E.g. `/metrics?minimum_response_time=1000`.
+
 ### Rule Configuration
 
 Rules are searched in order and a first match is used for each attribute.
