@@ -10,20 +10,6 @@ Features
 - By default, this agent exposes all the MBeans available.
 - Scraping behavior can be customized using jq scripts.
 
-### Why yet another exporter when there's an official one?
-
-- The order of key properties of an MBean's `ObjectName` is not significant. In fact, some `ObjectName`s are constructed using a `Hashtable` and doesn't have a consistent order of the key properties.
-
-  - Writing a regular expression against a string representation of an `ObjectName` is tricky because the key properties part doesn't have a predictable ordering.
-
-  - The default metric name which includes a value of the first key property doesn't work well because being "the first" doesn't mean anything. This prevents me from using the default configuration and I have to write many regular expressions, which is difficult.
-
-- "Metric traceability" is crucial for me.
-
-  - I don't need the metrics such as `jvm_memory_bytes_used` which is just a renamed version of `java.lang:type=Memory:HeapMemoryUsage.used`. They are exposed automatically and can't be turned off. Renaming a metric obfuscates where the metric comes from and what the metric actually means.
-
-  - One generic rule that one-to-one maps all MBeans available to Prometheus metrics would be ideal.
-
 ### Features missing
 
 - TYPE and HELP annotations.
@@ -39,7 +25,7 @@ Clone this repository and run `mvn clean package`. A agent jar will be built and
 #### Download from Maven Central
 
 ```sh
-curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.3/java-prometheus-metrics-agent-0.0.3.jar'
+curl -O 'http://central.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.4/java-prometheus-metrics-agent-0.0.4.jar'
 ```
 
 Usage
@@ -127,6 +113,8 @@ See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for mo
 |-|-|-|
 | `options.include_timestamp` | `true` | Specifies whether /metrics response should include a timestamp at which the metric is scraped. |
 | `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
+
+These options can also be specified as /metrics parameters. E.g. `/metrics?minimum_response_time=1000`.
 
 ### Rule Configuration
 
@@ -271,6 +259,23 @@ net.thisptr.java.prometheus.metrics.agent.shade.level = INFO
 
 $ java -Djava.util.logging.config.file=logging.properties ...
 ```
+
+FAQ
+---
+
+### Why yet another exporter when there's an official one?
+
+- The order of key properties of an MBean's `ObjectName` is not significant. In fact, some `ObjectName`s are constructed using a `Hashtable` and doesn't have a consistent order of the key properties.
+
+  - Writing a regular expression against a string representation of an `ObjectName` is tricky because the key properties part doesn't have a predictable ordering.
+
+  - The default metric name which includes a value of the first key property doesn't work well because being "the first" doesn't mean anything. This prevents me from using the default configuration and I have to write many regular expressions, which is difficult.
+
+- "Metric traceability" is crucial for me.
+
+  - I don't need the metrics such as `jvm_memory_bytes_used` which is just a renamed version of `java.lang:type=Memory:HeapMemoryUsage.used`. They are exposed automatically and can't be turned off. Renaming a metric obfuscates where the metric comes from and what the metric actually means.
+
+  - One generic rule that one-to-one maps all MBeans available to Prometheus metrics would be ideal.
 
 
 

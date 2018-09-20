@@ -25,15 +25,15 @@ public class PrometheusExporterServer extends NanoHTTPD {
 				case "/metrics":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handler.handleGetMetrics();
+					return handler.handleGetMetrics(session);
 				case "/mbeans":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handler.handleGetMBeans();
+					return handler.handleGetMBeans(session);
 				case "/metrics-raw":
 					if (session.getMethod() != Method.GET)
 						return handleMethodNotAllowed();
-					return handler.handleGetMetricsRaw();
+					return handler.handleGetMetricsRaw(session);
 			}
 		} catch (final Throwable th) {
 			return handleInternalError(th);
