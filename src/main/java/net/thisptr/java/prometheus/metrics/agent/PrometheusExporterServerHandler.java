@@ -44,7 +44,8 @@ public class PrometheusExporterServerHandler {
 	private Map<String, String> makeLabels() throws IOException {
 		if (labels == null)
 			return Collections.emptyMap();
-		final List<JsonNode> nodes = labels.apply(RootScope.getInstance(), NullNode.getInstance());
+		final List<JsonNode> nodes = new ArrayList<>();
+		labels.apply(RootScope.getInstance(), NullNode.getInstance(), nodes::add);
 		if (nodes.isEmpty())
 			return Collections.emptyMap();
 		final JsonNode in = nodes.get(nodes.size() - 1);

@@ -1,5 +1,6 @@
 package net.thisptr.java.prometheus.metrics.agent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
+import net.thisptr.jackson.jq.Versions;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
@@ -21,7 +23,7 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 	public static final JsonQuery DEFAULT_TRANSFORM;
 	static {
 		try {
-			DEFAULT_TRANSFORM = JsonQuery.compile("default_transform_v1");
+			DEFAULT_TRANSFORM = JsonQuery.compile("default_transform_v1", Versions.JQ_1_6);
 		} catch (final JsonQueryException e) {
 			throw new RuntimeException(e);
 		}
@@ -50,9 +52,9 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 	public void emit(final PrometheusScrapeRule rule, final long timestamp, final JsonNode mbeanAttributeNode) {
 		final JsonQuery transform = rule != null && rule.transform != null ? rule.transform : DEFAULT_TRANSFORM;
 
-		final List<JsonNode> metricNodes;
+		final List<JsonNode> metricNodes = new ArrayList<>();
 		try {
-			metricNodes = transform.apply(scope, mbeanAttributeNode);
+			transform.apply(scope, mbeanAttributeNode, metricNodes::add);
 		} catch (final Throwable th) {
 			LOG.log(Level.INFO, "Failed to transform a MBean attribute (" + mbeanAttributeNode + ") to Prometheus metrics.", th);
 			return;

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.Versions;
 
 public class LabelsDeserializer extends JsonQueryDeserializer {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -21,7 +22,7 @@ public class LabelsDeserializer extends JsonQueryDeserializer {
 	public JsonQuery deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException, JsonProcessingException {
 		if (p.currentToken() == JsonToken.START_OBJECT) {
 			final Map<String, String> labels = p.readValueAs(new TypeReference<Map<String, String>>() {});
-			return JsonQuery.compile(MAPPER.valueToTree(labels).toString());
+			return JsonQuery.compile(MAPPER.valueToTree(labels).toString(), Versions.JQ_1_6);
 		}
 		return super.deserialize(p, ctxt);
 	}

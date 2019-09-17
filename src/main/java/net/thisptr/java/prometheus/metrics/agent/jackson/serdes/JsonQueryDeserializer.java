@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.Versions;
 
 public class JsonQueryDeserializer extends StdDeserializer<JsonQuery> {
 	private static final long serialVersionUID = -5919966550962626465L;
@@ -21,6 +22,6 @@ public class JsonQueryDeserializer extends StdDeserializer<JsonQuery> {
 		final String jqText = p.readValueAs(String.class);
 		if (jqText == null)
 			return null;
-		return JsonQuery.compile(jqText);
+		return JsonQuery.compile(jqText, Versions.JQ_1_6);
 	}
 }
