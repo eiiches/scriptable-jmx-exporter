@@ -14,6 +14,7 @@ import net.thisptr.jackson.jq.Expression;
 import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.Versions;
 import net.thisptr.jackson.jq.internal.javacc.ExpressionParser;
+import net.thisptr.java.prometheus.metrics.misc.jq.DefaultTransformV1Function;
 import net.thisptr.java.prometheus.metrics.misc.jq.JmxFunction;
 
 public class RootScope {
@@ -32,6 +33,7 @@ public class RootScope {
 			throw new RuntimeException(th);
 		}
 		INSTANCE.addFunction("jmx", 2, new JmxFunction());
+		INSTANCE.addFunction("default_transform_v1", 2, new DefaultTransformV1Function());
 	}
 
 	public static Scope getInstance() {
