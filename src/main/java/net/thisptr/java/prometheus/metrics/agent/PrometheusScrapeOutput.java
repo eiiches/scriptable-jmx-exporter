@@ -7,7 +7,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
@@ -17,7 +16,6 @@ import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeR
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 
 public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule> {
-	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final Logger LOG = Logger.getLogger(PrometheusScrapeOutput.class.getName());
 
 	public static final JsonQuery DEFAULT_TRANSFORM;
@@ -70,7 +68,7 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 
 			final PrometheusMetric metric;
 			try {
-				metric = MAPPER.treeToValue(metricNode, PrometheusMetric.class);
+				metric = PrometheusMetric.fromJsonNode(metricNode);
 			} catch (final Throwable th) {
 				LOG.log(Level.INFO, "Failed to map a Prometheus metric JSON (" + metricNode + ") to an object.", th);
 				continue;

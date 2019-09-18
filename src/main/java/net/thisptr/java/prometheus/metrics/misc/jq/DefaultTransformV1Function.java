@@ -1,7 +1,6 @@
 package net.thisptr.java.prometheus.metrics.misc.jq;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.DoubleNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.collect.Maps;
 
 import net.thisptr.jackson.jq.Expression;
 import net.thisptr.jackson.jq.Function;
@@ -155,7 +155,7 @@ public class DefaultTransformV1Function implements Function {
 
 	private static void emit(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonSample sample, final PathOutput output, final double value) {
 		try {
-			final Map<String, String> metricLabels = new HashMap<>();
+			final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + sample.properties.size());
 			labels.forEach((label) -> {
 				metricLabels.put(label.label, label.index);
 			});
@@ -202,7 +202,7 @@ public class DefaultTransformV1Function implements Function {
 	}
 
 	private static void transform(final List<String> nameKeys, final boolean attrAsName, final JsonNode in, final PathOutput output) throws JsonProcessingException {
-		final JsonSample value = MAPPER.treeToValue(in, JsonSample.class);
+		final JsonSample value = JsonSample.fromJsonNode(in);
 		unfold(nameKeys, attrAsName, value, output);
 	}
 }
