@@ -12,6 +12,8 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 
 import net.thisptr.jackson.jq.Expression;
@@ -21,16 +23,23 @@ import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import net.thisptr.jackson.jq.path.Path;
-import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
+import net.thisptr.java.prometheus.metrics.agent.jackson.JmxModule;
 
 public class JmxFunction implements Function {
+	public static final ObjectMapper JMX_MAPPER = new ObjectMapper()
+			.registerModule(new JmxModule())
+			.disable(MapperFeature.AUTO_DETECT_GETTERS)
+			.disable(MapperFeature.AUTO_DETECT_FIELDS)
+			.disable(MapperFeature.AUTO_DETECT_IS_GETTERS)
+			.disable(MapperFeature.AUTO_DETECT_SETTERS)
+			.disable(MapperFeature.AUTO_DETECT_CREATORS);
 
 	private static JsonNode get(final MBeanServer server, final String name, final String attribute) throws InstanceNotFoundException, ReflectionException, MBeanException, MalformedObjectNameException, AttributeNotFoundException {
 		AttributeNotFoundException th = null;
 		for (final ObjectName on : server.queryNames(new ObjectName(name), null)) {
 			try {
 				final Object value = server.getAttribute(on, attribute);
-				return Scraper.JMX_MAPPER.valueToTree(value);
+				return JMX_MAPPER.valueToTree(value);
 			} catch (AttributeNotFoundException e) {
 				th = e;
 				continue;

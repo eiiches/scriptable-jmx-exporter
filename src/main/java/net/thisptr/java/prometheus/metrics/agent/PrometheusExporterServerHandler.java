@@ -102,8 +102,8 @@ public class PrometheusExporterServerHandler {
 
 	public Response handleGetMBeans(final IHTTPSession session) throws InterruptedException {
 		final StringWriter writer = new StringWriter();
-		scraper.scrape((rule, timestamp, value) -> {
-			writer.write(value.toString());
+		scraper.scrape((sample) -> {
+			writer.write(sample.toJsonNode().toString());
 			writer.write('\n');
 		});
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());

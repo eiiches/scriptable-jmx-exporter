@@ -49,8 +49,9 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 	}
 
 	@Override
-	public void emit(final PrometheusScrapeRule rule, final long timestamp, final JsonNode mbeanAttributeNode) {
-		final JsonQuery transform = rule != null && rule.transform != null ? rule.transform : DEFAULT_TRANSFORM;
+	public void emit(final Sample<PrometheusScrapeRule> sample) {
+		final JsonNode mbeanAttributeNode = sample.toJsonNode();
+		final JsonQuery transform = sample.rule != null && sample.rule.transform != null ? sample.rule.transform : DEFAULT_TRANSFORM;
 
 		final List<JsonNode> metricNodes = new ArrayList<>();
 		try {
@@ -76,7 +77,7 @@ public class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule
 			}
 
 			if (metric.timestamp == null) {
-				metric.timestamp = timestamp;
+				metric.timestamp = sample.timestamp;
 			}
 
 			output.emit(metric);

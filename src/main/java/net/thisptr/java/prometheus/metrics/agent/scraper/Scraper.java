@@ -17,26 +17,11 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.LongNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-
-import net.thisptr.java.prometheus.metrics.agent.jackson.JmxModule;
+import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
-
-	public static final ObjectMapper JMX_MAPPER = new ObjectMapper()
-			.registerModule(new JmxModule())
-			.disable(MapperFeature.AUTO_DETECT_GETTERS)
-			.disable(MapperFeature.AUTO_DETECT_FIELDS)
-			.disable(MapperFeature.AUTO_DETECT_IS_GETTERS)
-			.disable(MapperFeature.AUTO_DETECT_SETTERS)
-			.disable(MapperFeature.AUTO_DETECT_CREATORS);
 
 	private final List<ScrapeRuleType> rules;
 	private final MBeanServer server;
@@ -144,22 +129,6 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			throw e;
 		}
 
-		final JsonNode valueJson = JMX_MAPPER.valueToTree(value);
-
-		final ObjectNode out = JMX_MAPPER.createObjectNode();
-		out.set("type", TextNode.valueOf(attribute.getType()));
-		out.set("value", valueJson);
-		out.set("domain", TextNode.valueOf(name.getDomain()));
-		final ObjectNode properties = JMX_MAPPER.createObjectNode();
-		name.getKeyPropertyList().forEach((k, v) -> {
-			if (v.startsWith("\""))
-				v = ObjectName.unquote(v);
-			properties.set(k, TextNode.valueOf(v));
-		});
-		out.set("properties", properties);
-		out.set("attribute", TextNode.valueOf(attribute.getName()));
-		out.set("timestamp", LongNode.valueOf(timestamp));
-
-		output.emit(rule, timestamp, out);
+		output.emit(new Sample<>(rule, timestamp, instance, attribute, value));
 	}
 }
