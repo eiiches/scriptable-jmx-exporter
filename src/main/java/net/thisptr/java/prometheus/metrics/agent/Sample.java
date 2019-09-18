@@ -1,7 +1,7 @@
 package net.thisptr.java.prometheus.metrics.agent;
 
 import javax.management.MBeanAttributeInfo;
-import javax.management.ObjectInstance;
+import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,21 +26,22 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 
 	public final ScrapeRuleType rule;
 	public final long timestamp;
-	public final ObjectInstance instance;
 	public final MBeanAttributeInfo attribute;
 	public final Object value;
+	public final ObjectName name;
+	public final MBeanInfo info;
 
-	public Sample(final ScrapeRuleType rule, final long timestamp, final ObjectInstance instance, final MBeanAttributeInfo attribute, final Object value) {
+	public Sample(final ScrapeRuleType rule, final long timestamp, final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final Object value) {
 		this.rule = rule;
 		this.timestamp = timestamp;
-		this.instance = instance;
+		this.name = name;
+		this.info = info;
 		this.attribute = attribute;
 		this.value = value;
 	}
 
 	public JsonNode toJsonNode() {
 		final JsonNode valueJson = JMX_MAPPER.valueToTree(value);
-		final ObjectName name = instance.getObjectName();
 
 		final ObjectNode out = JMX_MAPPER.createObjectNode();
 		out.set("type", TextNode.valueOf(attribute.getType()));

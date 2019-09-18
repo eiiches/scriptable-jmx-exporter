@@ -10,6 +10,9 @@ import java.util.Map.Entry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import net.thisptr.jackson.jq.Expression;
 import net.thisptr.jackson.jq.Function;
@@ -19,7 +22,6 @@ import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import net.thisptr.jackson.jq.path.Path;
 import net.thisptr.java.prometheus.metrics.agent.JsonSample;
-import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 
 public class DefaultTransformV1Function implements Function {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -186,11 +188,14 @@ public class DefaultTransformV1Function implements Function {
 				metricLabels.put("attribute", attributeNameBuilder.toString());
 			}
 
-			final PrometheusMetric m = new PrometheusMetric();
-			m.labels = metricLabels;
-			m.name = nameBuilder.toString();
-			m.value = value;
-			output.emit(MAPPER.valueToTree(m), null);
+			final ObjectNode jsonLabels = MAPPER.createObjectNode();
+			metricLabels.forEach((k, v) -> jsonLabels.set(k, TextNode.valueOf(v)));
+
+			final ObjectNode jsonOutput = MAPPER.createObjectNode();
+			jsonOutput.set("name", TextNode.valueOf(nameBuilder.toString()));
+			jsonOutput.set("value", DoubleNode.valueOf(value));
+			jsonOutput.set("labels", jsonLabels);
+			output.emit(jsonOutput, null);
 		} catch (final JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
