@@ -2,17 +2,16 @@ package net.thisptr.java.prometheus.metrics.agent;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class PrometheusMetricWriter implements Closeable {
-	private final Writer writer;
+	private final StringBuilder builder;
 	private final boolean includeTimestamp;
 
-	public PrometheusMetricWriter(final Writer writer, final boolean includeTimestamp) {
-		this.writer = writer;
+	public PrometheusMetricWriter(final StringBuilder builder, final boolean includeTimestamp) {
+		this.builder = builder;
 		this.includeTimestamp = includeTimestamp;
 	}
 
@@ -24,21 +23,25 @@ public class PrometheusMetricWriter implements Closeable {
 	 * @see https://prometheus.io/docs/concepts/data_model/
 	 * @see {@link #sanitizeLabelName(String)}
 	 */
-	private static String sanitizeMetricName(final String name) {
-		if (name.isEmpty()) // An empty name is not allowed.
-			return "_";
-		final char[] chars = name.toCharArray();
-		for (int i = 0; i < chars.length; ++i) {
-			final char ch = chars[i];
+	private static void sanitizeMetricName(final StringBuilder builder, final String name) {
+		if (name.isEmpty()) {// An empty name is not allowed.
+			builder.append('_');
+			return;
+		}
+		final int length = name.length();
+		for (int i = 0; i < length; ++i) {
+			final char ch = name.charAt(i);
 			final boolean valid = ('a' <= ch && ch <= 'z')
 					|| ('A' <= ch && ch <= 'Z')
 					|| ('0' <= ch && ch <= '9' && i != 0)
 					|| (ch == '_')
 					|| (ch == ':');
-			if (!valid)
-				chars[i] = '_';
+			if (valid) {
+				builder.append(ch);
+			} else {
+				builder.append('_');
+			}
 		}
-		return new String(chars);
 	}
 
 	/**
@@ -54,45 +57,79 @@ public class PrometheusMetricWriter implements Closeable {
 	 * @see https://prometheus.io/docs/concepts/data_model/
 	 * @see {@link #sanitizeMetricName(String)}
 	 */
-	private static String sanitizeLabelName(final String name) {
-		if (name.isEmpty()) // An empty name is not allowed.
-			return "_";
-		final char[] chars = name.toCharArray();
-		for (int i = 0; i < chars.length; ++i) {
-			final char ch = chars[i];
+	private static void sanitizeLabelName(final StringBuilder builder, final String name) {
+		if (name.isEmpty()) { // An empty name is not allowed.
+			builder.append('_');
+			return;
+		}
+		final int length = name.length();
+		for (int i = 0; i < length; ++i) {
+			final char ch = name.charAt(i);
 			final boolean valid = ('a' <= ch && ch <= 'z')
 					|| ('A' <= ch && ch <= 'Z')
 					|| ('0' <= ch && ch <= '9' && i != 0)
 					|| (ch == '_');
-			if (!valid)
-				chars[i] = '_';
+			if (valid) {
+				builder.append(ch);
+			} else {
+				builder.append('_');
+			}
 		}
-		return new String(chars);
 	}
 
 	public void write(final PrometheusMetric metric) throws IOException {
-		writer.write(sanitizeMetricName(metric.name));
+		sanitizeMetricName(builder, metric.name);
 		if (!metric.labels.isEmpty()) {
-			writer.write('{');
-			for (final Entry<String, String> entry : metric.labels.entrySet()) {
-				writer.write(sanitizeLabelName(entry.getKey()));
-				writer.write('=');
-				writer.write(TextNode.valueOf(entry.getValue()).toString());
-				writer.write(',');
+			builder.append('{');
+			for (final Entry<String, JsonNode> entry : metric.labels.entrySet()) {
+				sanitizeLabelName(builder, entry.getKey());
+				builder.append('=');
+				sanitizeLabelValue(builder, entry.getValue());
+				builder.append(',');
 			}
-			writer.write('}');
+			builder.append('}');
 		}
-		writer.write(' ');
-		writer.write(String.valueOf(metric.value));
+		builder.append(' ');
+		builder.append(metric.value);
 		if (includeTimestamp && metric.timestamp != null) {
-			writer.write(' ');
-			writer.write(String.valueOf(metric.timestamp));
+			builder.append(' ');
+			builder.append(metric.timestamp);
 		}
-		writer.write('\n');
+		builder.append('\n');
+	}
+
+	private static void sanitizeLabelValue(final StringBuilder builder, final JsonNode value) {
+		if (value == null || value.isNull()) {
+			builder.append('"');
+			builder.append("null");
+			builder.append('"');
+		} else {
+			builder.append('"');
+			final String text = value.isTextual() ? value.asText() : value.toString();
+			final int length = text.length();
+			for (int i = 0; i < length; ++i) {
+				final char ch = text.charAt(i);
+				switch (ch) {
+				case '\\':
+					builder.append('\\');
+					builder.append('\\');
+					break;
+				case '\n':
+					builder.append('\\');
+					builder.append('\n');
+					break;
+				case '"':
+					builder.append('\\');
+					builder.append('\"');
+					break;
+				default:
+					builder.append(ch);
+				}
+			}
+			builder.append('"');
+		}
 	}
 
 	@Override
-	public void close() throws IOException {
-		writer.close();
-	}
+	public void close() throws IOException {}
 }

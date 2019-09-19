@@ -16,7 +16,7 @@ public class PrometheusMetric {
 	public String name;
 
 	@JsonProperty("labels")
-	public Map<String, String> labels;
+	public Map<String, JsonNode> labels;
 
 	@JsonProperty("value")
 	public double value;
@@ -43,7 +43,7 @@ public class PrometheusMetric {
 			final Iterator<Entry<String, JsonNode>> iter = labels.fields();
 			while (iter.hasNext()) {
 				final Entry<String, JsonNode> entry = iter.next();
-				m.labels.put(entry.getKey(), entry.getValue().asText());
+				m.labels.put(entry.getKey(), entry.getValue());
 			}
 		} else {
 			m.labels = null;

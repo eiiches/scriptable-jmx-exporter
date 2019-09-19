@@ -41,7 +41,7 @@ public class PrometheusExporterServerHandler {
 		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 	}
 
-	private Map<String, String> makeLabels() throws IOException {
+	private Map<String, JsonNode> makeLabels() throws IOException {
 		if (labels == null)
 			return Collections.emptyMap();
 		final List<JsonNode> nodes = new ArrayList<>();
@@ -50,7 +50,7 @@ public class PrometheusExporterServerHandler {
 			return Collections.emptyMap();
 		final JsonNode in = nodes.get(nodes.size() - 1);
 		try (JsonParser jp = MAPPER.treeAsTokens(in)) {
-			return MAPPER.readValue(jp, new TypeReference<Map<String, String>>() {});
+			return MAPPER.readValue(jp, new TypeReference<Map<String, JsonNode>>() {});
 		} catch (final Exception e) {
 			throw new RuntimeException("Cannot deserialize labels from input: " + in, e);
 		}
@@ -73,7 +73,7 @@ public class PrometheusExporterServerHandler {
 	}
 
 	public Response handleGetMetrics(final IHTTPSession session) throws InterruptedException, IOException {
-		final Map<String, String> labels = makeLabels();
+		final Map<String, JsonNode> labels = makeLabels();
 		final OptionsConfig options = getOptions(session);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
@@ -84,8 +84,9 @@ public class PrometheusExporterServerHandler {
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
-		final StringWriter writer = new StringWriter();
-		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(writer, options.includeTimestamp)) {
+		final StringBuilder builder = new StringBuilder();
+
+		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(builder, options.includeTimestamp)) {
 			allMetrics.forEach((name, metrics) -> {
 				metrics.forEach((metric) -> {
 					try {
@@ -97,7 +98,7 @@ public class PrometheusExporterServerHandler {
 			});
 		}
 
-		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", writer.toString());
+		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", builder.toString());
 	}
 
 	public Response handleGetMBeans(final IHTTPSession session) throws InterruptedException {
