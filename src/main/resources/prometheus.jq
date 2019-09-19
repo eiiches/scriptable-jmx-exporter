@@ -42,7 +42,8 @@ def unfold_v1($value; label_name_fn): unfold_v1({}; []; $value; label_name_fn);
 #     }
 # ;
 
-def default_transform_v1: default_transform_v1([]; false);
+# def default_transform_v1: default_transform_v1([]; false);
+
 def default_transform_v1($name_keys; $attribute_as_name; $label_remapping):
     default_transform_v1($name_keys; $attribute_as_name)
     | {

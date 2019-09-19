@@ -33,6 +33,7 @@ public class RootScope {
 			throw new RuntimeException(th);
 		}
 		INSTANCE.addFunction("jmx", 2, new JmxFunction());
+		INSTANCE.addFunction("default_transform_v1", 0, new DefaultTransformV1Function());
 		INSTANCE.addFunction("default_transform_v1", 2, new DefaultTransformV1Function());
 	}
 

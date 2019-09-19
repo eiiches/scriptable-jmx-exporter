@@ -1,6 +1,7 @@
 package net.thisptr.java.prometheus.metrics.misc.jq;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,23 +29,23 @@ public class DefaultTransformV1Function implements Function {
 
 	@Override
 	public void apply(final Scope scope, final List<Expression> args, final JsonNode in, final Path path, final PathOutput output, final Version version) throws JsonQueryException {
-		final Expression nameKeysExpr = args.get(0);
-		final Expression attrAsNameExpr = args.get(1);
+		if (args.size() == 2) {
+			final Expression nameKeysExpr = args.get(0);
+			final Expression attrAsNameExpr = args.get(1);
 
-		nameKeysExpr.apply(scope, in, path, (nameKeysJson, nameKeysPath) -> {
-			final List<String> nameKeys = new ArrayList<>(nameKeysJson.size());
-			for (final JsonNode nameKeyJson : nameKeysJson)
-				nameKeys.add(nameKeyJson.asText());
+			nameKeysExpr.apply(scope, in, path, (nameKeysJson, nameKeysPath) -> {
+				final List<String> nameKeys = new ArrayList<>(nameKeysJson.size());
+				for (final JsonNode nameKeyJson : nameKeysJson)
+					nameKeys.add(nameKeyJson.asText());
 
-			attrAsNameExpr.apply(scope, in, path, (attrAsNameJson, attrAsNamePath) -> {
-				final boolean attrAsName = attrAsNameJson.asBoolean();
-				try {
+				attrAsNameExpr.apply(scope, in, path, (attrAsNameJson, attrAsNamePath) -> {
+					final boolean attrAsName = attrAsNameJson.asBoolean();
 					transform(nameKeys, attrAsName, in, output);
-				} catch (final Exception e) {
-					throw new JsonQueryException(e);
-				}
+				}, false);
 			}, false);
-		}, false);
+		} else {
+			transform(Collections.emptyList(), false, in, output);
+		}
 	}
 
 	private static void unfold(final List<String> nameKeys, final boolean attrAsName, final JsonSample sample, final PathOutput output) {
@@ -198,8 +199,12 @@ public class DefaultTransformV1Function implements Function {
 		}
 	}
 
-	private static void transform(final List<String> nameKeys, final boolean attrAsName, final JsonNode in, final PathOutput output) throws JsonProcessingException {
+	private static void transform(final List<String> nameKeys, final boolean attrAsName, final JsonNode in, final PathOutput output) throws JsonQueryException {
 		final JsonSample value = JsonSample.fromJsonNode(in);
-		unfold(nameKeys, attrAsName, value, output);
+		try {
+			unfold(nameKeys, attrAsName, value, output);
+		} catch (final Exception e) {
+			throw new JsonQueryException(e);
+		}
 	}
 }

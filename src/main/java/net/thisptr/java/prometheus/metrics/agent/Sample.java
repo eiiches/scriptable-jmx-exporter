@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.LongNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.Maps;
@@ -49,7 +50,7 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 
 		final Map<String, JsonNode> out = Maps.newHashMapWithExpectedSize(6);
 		out.put("type", TextNode.valueOf(attribute.getType()));
-		out.put("value", valueJson);
+		out.put("value", valueJson != null ? valueJson : NullNode.getInstance());
 		out.put("domain", TextNode.valueOf(name.getDomain()));
 		final Hashtable<String, String> propertyList = name.getKeyPropertyList();
 		final Map<String, JsonNode> properties = Maps.newHashMapWithExpectedSize(propertyList.size());
