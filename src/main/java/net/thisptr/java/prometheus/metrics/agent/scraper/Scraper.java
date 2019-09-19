@@ -133,7 +133,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		for (int i = 0; i < requests.size(); ++i) {
 			final long waitUntilNanos = startNanos + (long) (((i + 1) / (double) requests.size()) * durationNanos);
 			final long sleepNanos = waitUntilNanos - System.nanoTime();
-			if (sleepNanos > 0)
+			if (sleepNanos > 10_000_000) // sleep only when we are more than 10ms ahead, to avoid excessive context switches.
 				sleepNanos(sleepNanos);
 			final AttributeScrapeRequest request = requests.get(i);
 			try {
@@ -142,6 +142,11 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				LOG.log(Level.FINER, "Failed to scrape the attribute of the MBean instance (name = " + request.name + ", attribute = " + request.attribute.getName() + ")", th);
 			}
 		}
+		// The previous loop can finish at most 10ms earlier than desired.
+		final long waitUntilNanos = startNanos + durationNanos;
+		final long sleepNanos = waitUntilNanos - System.nanoTime();
+		if (sleepNanos > 0)
+			sleepNanos(sleepNanos);
 	}
 
 	private static void sleepNanos(final long totalNanos) throws InterruptedException {
