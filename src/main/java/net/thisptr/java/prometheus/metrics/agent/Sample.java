@@ -1,5 +1,8 @@
 package net.thisptr.java.prometheus.metrics.agent;
 
+import java.util.Hashtable;
+import java.util.Map;
+
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
@@ -10,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.collect.Maps;
 
 import net.thisptr.java.prometheus.metrics.agent.jackson.JmxModule;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeRule;
@@ -43,19 +47,20 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 	public JsonNode toJsonNode() {
 		final JsonNode valueJson = JMX_MAPPER.valueToTree(value);
 
-		final ObjectNode out = JMX_MAPPER.createObjectNode();
-		out.set("type", TextNode.valueOf(attribute.getType()));
-		out.set("value", valueJson);
-		out.set("domain", TextNode.valueOf(name.getDomain()));
-		final ObjectNode properties = JMX_MAPPER.createObjectNode();
-		name.getKeyPropertyList().forEach((k, v) -> {
+		final Map<String, JsonNode> out = Maps.newHashMapWithExpectedSize(6);
+		out.put("type", TextNode.valueOf(attribute.getType()));
+		out.put("value", valueJson);
+		out.put("domain", TextNode.valueOf(name.getDomain()));
+		final Hashtable<String, String> propertyList = name.getKeyPropertyList();
+		final Map<String, JsonNode> properties = Maps.newHashMapWithExpectedSize(propertyList.size());
+		propertyList.forEach((k, v) -> {
 			if (v.startsWith("\""))
 				v = ObjectName.unquote(v);
-			properties.set(k, TextNode.valueOf(v));
+			properties.put(k, TextNode.valueOf(v));
 		});
-		out.set("properties", properties);
-		out.set("attribute", TextNode.valueOf(attribute.getName()));
-		out.set("timestamp", LongNode.valueOf(timestamp));
-		return out;
+		out.put("properties", new ObjectNode(JMX_MAPPER.getNodeFactory(), properties));
+		out.put("attribute", TextNode.valueOf(attribute.getName()));
+		out.put("timestamp", LongNode.valueOf(timestamp));
+		return new ObjectNode(JMX_MAPPER.getNodeFactory(), out);
 	}
 }

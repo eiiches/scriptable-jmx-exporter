@@ -21,7 +21,7 @@ public class JsonSample {
 	public String domain;
 
 	@JsonProperty("properties")
-	public Map<String, String> properties;
+	public Map<String, JsonNode> properties;
 
 	@JsonProperty("timestamp")
 	public long timestamp;
@@ -42,7 +42,7 @@ public class JsonSample {
 			final Iterator<Entry<String, JsonNode>> iter = properties.fields();
 			while (iter.hasNext()) {
 				final Entry<String, JsonNode> entry = iter.next();
-				sample.properties.put(entry.getKey(), entry.getValue().asText());
+				sample.properties.put(entry.getKey(), entry.getValue());
 			}
 		} else {
 			sample.properties = null;

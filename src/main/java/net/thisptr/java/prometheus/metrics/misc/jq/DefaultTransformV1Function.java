@@ -155,9 +155,9 @@ public class DefaultTransformV1Function implements Function {
 
 	private static void emit(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonSample sample, final PathOutput output, final double value) {
 		try {
-			final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + sample.properties.size());
+			final Map<String, JsonNode> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + sample.properties.size());
 			labels.forEach((label) -> {
-				metricLabels.put(label.label, label.index);
+				metricLabels.put(label.label, TextNode.valueOf(label.index));
 			});
 			sample.properties.forEach(metricLabels::put);
 
@@ -165,7 +165,7 @@ public class DefaultTransformV1Function implements Function {
 			nameBuilder.append(sample.domain);
 			for (final String nameKey : nameKeys) {
 				nameBuilder.append(":");
-				nameBuilder.append(metricLabels.get(nameKey));
+				nameBuilder.append(metricLabels.get(nameKey).asText());
 			}
 
 			final StringBuilder attributeNameBuilder = new StringBuilder();
@@ -185,17 +185,14 @@ public class DefaultTransformV1Function implements Function {
 				nameBuilder.append(":");
 				nameBuilder.append(attributeNameBuilder);
 			} else {
-				metricLabels.put("attribute", attributeNameBuilder.toString());
+				metricLabels.put("attribute", TextNode.valueOf(attributeNameBuilder.toString()));
 			}
 
-			final ObjectNode jsonLabels = MAPPER.createObjectNode();
-			metricLabels.forEach((k, v) -> jsonLabels.set(k, TextNode.valueOf(v)));
-
-			final ObjectNode jsonOutput = MAPPER.createObjectNode();
-			jsonOutput.set("name", TextNode.valueOf(nameBuilder.toString()));
-			jsonOutput.set("value", DoubleNode.valueOf(value));
-			jsonOutput.set("labels", jsonLabels);
-			output.emit(jsonOutput, null);
+			final Map<String, JsonNode> jsonOutput = Maps.newHashMapWithExpectedSize(3);
+			jsonOutput.put("name", TextNode.valueOf(nameBuilder.toString()));
+			jsonOutput.put("value", DoubleNode.valueOf(value));
+			jsonOutput.put("labels", new ObjectNode(MAPPER.getNodeFactory(), metricLabels));
+			output.emit(new ObjectNode(MAPPER.getNodeFactory(), jsonOutput), null);
 		} catch (final JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
