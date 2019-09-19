@@ -1,8 +1,10 @@
 package net.thisptr.java.prometheus.metrics.agent.scraper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,6 +19,10 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 import net.thisptr.jackson.jq.internal.misc.Pair;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
@@ -26,6 +32,24 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 
 	private final List<ScrapeRuleType> rules;
 	private final MBeanServer server;
+
+	private final LoadingCache<ObjectName, MBeanInfo> mbeanInfoCache = CacheBuilder.newBuilder()
+			.refreshAfterWrite(60, TimeUnit.SECONDS)
+			.build(new CacheLoader<ObjectName, MBeanInfo>() {
+				@Override
+				public MBeanInfo load(final ObjectName name) throws Exception {
+					return server.getMBeanInfo(name);
+				}
+			});
+
+	private final LoadingCache<ObjectName, Set<String>> attributeBlacklist = CacheBuilder.newBuilder()
+			.expireAfterWrite(600, TimeUnit.SECONDS)
+			.build(new CacheLoader<ObjectName, Set<String>>() {
+				@Override
+				public Set<String> load(final ObjectName name) {
+					return Collections.newSetFromMap(new ConcurrentHashMap<>());
+				}
+			});
 
 	public Scraper(final MBeanServer server, final List<ScrapeRuleType> rules) {
 		this.server = server;
@@ -101,15 +125,20 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 
 			final MBeanInfo info;
 			try {
-				info = server.getMBeanInfo(name);
+				info = mbeanInfoCache.get(name);
 			} catch (final Throwable th) {
 				LOG.log(Level.FINER, "Failed to obtain MBeanInfo (name = " + name + ")", th);
 				continue;
 			}
 
+			final Set<String> bannedAttributes = attributeBlacklist.getIfPresent(name);
+
 			for (final MBeanAttributeInfo attribute : info.getAttributes()) {
 				try {
 					if (!attribute.isReadable())
+						continue;
+
+					if (bannedAttributes != null && bannedAttributes.contains(attribute.getName()))
 						continue;
 
 					final ScrapeRuleType rule;
@@ -161,11 +190,18 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		try {
 			value = server.getAttribute(name, attribute.getName());
 		} catch (final RuntimeMBeanException e) {
-			if (e.getCause() instanceof UnsupportedOperationException)
+			if (e.getCause() instanceof UnsupportedOperationException) {
+				// add to blacklist
+				blacklist(name, info, attribute);
 				return;
+			}
 			throw e;
 		}
 
 		output.emit(new Sample<>(rule, timestamp, name, info, attribute, value));
+	}
+
+	private void blacklist(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute) {
+		attributeBlacklist.getUnchecked(name).add(attribute.getName());
 	}
 }
