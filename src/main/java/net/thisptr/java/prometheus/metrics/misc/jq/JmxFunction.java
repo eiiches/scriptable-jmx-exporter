@@ -1,7 +1,6 @@
 package net.thisptr.java.prometheus.metrics.misc.jq;
 
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.AttributeNotFoundException;
@@ -13,22 +12,34 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 
+import net.thisptr.jackson.jq.Expression;
 import net.thisptr.jackson.jq.Function;
-import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.PathOutput;
 import net.thisptr.jackson.jq.Scope;
+import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
-import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
+import net.thisptr.jackson.jq.path.Path;
+import net.thisptr.java.prometheus.metrics.agent.jackson.JmxModule;
 
 public class JmxFunction implements Function {
+	public static final ObjectMapper JMX_MAPPER = new ObjectMapper()
+			.registerModule(new JmxModule())
+			.disable(MapperFeature.AUTO_DETECT_GETTERS)
+			.disable(MapperFeature.AUTO_DETECT_FIELDS)
+			.disable(MapperFeature.AUTO_DETECT_IS_GETTERS)
+			.disable(MapperFeature.AUTO_DETECT_SETTERS)
+			.disable(MapperFeature.AUTO_DETECT_CREATORS);
 
 	private static JsonNode get(final MBeanServer server, final String name, final String attribute) throws InstanceNotFoundException, ReflectionException, MBeanException, MalformedObjectNameException, AttributeNotFoundException {
 		AttributeNotFoundException th = null;
 		for (final ObjectName on : server.queryNames(new ObjectName(name), null)) {
 			try {
 				final Object value = server.getAttribute(on, attribute);
-				return Scraper.JMX_MAPPER.valueToTree(value);
+				return JMX_MAPPER.valueToTree(value);
 			} catch (AttributeNotFoundException e) {
 				th = e;
 				continue;
@@ -40,29 +51,24 @@ public class JmxFunction implements Function {
 	}
 
 	@Override
-	public List<JsonNode> apply(final Scope scope, final List<JsonQuery> args, final JsonNode in) throws JsonQueryException {
+	public void apply(final Scope scope, final List<Expression> args, final JsonNode in, final Path path, final PathOutput output, final Version version) throws JsonQueryException {
 		final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-		final JsonQuery nameExpr = args.get(0);
-		final JsonQuery attributeExpr = args.get(1);
+		final Expression nameExpr = args.get(0);
+		final Expression attributeExpr = args.get(1);
 
-		final List<JsonNode> out = new ArrayList<>();
-
-		for (final JsonNode name : nameExpr.apply(scope, NullNode.getInstance())) {
+		nameExpr.apply(scope, NullNode.getInstance(), (name) -> {
 			if (!name.isTextual())
 				throw new JsonQueryException("objectname must be string");
-			for (final JsonNode attribute : attributeExpr.apply(scope, NullNode.getInstance())) {
+			attributeExpr.apply(scope, NullNode.getInstance(), (attribute) -> {
 				if (!attribute.isTextual())
 					throw new JsonQueryException("attribute must be string");
-
 				try {
-					out.add(get(server, name.asText(), attribute.asText()));
+					output.emit(get(server, name.asText(), attribute.asText()), null);
 				} catch (final Exception e) {
 					throw new JsonQueryException(e);
 				}
-			}
-		}
-
-		return out;
+			});
+		});
 	}
 }

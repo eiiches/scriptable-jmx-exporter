@@ -47,8 +47,8 @@ public class ScraperTest {
 		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
 
 		final Set<JsonNode> actual = new HashSet<>();
-		scraper.scrape((rule, timestamp, out) -> {
-			actual.add(out);
+		scraper.scrape((sample) -> {
+			actual.add(sample.toJsonNode());
 		});
 
 		assertEquals(1, actual.size());
@@ -61,8 +61,8 @@ public class ScraperTest {
 		final long start = System.currentTimeMillis();
 
 		final Set<JsonNode> actual = new HashSet<>();
-		scraper.scrape((rule, timestamp, out) -> {
-			actual.add(out);
+		scraper.scrape((sample) -> {
+			actual.add(sample.toJsonNode());
 		}, 3, TimeUnit.SECONDS);
 
 		assertTrue(3000L <= System.currentTimeMillis() - start);

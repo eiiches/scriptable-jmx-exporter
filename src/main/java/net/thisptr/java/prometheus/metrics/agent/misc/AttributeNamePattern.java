@@ -25,6 +25,20 @@ public class AttributeNamePattern {
 	}
 
 	public boolean matches(final ObjectName name, final String attribute) {
+		if (!nameMatches(name))
+			return false;
+
+		if (this.attribute != null && (attribute == null || !this.attribute.matcher(attribute).matches()))
+			return false;
+
+		return true;
+	}
+
+	public static AttributeNamePattern compile(final String patternText) {
+		return AttributeNamePatternParser.parse(patternText);
+	}
+
+	public boolean nameMatches(final ObjectName name) {
 		if (domain != null && !domain.matcher(name.getDomain()).matches())
 			return false;
 
@@ -39,13 +53,6 @@ public class AttributeNamePattern {
 				return false;
 		}
 
-		if (this.attribute != null && (attribute == null || !this.attribute.matcher(attribute).matches()))
-			return false;
-
 		return true;
-	}
-
-	public static AttributeNamePattern compile(final String patternText) {
-		return AttributeNamePatternParser.parse(patternText);
 	}
 }

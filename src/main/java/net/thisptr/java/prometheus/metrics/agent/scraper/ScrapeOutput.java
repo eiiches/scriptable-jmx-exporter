@@ -1,8 +1,8 @@
 package net.thisptr.java.prometheus.metrics.agent.scraper;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import net.thisptr.java.prometheus.metrics.agent.Sample;
 
 public interface ScrapeOutput<ScrapeRuleType extends ScrapeRule> {
 
-	void emit(ScrapeRuleType rule, long timestamp, JsonNode object);
+	void emit(Sample<ScrapeRuleType> sample);
 }
