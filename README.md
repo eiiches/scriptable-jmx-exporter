@@ -3,6 +3,7 @@ java-prometheus-metrics-agent
 
 A javaagent for scraping and exposing MBeans to Prometheus
 
+[![GitHub Actions](https://github.com/eiiches/java-prometheus-metrics-agent/workflows/test/badge.svg)](https://github.com/eiiches/java-prometheus-metrics-agent/actions)
 
 Features
 --------
