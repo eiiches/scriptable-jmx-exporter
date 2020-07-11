@@ -6,9 +6,11 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.google.common.base.Joiner;
 
 import fi.iki.elonen.NanoHTTPD.IHTTPSession;
 import fi.iki.elonen.NanoHTTPD.Response;
@@ -88,6 +91,11 @@ public class PrometheusExporterServerHandler {
 
 		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(builder, options.includeTimestamp)) {
 			allMetrics.forEach((name, metrics) -> {
+				final Set<String> helps = new HashSet<>();
+				metrics.forEach((metric) -> {
+					helps.add(metric.help);
+				});
+				pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
 				metrics.forEach((metric) -> {
 					try {
 						pwriter.write(metric);

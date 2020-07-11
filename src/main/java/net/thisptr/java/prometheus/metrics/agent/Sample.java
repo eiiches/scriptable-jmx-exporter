@@ -139,6 +139,7 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 
 		final Map<String, JsonNode> out = Maps.newHashMapWithExpectedSize(6);
 		out.put("type", TextNode.valueOf(attribute.getType()));
+		out.put("mbean_description", TextNode.valueOf(info.getDescription()));
 		out.put("value", valueJson != null ? valueJson : NullNode.getInstance());
 		out.put("domain", TextNode.valueOf(name.getDomain()));
 		final Hashtable<String, String> propertyList = name.getKeyPropertyList();
@@ -148,6 +149,7 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 				v = ObjectName.unquote(v);
 			properties.put(k, TextNode.valueOf(v));
 		});
+		out.put("description", TextNode.valueOf(attribute.getDescription()));
 		out.put("properties", new ObjectNode(JMX_MAPPER.getNodeFactory(), properties));
 		out.put("attribute", TextNode.valueOf(attribute.getName()));
 		out.put("timestamp", LongNode.valueOf(timestamp));

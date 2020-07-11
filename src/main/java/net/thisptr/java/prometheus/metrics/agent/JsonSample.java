@@ -29,12 +29,24 @@ public class JsonSample {
 	@JsonProperty("attribute")
 	public String attribute;
 
+	@JsonProperty("mbean_description")
+	public String mbeanDescription;
+
+	@JsonProperty("description")
+	public String attributeDescription;
+
 	public static JsonSample fromJsonNode(final JsonNode tree) {
 		final JsonSample sample = new JsonSample();
 		final JsonNode type = tree.get("type");
 		sample.type = type != null ? type.asText() : null;
 		sample.value = tree.get("value");
 		sample.domain = tree.get("domain").asText();
+
+		final JsonNode description = tree.get("description");
+		sample.attributeDescription = description != null ? description.asText() : null;
+
+		final JsonNode mbeanDescription = tree.get("mbean_description");
+		sample.mbeanDescription = mbeanDescription != null ? mbeanDescription.asText() : null;
 
 		final JsonNode properties = tree.get("properties");
 		if (properties != null) {

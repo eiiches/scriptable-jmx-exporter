@@ -193,6 +193,8 @@ public class DefaultTransformV1Function implements Function {
 			jsonOutput.put("name", TextNode.valueOf(nameBuilder.toString()));
 			jsonOutput.put("value", DoubleNode.valueOf(value));
 			jsonOutput.put("labels", new ObjectNode(MAPPER.getNodeFactory(), metricLabels));
+			if (sample.attributeDescription != null)
+				jsonOutput.put("help", TextNode.valueOf(sample.attributeDescription));
 			output.emit(new ObjectNode(MAPPER.getNodeFactory(), jsonOutput), null);
 		} catch (final JsonProcessingException e) {
 			throw new RuntimeException(e);

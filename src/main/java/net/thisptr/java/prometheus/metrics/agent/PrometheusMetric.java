@@ -25,6 +25,9 @@ public class PrometheusMetric {
 	@JsonInclude(Include.NON_NULL)
 	public Long timestamp = null;
 
+	@JsonProperty("help")
+	public String help;
+
 	public static PrometheusMetric fromJsonNode(final JsonNode tree) {
 		final PrometheusMetric m = new PrometheusMetric();
 
@@ -48,6 +51,9 @@ public class PrometheusMetric {
 		} else {
 			m.labels = null;
 		}
+
+		final JsonNode help = tree.get("help");
+		m.help = help.asText();
 
 		return m;
 	}

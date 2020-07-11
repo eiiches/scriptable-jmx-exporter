@@ -132,4 +132,12 @@ public class PrometheusMetricWriter implements Closeable {
 
 	@Override
 	public void close() throws IOException {}
+
+	public void writeHelp(final String name, final String help) {
+		builder.append("# HELP ");
+		sanitizeMetricName(builder, name);
+		builder.append(' ');
+		builder.append(help.replaceAll("\n", " "));
+		builder.append('\n');
+	}
 }
