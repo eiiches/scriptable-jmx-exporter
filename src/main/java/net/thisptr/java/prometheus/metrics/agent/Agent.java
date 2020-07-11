@@ -11,10 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import fi.iki.elonen.NanoHTTPD;
+import net.thisptr.java.prometheus.metrics.agent.config.ClassPathPollingConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.Config;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher.ConfigListener;
-import net.thisptr.java.prometheus.metrics.agent.config.FileConfigWatcher;
+import net.thisptr.java.prometheus.metrics.agent.config.FilePollingConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.StaticConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreValidators;
 
@@ -24,11 +25,13 @@ public class Agent {
 
 	private static PrometheusExporterServer SERVER;
 
-	private static ConfigWatcher newConfigWatcher(final String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
+	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		if (args == null || args.isEmpty()) {
 			return new StaticConfigWatcher(new Config());
+		} else if (args.startsWith("@classpath:")) {
+			return new ClassPathPollingConfigWatcher(args.substring("@classpath:".length()), listener);
 		} else if (args.startsWith("@")) {
-			return new FileConfigWatcher(new File(args.substring(1)), listener);
+			return new FilePollingConfigWatcher(new File(args.substring(1)), listener);
 		} else {
 			final Config config = MAPPER.readValue(args, Config.class);
 			MoreValidators.validate(config);
