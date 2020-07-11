@@ -26,6 +26,7 @@ import com.google.common.cache.LoadingCache;
 import net.thisptr.jackson.jq.internal.misc.Pair;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
+import net.thisptr.java.prometheus.metrics.agent.utils.MoreCollections;
 
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
@@ -157,31 +158,13 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			}
 		}
 
-		final long startNanos = System.nanoTime();
-		final long durationNanos = unit.toNanos(duration);
-		for (int i = 0; i < requests.size(); ++i) {
-			final long waitUntilNanos = startNanos + (long) (((i + 1) / (double) requests.size()) * durationNanos);
-			final long sleepNanos = waitUntilNanos - System.nanoTime();
-			if (sleepNanos > 10_000_000) // sleep only when we are more than 10ms ahead, to avoid excessive context switches.
-				sleepNanos(sleepNanos);
-			final AttributeScrapeRequest request = requests.get(i);
+		MoreCollections.forEachSlowlyOverDuration(requests, duration, unit, (request) -> {
 			try {
 				scrape(request.name, request.info, request.attribute, request.rule, output);
 			} catch (final Throwable th) {
 				LOG.log(Level.FINER, "Failed to scrape the attribute of the MBean instance (name = " + request.name + ", attribute = " + request.attribute.getName() + ")", th);
 			}
-		}
-		// The previous loop can finish at most 10ms earlier than desired.
-		final long waitUntilNanos = startNanos + durationNanos;
-		final long sleepNanos = waitUntilNanos - System.nanoTime();
-		if (sleepNanos > 0)
-			sleepNanos(sleepNanos);
-	}
-
-	private static void sleepNanos(final long totalNanos) throws InterruptedException {
-		final int nanos = (int) (totalNanos % 1000000L);
-		final long millis = totalNanos / 1000000L;
-		Thread.sleep(millis, nanos);
+		});
 	}
 
 	private void scrape(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule, final ScrapeOutput<ScrapeRuleType> output) throws InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException {
