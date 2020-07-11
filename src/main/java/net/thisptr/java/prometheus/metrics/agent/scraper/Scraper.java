@@ -42,7 +42,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				}
 			});
 
-	private final LoadingCache<ObjectName, Set<String>> attributeBlacklist = CacheBuilder.newBuilder()
+	private final LoadingCache<ObjectName, Set<String>> bannedMBeanAttributes = CacheBuilder.newBuilder()
 			.expireAfterWrite(600, TimeUnit.SECONDS)
 			.build(new CacheLoader<ObjectName, Set<String>>() {
 				@Override
@@ -131,7 +131,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				continue;
 			}
 
-			final Set<String> bannedAttributes = attributeBlacklist.getIfPresent(name);
+			final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(name);
 
 			for (final MBeanAttributeInfo attribute : info.getAttributes()) {
 				try {
@@ -191,8 +191,8 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			value = server.getAttribute(name, attribute.getName());
 		} catch (final RuntimeMBeanException e) {
 			if (e.getCause() instanceof UnsupportedOperationException) {
-				// add to blacklist
-				blacklist(name, info, attribute);
+				// ban attributes temporarily
+				banAttribute(name, info, attribute);
 				return;
 			}
 			throw e;
@@ -201,7 +201,14 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		output.emit(new Sample<>(rule, timestamp, name, info, attribute, value));
 	}
 
-	private void blacklist(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute) {
-		attributeBlacklist.getUnchecked(name).add(attribute.getName());
+	/**
+	 * Temporarily bans an attribute known to cause errors while scraping.
+	 *
+	 * @param name
+	 * @param info
+	 * @param attribute
+	 */
+	private void banAttribute(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute) {
+		bannedMBeanAttributes.getUnchecked(name).add(attribute.getName());
 	}
 }
