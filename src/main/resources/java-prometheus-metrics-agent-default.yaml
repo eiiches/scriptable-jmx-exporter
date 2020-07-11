@@ -1,0 +1,11 @@
+server:
+  bind_address: 0.0.0.0:18090
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+- pattern: 'java\\.lang|java\\.nio'
+  transform: 'default_transform_v1(["type"]; true)'
+- transform: 'default_transform_v1([]; true)'

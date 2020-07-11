@@ -26,7 +26,9 @@ public class Agent {
 	private static PrometheusExporterServer SERVER;
 
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
-		if (args == null || args.isEmpty()) {
+		if (args == null)
+			args = "@classpath:java-prometheus-metrics-agent-default.yaml";
+		if (args.isEmpty()) {
 			return new StaticConfigWatcher(new Config());
 		} else if (args.startsWith("@classpath:")) {
 			return new ClassPathPollingConfigWatcher(args.substring("@classpath:".length()), listener);
