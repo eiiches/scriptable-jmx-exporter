@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.misc.jq;
+package net.thisptr.java.prometheus.metrics.agent.handler.jq.functions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +24,6 @@ import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import net.thisptr.jackson.jq.path.Path;
-import net.thisptr.java.prometheus.metrics.agent.JsonSample;
 
 public class DefaultTransformV1Function implements Function {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -48,7 +49,7 @@ public class DefaultTransformV1Function implements Function {
 		}
 	}
 
-	private static void unfold(final List<String> nameKeys, final boolean attrAsName, final JsonSample sample, final PathOutput output) {
+	private static void unfold(final List<String> nameKeys, final boolean attrAsName, final JsonSampleInput sample, final PathOutput output) {
 		final List<IndexLabel> labels = new ArrayList<>();
 		final List<String> names = new ArrayList<>();
 		unfold(nameKeys, attrAsName, labels, names, sample.value, sample, output);
@@ -79,7 +80,7 @@ public class DefaultTransformV1Function implements Function {
 		}
 	}
 
-	private static void unfold(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonNode value, final JsonSample sample, final PathOutput output) {
+	private static void unfold(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonNode value, final JsonSampleInput sample, final PathOutput output) {
 		switch (value.getNodeType()) {
 		case ARRAY: {
 			final Iterator<JsonNode> iter = value.iterator();
@@ -154,7 +155,7 @@ public class DefaultTransformV1Function implements Function {
 		}
 	}
 
-	private static void emit(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonSample sample, final PathOutput output, final double value) {
+	private static void emit(final List<String> nameKeys, final boolean attrAsName, final List<IndexLabel> labels, final List<String> names, final JsonSampleInput sample, final PathOutput output, final double value) {
 		try {
 			final Map<String, JsonNode> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + sample.properties.size());
 			labels.forEach((label) -> {
@@ -202,11 +203,70 @@ public class DefaultTransformV1Function implements Function {
 	}
 
 	private static void transform(final List<String> nameKeys, final boolean attrAsName, final JsonNode in, final PathOutput output) throws JsonQueryException {
-		final JsonSample value = JsonSample.fromJsonNode(in);
+		// convert to Java object first to ease transformation.
+		final JsonSampleInput value = JsonSampleInput.fromJsonNode(in);
 		try {
 			unfold(nameKeys, attrAsName, value, output);
 		} catch (final Exception e) {
 			throw new JsonQueryException(e);
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private static class JsonSampleInput {
+		@JsonProperty("type")
+		public String type;
+
+		@JsonProperty("value")
+		public JsonNode value;
+
+		@JsonProperty("domain")
+		public String domain;
+
+		@JsonProperty("properties")
+		public Map<String, JsonNode> properties;
+
+		@JsonProperty("timestamp")
+		public long timestamp;
+
+		@JsonProperty("attribute")
+		public String attribute;
+
+		@JsonProperty("mbean_description")
+		public String mbeanDescription;
+
+		@JsonProperty("description")
+		public String attributeDescription;
+
+		public static JsonSampleInput fromJsonNode(final JsonNode tree) {
+			final JsonSampleInput sample = new JsonSampleInput();
+			final JsonNode type = tree.get("type");
+			sample.type = type != null ? type.asText() : null;
+			sample.value = tree.get("value");
+			sample.domain = tree.get("domain").asText();
+
+			final JsonNode description = tree.get("description");
+			sample.attributeDescription = description != null ? description.asText() : null;
+
+			final JsonNode mbeanDescription = tree.get("mbean_description");
+			sample.mbeanDescription = mbeanDescription != null ? mbeanDescription.asText() : null;
+
+			final JsonNode properties = tree.get("properties");
+			if (properties != null) {
+				sample.properties = Maps.newHashMapWithExpectedSize(properties.size());
+				final Iterator<Entry<String, JsonNode>> iter = properties.fields();
+				while (iter.hasNext()) {
+					final Entry<String, JsonNode> entry = iter.next();
+					sample.properties.put(entry.getKey(), entry.getValue());
+				}
+			} else {
+				sample.properties = null;
+			}
+
+			final JsonNode timestamp = tree.get("timestamp");
+			sample.timestamp = timestamp != null ? timestamp.asLong() : 0L;
+			sample.attribute = tree.get("attribute").asText();
+			return sample;
 		}
 	}
 }

@@ -83,7 +83,9 @@ public class PrometheusExporterServerHandler {
 		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {
 			if (metric.labels == null)
 				metric.labels = new HashMap<>();
-			metric.labels.putAll(labels);
+			labels.forEach((label, value) -> {
+				metric.labels.put(label, value == null ? null : (value.isTextual() ? value.asText() : value.toString()));
+			});
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
@@ -109,21 +111,9 @@ public class PrometheusExporterServerHandler {
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; version=0.0.4; charset=utf-8", builder.toString());
 	}
 
-	public Response handleGetMBeans(final IHTTPSession session) throws InterruptedException {
+	public Response handleGetMetricsJson(final IHTTPSession session) throws InterruptedException {
 		final StringWriter writer = new StringWriter();
-		scraper.scrape((sample) -> {
-			writer.write(sample.toJsonNode().toString());
-			writer.write('\n');
-		});
-		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
-	}
-
-	public Response handleGetMetricsRaw(final IHTTPSession session) throws InterruptedException {
-		final StringWriter writer = new StringWriter();
-		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {}, (raw) -> {
-			writer.write(raw.toString());
-			writer.write('\n');
-		}));
+		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {})); // FIXME
 		return PrometheusExporterServer.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", writer.toString());
 	}
 }

@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.misc.jq;
+package net.thisptr.java.prometheus.metrics.agent.handler.jq.functions;
 
 import java.lang.management.ManagementFactory;
 import java.util.List;

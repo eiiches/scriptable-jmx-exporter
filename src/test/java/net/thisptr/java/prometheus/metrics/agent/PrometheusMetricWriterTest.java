@@ -6,8 +6,6 @@ import java.util.HashMap;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.node.TextNode;
-
 public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithEmptyMetricAndLabelName() throws Exception {
@@ -17,7 +15,7 @@ public class PrometheusMetricWriterTest {
 			metric.name = "";
 			metric.value = 1.0;
 			metric.labels = new HashMap<>();
-			metric.labels.put("", TextNode.valueOf("foo"));
+			metric.labels.put("", "foo");
 			writer.write(metric);
 		}
 		assertEquals("_{_=\"foo\",} 1.0\n", builder.toString());
@@ -31,7 +29,7 @@ public class PrometheusMetricWriterTest {
 			metric.name = "metricName_a:@";
 			metric.value = 1.0;
 			metric.labels = new HashMap<>();
-			metric.labels.put("labelName_b:@", TextNode.valueOf("foo"));
+			metric.labels.put("labelName_b:@", "foo");
 			metric.timestamp = 10000000000000L;
 			writer.write(metric);
 		}

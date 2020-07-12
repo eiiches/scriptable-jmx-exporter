@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.SampleToJsonInputConverter;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 
 public class ScraperTest {
@@ -48,7 +49,7 @@ public class ScraperTest {
 
 		final Set<JsonNode> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
-			actual.add(sample.toJsonNode());
+			actual.add(SampleToJsonInputConverter.getInstance().convert(sample));
 		});
 
 		assertEquals(1, actual.size());
@@ -62,7 +63,7 @@ public class ScraperTest {
 
 		final Set<JsonNode> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
-			actual.add(sample.toJsonNode());
+			actual.add(SampleToJsonInputConverter.getInstance().convert(sample));
 		}, 3, TimeUnit.SECONDS);
 
 		assertTrue(3000L <= System.currentTimeMillis() - start);

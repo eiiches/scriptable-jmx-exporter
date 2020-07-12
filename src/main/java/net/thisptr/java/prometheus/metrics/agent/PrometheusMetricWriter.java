@@ -4,8 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class PrometheusMetricWriter implements Closeable {
 	private final StringBuilder builder;
 	private final boolean includeTimestamp;
@@ -81,7 +79,7 @@ public class PrometheusMetricWriter implements Closeable {
 		sanitizeMetricName(builder, metric.name);
 		if (!metric.labels.isEmpty()) {
 			builder.append('{');
-			for (final Entry<String, JsonNode> entry : metric.labels.entrySet()) {
+			for (final Entry<String, String> entry : metric.labels.entrySet()) {
 				sanitizeLabelName(builder, entry.getKey());
 				builder.append('=');
 				sanitizeLabelValue(builder, entry.getValue());
@@ -98,14 +96,13 @@ public class PrometheusMetricWriter implements Closeable {
 		builder.append('\n');
 	}
 
-	private static void sanitizeLabelValue(final StringBuilder builder, final JsonNode value) {
-		if (value == null || value.isNull()) {
+	private static void sanitizeLabelValue(final StringBuilder builder, final String text) {
+		if (text == null) {
 			builder.append('"');
 			builder.append("null");
 			builder.append('"');
 		} else {
 			builder.append('"');
-			final String text = value.isTextual() ? value.asText() : value.toString();
 			final int length = text.length();
 			for (int i = 0; i < length; ++i) {
 				final char ch = text.charAt(i);
@@ -137,7 +134,12 @@ public class PrometheusMetricWriter implements Closeable {
 		builder.append("# HELP ");
 		sanitizeMetricName(builder, name);
 		builder.append(' ');
-		builder.append(help.replaceAll("\n", " "));
+		for (int i = 0; i < help.length(); ++i) {
+			char ch = help.charAt(i);
+			if (ch == '\n')
+				ch = ' ';
+			builder.append(ch);
+		}
 		builder.append('\n');
 	}
 }

@@ -14,8 +14,8 @@ import net.thisptr.jackson.jq.Expression;
 import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.Versions;
 import net.thisptr.jackson.jq.internal.javacc.ExpressionParser;
-import net.thisptr.java.prometheus.metrics.misc.jq.DefaultTransformV1Function;
-import net.thisptr.java.prometheus.metrics.misc.jq.JmxFunction;
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.functions.DefaultTransformV1Function;
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.functions.JmxFunction;
 
 public class RootScope {
 	private static final Scope INSTANCE;

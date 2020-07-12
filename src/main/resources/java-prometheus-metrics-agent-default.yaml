@@ -7,5 +7,5 @@ rules:
   - jdk.management.jfr
   skip: true
 - pattern: 'java\\.lang|java\\.nio'
-  transform: 'default_transform_v1(["type"]; true)'
-- transform: 'default_transform_v1([]; true)'
+  transform: '!java defaultTransformV1(in, out, "type")'
+- transform: '!java defaultTransformV1(in, out)'

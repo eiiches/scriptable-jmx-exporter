@@ -14,10 +14,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.net.HostAndPort;
 
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.AttributeNamePatternDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.HostAndPortDeserializer;
-import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.JsonQueryDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.LabelsDeserializer;
+import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.ScriptDeserializer;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeRule;
 
@@ -67,8 +68,8 @@ public class Config {
 		public boolean skip = false;
 
 		@JsonProperty("transform")
-		@JsonDeserialize(using = JsonQueryDeserializer.class)
-		public JsonQuery transform;
+		@JsonDeserialize(using = ScriptDeserializer.class)
+		public Script<?> transform;
 
 		@Override
 		public boolean skip() {

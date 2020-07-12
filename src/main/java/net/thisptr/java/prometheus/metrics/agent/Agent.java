@@ -15,6 +15,9 @@ import net.thisptr.java.prometheus.metrics.agent.config.ClassPathPollingConfigWa
 import net.thisptr.java.prometheus.metrics.agent.config.Config;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher.ConfigListener;
+import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessorRegistry;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor;
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
 import net.thisptr.java.prometheus.metrics.agent.config.FilePollingConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.StaticConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreValidators;
@@ -24,6 +27,13 @@ public class Agent {
 	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
 	private static PrometheusExporterServer SERVER;
+
+	static {
+		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
+		registry.add("jq", new JsonQuerySampleProcessor());
+		registry.add("java", new JaninoSampleProcessor());
+		registry.setDefault("jq");
+	}
 
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		if (args == null)
