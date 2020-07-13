@@ -66,6 +66,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	private OptionsConfig getOptions(final HttpServerExchange exchange) {
 		final OptionsConfig options = new OptionsConfig();
 		options.includeTimestamp = this.options.includeTimestamp;
+		options.includeHelp = this.options.includeHelp;
 		options.minimumResponseTime = this.options.minimumResponseTime;
 
 		final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
@@ -75,6 +76,14 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 			final String value = deque.getFirst();
 			if (!value.isEmpty()) {
 				options.includeTimestamp = Boolean.parseBoolean(value);
+			}
+		}
+
+		deque = queryParams.get("include_help");
+		if (deque != null) {
+			final String value = deque.getFirst();
+			if (!value.isEmpty()) {
+				options.includeHelp = Boolean.parseBoolean(value);
 			}
 		}
 
@@ -114,7 +123,8 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 				metrics.forEach((metric) -> {
 					helps.add(metric.help);
 				});
-				pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+				if (options.includeHelp)
+					pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
 				metrics.forEach((metric) -> {
 					try {
 						pwriter.write(metric);

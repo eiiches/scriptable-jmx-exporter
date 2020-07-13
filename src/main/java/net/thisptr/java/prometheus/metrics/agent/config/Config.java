@@ -47,6 +47,9 @@ public class Config {
 		@JsonProperty("include_timestamp")
 		public boolean includeTimestamp = true;
 
+		@JsonProperty("include_help")
+		public boolean includeHelp = true;
+
 		@Min(0L)
 		@Max(60000L)
 		@JsonProperty("minimum_response_time")
