@@ -74,9 +74,7 @@ public class JsonQuerySampleProcessor implements SampleProcessor<JsonQuery> {
 				continue;
 			}
 
-			if (metric.timestamp == null) {
-				metric.timestamp = sample.timestamp;
-			}
+			metric.timestamp = sample.timestamp;
 
 			output.emit(metric);
 		}

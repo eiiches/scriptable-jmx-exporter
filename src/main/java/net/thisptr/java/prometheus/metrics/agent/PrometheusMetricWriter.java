@@ -89,7 +89,7 @@ public class PrometheusMetricWriter implements Closeable {
 		}
 		builder.append(' ');
 		builder.append(metric.value);
-		if (includeTimestamp && metric.timestamp != null) {
+		if (includeTimestamp && metric.timestamp != 0) {
 			builder.append(' ');
 			builder.append(metric.timestamp);
 		}
