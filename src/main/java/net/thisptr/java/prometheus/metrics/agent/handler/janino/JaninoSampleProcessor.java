@@ -41,14 +41,10 @@ public class JaninoSampleProcessor implements SampleProcessor<JaninoScript> {
 	@Override
 	public Script<JaninoScript> compile(final String script) throws ScriptCompileException {
 		final ScriptEvaluator se = new ScriptEvaluator();
-		// se.setParameters(new String[] { "in", "out" }, new Class[] { Input.class, PrometheusMetricOutput.class });
-		// se.setImplementedInterfaces(new Class[] { JaninoScript.class });
-		// se.setMethodName("execute");
+		se.setDefaultImports(ObjectName.class.getName());
 		try {
-			// se.cook(SCRIPT_HEADER + script + SCRIPT_FOOTER);
-			// final JaninoScript compiledScript = ((JaninoScript) se.getClazz().getDeclaredConstructor().newInstance());
-			final JaninoScript compiledScript2 = (JaninoScript) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, JaninoScript.class, new String[] { "in", "out" });
-			return new Script<>(this, compiledScript2);
+			final JaninoScript compiledScript = (JaninoScript) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, JaninoScript.class, new String[] { "in", "out" });
+			return new Script<>(this, compiledScript);
 		} catch (Exception e) {
 			throw new ScriptCompileException(e);
 		}
