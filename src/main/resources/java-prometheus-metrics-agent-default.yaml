@@ -6,6 +6,6 @@ rules:
   - java.lang:type=Threading:AllThreadIds
   - jdk.management.jfr
   skip: true
-- pattern: 'java\\.lang|java\\.nio'
+- pattern: 'java\\.lang|java\\.nio|jboss\\.threads|org\\.xnio'
   transform: '!java defaultTransformV1(in, out, "type")'
 - transform: '!java defaultTransformV1(in, out)'
