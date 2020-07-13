@@ -31,7 +31,6 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor.JaninoScript;
 import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
 
 public class JaninoSampleProcessorTest {

@@ -30,7 +30,7 @@ public abstract class PollingConfigWatcher extends Thread implements ConfigWatch
 		this.setName("Prometheus Metrics Agent " + PollingConfigWatcher.class.getSimpleName());
 		this.setDaemon(true);
 	}
-	
+
 	protected void runOnce() throws IOException {
 		this.bytes = doLoadConfig();
 		this.config = YAML_MAPPER.readValue(this.bytes, Config.class);

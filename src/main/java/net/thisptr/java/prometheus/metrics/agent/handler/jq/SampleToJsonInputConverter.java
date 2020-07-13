@@ -34,7 +34,7 @@ import net.thisptr.java.prometheus.metrics.agent.misc.Converter;
 
 public class SampleToJsonInputConverter implements Converter<Sample<?>, JsonNode> {
 	private static final SampleToJsonInputConverter INSTANCE = new SampleToJsonInputConverter();
-	
+
 	public static SampleToJsonInputConverter getInstance() {
 		return INSTANCE;
 	}
