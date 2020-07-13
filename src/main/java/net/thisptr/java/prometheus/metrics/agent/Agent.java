@@ -86,7 +86,7 @@ public class Agent {
 		final EncodingHandler encodingHandler = new EncodingHandler(new ContentEncodingRepository()
 				.addEncodingHandler("gzip",
 						new GzipEncodingProvider(), 50,
-						Predicates.parse("max-content-size[5]")))
+						Predicates.parse("max-content-size(5)")))
 								.setNext(thisHandler);
 		return Undertow.builder()
 				.setWorkerOption(Options.WORKER_NAME, "MBeanExporterIO")
