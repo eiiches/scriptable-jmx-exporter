@@ -11,19 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
-import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
 
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
@@ -190,18 +185,9 @@ public class DefaultTransformV1Function {
 		}
 	}
 
-	private static LoadingCache<ObjectName, Hashtable<String, String>> keyPropertiesCache = CacheBuilder.newBuilder()
-			.expireAfterWrite(10, TimeUnit.MINUTES)
-			.build(new CacheLoader<ObjectName, Hashtable<String, String>>() {
-				@Override
-				public Hashtable<String, String> load(ObjectName key) {
-					return key.getKeyPropertyList();
-				}
-			});
-
 	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final Input input, final PrometheusMetricOutput output, final double value) {
 		// TODO: Move this somewhere so that we don't have to allocate the hash table on every invocation.
-		final Hashtable<String, String> keyProperties = keyPropertiesCache.getUnchecked(input.name);
+		final Hashtable<String, String> keyProperties = input.name.getKeyPropertyList();
 
 		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + keyProperties.size());
 		labels.forEach((label, labelValue) -> {
