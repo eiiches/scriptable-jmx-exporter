@@ -178,16 +178,28 @@
 									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.fasterxml</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>org.jboss.logging</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jboss.logging</shadedPattern>
+									<pattern>io.undertow</pattern>
+									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.io.undertow</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.xnio</pattern>
+									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.xnio</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.codehaus</pattern>
+									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.codehaus</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.wildfly</pattern>
+									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.wildfly</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.jboss</pattern>
+									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jboss</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.validation</pattern>
 									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.validation</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>fi.iki.elonen</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.fi.iki.elonen</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.annotation</pattern>
