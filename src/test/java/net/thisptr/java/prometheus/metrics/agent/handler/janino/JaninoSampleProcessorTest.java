@@ -118,7 +118,10 @@ public class JaninoSampleProcessorTest {
 	}
 
 	@Test
+	@Disabled
 	void testTabularData() throws Exception {
+		// FIXME: implement
+
 		final Sample<PrometheusScrapeRule> sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
