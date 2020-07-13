@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.xnio.Options;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -87,6 +89,7 @@ public class Agent {
 						Predicates.parse("max-content-size[5]")))
 								.setNext(thisHandler);
 		return Undertow.builder()
+				.setWorkerOption(Options.WORKER_NAME, "MBeanExporterIO")
 				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
 				.setHandler(encodingHandler)
 				.build();
