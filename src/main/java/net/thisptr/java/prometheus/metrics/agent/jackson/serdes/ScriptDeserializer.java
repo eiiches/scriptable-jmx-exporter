@@ -21,18 +21,26 @@ public class ScriptDeserializer extends StdDeserializer<Script<?>> {
 
 	@Override
 	public Script<?> deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException, JsonProcessingException {
-		final String text = p.readValueAs(String.class);
+		String text = p.readValueAs(String.class);
 		if (text == null)
 			return null;
 
 		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
 		final SampleProcessor<?> scriptProcessor;
 		final String scriptText;
+
+		text = text.trim();
 		if (text.startsWith("!")) {
-			final String[] tokens = text.substring(1).split(" ", 2);
-			final String name = tokens[0];
+			int i = 1;
+			for (; i < text.length(); ++i) {
+				final int ch = text.charAt(i);
+				if ('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z')
+					continue;
+				break;
+			}
+			final String name = text.substring(1, i);
 			scriptProcessor = registry.get(name);
-			scriptText = tokens[1];
+			scriptText = text.substring(i);
 		} else {
 			scriptProcessor = registry.get();
 			scriptText = text;
