@@ -7,7 +7,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -21,6 +20,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,11 +31,8 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
-import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
 
 public class JaninoSampleProcessorTest {
-	private static final Logger LOG = Logger.getLogger(JaninoSampleProcessorTest.class.getName());
-
 	private final JaninoSampleProcessor sut = new JaninoSampleProcessor();
 
 	private static Sample<PrometheusScrapeRule> sample(final ObjectName objectName, final String attributeName) throws MalformedObjectNameException, InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException, IntrospectionException {
@@ -131,10 +128,9 @@ public class JaninoSampleProcessorTest {
 	}
 
 	@Test
+	@Disabled
 	void testAll() throws Exception {
 		waitForLastGcInfo();
-		final JaninoSampleProcessor sut1 = new JaninoSampleProcessor();
-		final JsonQuerySampleProcessor sut2 = new JsonQuerySampleProcessor();
 
 		final List<Sample<PrometheusScrapeRule>> samples = new ArrayList<>();
 
@@ -144,15 +140,15 @@ public class JaninoSampleProcessorTest {
 				try {
 					samples.add(sample(name, attribute.getName()));
 				} catch (Exception e) {
-					// LOG.info(String.format("Failed to get attribute value: %s:%s", name, attribute.getName()));
 					continue;
 				}
 			}
 		}
 
+		final JaninoSampleProcessor sut1 = new JaninoSampleProcessor();
+		// final JsonQuerySampleProcessor sut2 = new JsonQuerySampleProcessor();
 		final Script<?> script1 = sut1.compile("defaultTransformV1(in, out, \"type\")");
-
-		final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
+		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 
 		final long start = System.currentTimeMillis();
 		for (int i = 0; i < 1000000; ++i) {

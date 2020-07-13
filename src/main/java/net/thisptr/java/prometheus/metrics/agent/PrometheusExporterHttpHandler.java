@@ -104,7 +104,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		final OptionsConfig options = getOptions(exchange);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
-		scraper.scrape(new PrometheusScrapeOutput(RootScope.getInstance(), (metric) -> {
+		scraper.scrape(new PrometheusScrapeOutput((metric) -> {
 			if (metric.labels == null)
 				metric.labels = new HashMap<>();
 			labels.forEach((label, value) -> {
