@@ -142,4 +142,12 @@ public class PrometheusMetricWriter implements Closeable {
 		}
 		builder.append('\n');
 	}
+
+	public void writeType(final String name, final String type) {
+		builder.append("# TYPE ");
+		sanitizeMetricName(builder, name);
+		builder.append(' ');
+		builder.append(type);
+		builder.append('\n');
+	}
 }

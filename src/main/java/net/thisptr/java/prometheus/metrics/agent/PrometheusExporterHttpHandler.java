@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -64,37 +66,42 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		}
 	}
 
+	private static void parseBooleanQueryParamAndThen(final HttpServerExchange exchange, final String name, final Consumer<Boolean> fn) {
+		final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
+		final Deque<String> deque = queryParams.get(name);
+		if (deque != null) {
+			final String value = deque.getFirst();
+			if (!value.isEmpty()) {
+				fn.accept(Boolean.parseBoolean(value));
+			}
+		}
+	}
+
+	private static void parseLongQueryParamAndThen(final HttpServerExchange exchange, final String name, final LongConsumer fn) {
+		final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
+		final Deque<String> deque = queryParams.get(name);
+		if (deque != null) {
+			final String value = deque.getFirst();
+			if (!value.isEmpty()) {
+				fn.accept(Long.parseLong(value));
+			}
+		}
+	}
+
 	private OptionsConfig getOptions(final HttpServerExchange exchange) {
 		final OptionsConfig options = new OptionsConfig();
+
+		// values provided in config file
 		options.includeTimestamp = this.options.includeTimestamp;
 		options.includeHelp = this.options.includeHelp;
+		options.includeType = this.options.includeType;
 		options.minimumResponseTime = this.options.minimumResponseTime;
 
-		final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
-
-		Deque<String> deque = queryParams.get("include_timestamp");
-		if (deque != null) {
-			final String value = deque.getFirst();
-			if (!value.isEmpty()) {
-				options.includeTimestamp = Boolean.parseBoolean(value);
-			}
-		}
-
-		deque = queryParams.get("include_help");
-		if (deque != null) {
-			final String value = deque.getFirst();
-			if (!value.isEmpty()) {
-				options.includeHelp = Boolean.parseBoolean(value);
-			}
-		}
-
-		deque = queryParams.get("minimum_response_time");
-		if (deque != null) {
-			final String value = deque.getFirst();
-			if (!value.isEmpty()) {
-				options.minimumResponseTime = Math.max(0, Math.min(60000L, Long.parseLong(value)));
-			}
-		}
+		// values from query params
+		parseBooleanQueryParamAndThen(exchange, "include_help", (value) -> options.includeHelp = value);
+		parseBooleanQueryParamAndThen(exchange, "include_type", (value) -> options.includeType = value);
+		parseBooleanQueryParamAndThen(exchange, "include_timestamp", (value) -> options.includeTimestamp = value);
+		parseLongQueryParamAndThen(exchange, "minimum_response_time", (value) -> options.minimumResponseTime = Math.max(0, Math.min(60000L, value)));
 
 		return options;
 	}
@@ -133,12 +140,21 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		final StringBuilder builder = new StringBuilder();
 		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(builder, options.includeTimestamp)) {
 			allMetrics.forEach((name, metrics) -> {
-				final Set<String> helps = new HashSet<>();
-				metrics.forEach((metric) -> {
-					helps.add(metric.help);
-				});
-				if (options.includeHelp)
+				if (metrics.isEmpty())
+					return;
+				if (options.includeHelp) {
+					final Set<String> helps = new HashSet<>();
+					metrics.forEach((metric) -> {
+						helps.add(metric.help);
+					});
 					pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+				}
+				if (options.includeType) {
+					final String type = metrics.get(0).type;
+					if (type != null) {
+						pwriter.writeType(name, type);
+					}
+				}
 				metrics.forEach((metric) -> {
 					try {
 						pwriter.write(metric);

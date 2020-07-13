@@ -10,4 +10,5 @@ public class MetricValue {
 	public long timestamp = 0;
 
 	public String help;
+	public String type;
 }

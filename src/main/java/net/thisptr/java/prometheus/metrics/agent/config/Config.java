@@ -50,6 +50,9 @@ public class Config {
 		@JsonProperty("include_help")
 		public boolean includeHelp = true;
 
+		@JsonProperty("include_type")
+		public boolean includeType = true;
+
 		@Min(0L)
 		@Max(60000L)
 		@JsonProperty("minimum_response_time")

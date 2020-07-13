@@ -20,4 +20,7 @@ public class PrometheusMetric {
 
 	@JsonProperty("help")
 	public String help;
+
+	@JsonProperty("type")
+	public String type;
 }

@@ -62,6 +62,7 @@ public class JaninoSampleProcessor implements SampleProcessor<Transformer> {
 				metric.value = m.value;
 				metric.timestamp = m.timestamp;
 				metric.help = m.help;
+				metric.type = m.type;
 				output.emit(metric);
 			});
 		} catch (Exception e) {
