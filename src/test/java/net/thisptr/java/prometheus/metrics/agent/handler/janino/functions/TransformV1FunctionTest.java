@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.agent.handler.janino;
+package net.thisptr.java.prometheus.metrics.agent.handler.janino.functions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.TransformV1Function.Labels;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function.Labels;
 
 public class TransformV1FunctionTest {
 

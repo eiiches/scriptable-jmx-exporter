@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.agent.handler.janino;
+package net.thisptr.java.prometheus.metrics.agent.handler.janino.functions;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -21,9 +21,9 @@ import javax.management.openmbean.TabularType;
 
 import com.google.common.collect.Maps;
 
-import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
-import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor.Input;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.AttributeValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValueOutput;
 import net.thisptr.java.prometheus.metrics.agent.misc.MutableInteger;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreClasses;
 
@@ -72,7 +72,7 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void unfoldArray(final List<String> nameKeys, final Labels labels, final List<String> names, final Object arrayValue, final String arrayType, final Input input, final PrometheusMetricOutput output) {
+	private static void unfoldArray(final List<String> nameKeys, final Labels labels, final List<String> names, final Object arrayValue, final String arrayType, final AttributeValue input, final MetricValueOutput output) {
 		final String elementType = MoreClasses.elementTypeNameOf(arrayType);
 		int length = Array.getLength(arrayValue);
 		for (int i = 0; i < length; ++i) {
@@ -85,7 +85,7 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void unfoldCompositeData(final List<String> nameKeys, final Labels labels, final List<String> names, final CompositeData compositeData, final Input input, final PrometheusMetricOutput output) {
+	private static void unfoldCompositeData(final List<String> nameKeys, final Labels labels, final List<String> names, final CompositeData compositeData, final AttributeValue input, final MetricValueOutput output) {
 		final CompositeType compositeType = compositeData.getCompositeType();
 		for (final String key : compositeType.keySet()) {
 			names.add(key);
@@ -94,7 +94,7 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void unfoldTabularData(final List<String> nameKeys, final Labels labels, final List<String> names, final TabularData tabularData, final Input input, final PrometheusMetricOutput output) {
+	private static void unfoldTabularData(final List<String> nameKeys, final Labels labels, final List<String> names, final TabularData tabularData, final AttributeValue input, final MetricValueOutput output) {
 		final TabularType tabularType = tabularData.getTabularType();
 		final CompositeType rowType = tabularType.getRowType();
 		final List<String> indexColumnNames = tabularType.getIndexNames();
@@ -134,7 +134,7 @@ public class TransformV1Function {
 	 * @param input
 	 * @param output
 	 */
-	private static void unfold(final List<String> nameKeys, final Labels labels, final List<String> names, final Object value, final String type, final Input input, final PrometheusMetricOutput output) {
+	private static void unfold(final List<String> nameKeys, final Labels labels, final List<String> names, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
 		switch (type) {
 		case "double": /* fall through */
 		case "float": /* fall through */
@@ -185,7 +185,7 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final Input input, final PrometheusMetricOutput output, final double value) {
+	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final AttributeValue input, final MetricValueOutput output, final double value) {
 		// TODO: Move this somewhere so that we don't have to allocate the hash table on every invocation.
 		final Hashtable<String, String> keyProperties = input.name.getKeyPropertyList();
 
@@ -218,7 +218,7 @@ public class TransformV1Function {
 		nameBuilder.append(":");
 		nameBuilder.append(attributeNameBuilder);
 
-		final PrometheusMetric m = new PrometheusMetric();
+		final MetricValue m = new MetricValue();
 		m.name = nameBuilder.toString();
 		m.value = value;
 		m.labels = metricLabels;
@@ -227,7 +227,7 @@ public class TransformV1Function {
 		output.emit(m);
 	}
 
-	public static void transformV1(final Input sample, final PrometheusMetricOutput output, final String... propertiesToUseInMetricName) {
+	public static void transformV1(final AttributeValue sample, final MetricValueOutput output, final String... propertiesToUseInMetricName) {
 		final Labels labels = new Labels();
 		final List<String> names = new ArrayList<>();
 		unfold(Arrays.asList(propertiesToUseInMetricName), labels, names, sample.value, sample.attributeInfo.getType(), sample, output);
