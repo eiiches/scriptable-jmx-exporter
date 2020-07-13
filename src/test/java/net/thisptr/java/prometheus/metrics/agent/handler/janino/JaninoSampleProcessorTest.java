@@ -49,7 +49,7 @@ public class JaninoSampleProcessorTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("defaultTransformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
@@ -62,7 +62,7 @@ public class JaninoSampleProcessorTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("defaultTransformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
@@ -77,7 +77,7 @@ public class JaninoSampleProcessorTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("defaultTransformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(4);
 
@@ -120,7 +120,7 @@ public class JaninoSampleProcessorTest {
 		final Sample<PrometheusScrapeRule> sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("defaultTransformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
 
 		System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(metrics));
 
@@ -147,7 +147,7 @@ public class JaninoSampleProcessorTest {
 
 		final JaninoSampleProcessor sut1 = new JaninoSampleProcessor();
 		// final JsonQuerySampleProcessor sut2 = new JsonQuerySampleProcessor();
-		final Script<?> script1 = sut1.compile("defaultTransformV1(in, out, \"type\")");
+		final Script<?> script1 = sut1.compile("transformV1(in, out, \"type\")");
 		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 
 		final long start = System.currentTimeMillis();

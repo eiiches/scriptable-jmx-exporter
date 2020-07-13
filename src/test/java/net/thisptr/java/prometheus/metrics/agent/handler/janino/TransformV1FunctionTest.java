@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.DefaultTransformV1Function.Labels;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.TransformV1Function.Labels;
 
-public class DefaultTransformV1FunctionTest {
+public class TransformV1FunctionTest {
 
 	@Test
 	void testLabels() throws Exception {

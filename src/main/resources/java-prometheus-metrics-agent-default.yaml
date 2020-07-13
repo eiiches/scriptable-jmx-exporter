@@ -11,12 +11,12 @@ rules:
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads'
   transform: |
     !java
-    defaultTransformV1(in, out, "type");
+    transformV1(in, out, "type");
 - pattern: 'net\\.thisptr\\.java\\.prometheus\\.metrics\\.agent\\.shade\\.org\\.xnio'
   transform: |
     !java
     in.name = new ObjectName("org.xnio", in.name.getKeyPropertyList());
-    defaultTransformV1(in, out, "type");
+    transformV1(in, out, "type");
 - transform: |
     !java
-    defaultTransformV1(in, out);
+    transformV1(in, out);

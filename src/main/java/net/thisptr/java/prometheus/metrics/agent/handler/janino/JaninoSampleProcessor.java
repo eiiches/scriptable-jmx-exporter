@@ -16,7 +16,7 @@ import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProc
 public class JaninoSampleProcessor implements SampleProcessor<JaninoScript> {
 
 	private static final String SCRIPT_HEADER = ""
-			+ "import static " + DefaultTransformV1Function.class.getName() + ".*" + ";";
+			+ "import static " + TransformV1Function.class.getName() + ".*" + ";";
 
 	private static final String SCRIPT_FOOTER = ""
 			+ ";";

@@ -27,8 +27,8 @@ import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProc
 import net.thisptr.java.prometheus.metrics.agent.misc.MutableInteger;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreClasses;
 
-public class DefaultTransformV1Function {
-	private static final Logger LOG = Logger.getLogger(DefaultTransformV1Function.class.getName());
+public class TransformV1Function {
+	private static final Logger LOG = Logger.getLogger(TransformV1Function.class.getName());
 
 	private static final Set<String> SUPPRESSED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -227,7 +227,7 @@ public class DefaultTransformV1Function {
 		output.emit(m);
 	}
 
-	public static void defaultTransformV1(final Input sample, final PrometheusMetricOutput output, final String... propertiesToUseInMetricName) {
+	public static void transformV1(final Input sample, final PrometheusMetricOutput output, final String... propertiesToUseInMetricName) {
 		final Labels labels = new Labels();
 		final List<String> names = new ArrayList<>();
 		unfold(Arrays.asList(propertiesToUseInMetricName), labels, names, sample.value, sample.attributeInfo.getType(), sample, output);
