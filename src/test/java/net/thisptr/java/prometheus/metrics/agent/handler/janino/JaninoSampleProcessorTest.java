@@ -66,10 +66,12 @@ public class JaninoSampleProcessorTest {
 
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:Threading:AllThreadIds");
-		assertThat(metrics.get(0).value).isEqualTo(((Number) Array.get(sample.value, 0)).doubleValue());
-		assertThat(metrics.get(0).labels.size()).isEqualTo(1);
-		assertThat(metrics.get(0).labels.get("index_0")).isEqualTo(TextNode.valueOf("1"));
+		for (int i = 0; i < metrics.size(); ++i) {
+			assertThat(metrics.get(i).name).isEqualTo("java.lang:Threading:AllThreadIds");
+			assertThat(metrics.get(i).value).isEqualTo(((Number) Array.get(sample.value, i)).doubleValue());
+			assertThat(metrics.get(i).labels.size()).isEqualTo(1);
+			assertThat(metrics.get(i).labels.get("index")).isEqualTo(String.valueOf(i));
+		}
 	}
 
 	@Test
