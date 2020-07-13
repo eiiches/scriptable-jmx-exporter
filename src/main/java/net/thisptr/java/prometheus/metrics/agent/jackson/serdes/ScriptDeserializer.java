@@ -7,9 +7,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessor;
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessor.ScriptCompileException;
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessorRegistry;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine.ScriptCompileException;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 
 public class ScriptDeserializer extends StdDeserializer<Script<?>> {
@@ -25,8 +25,8 @@ public class ScriptDeserializer extends StdDeserializer<Script<?>> {
 		if (text == null)
 			return null;
 
-		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
-		final SampleProcessor<?> scriptProcessor;
+		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
+		final ScriptEngine<?> scriptEngine;
 		final String scriptText;
 
 		text = text.trim();
@@ -39,14 +39,14 @@ public class ScriptDeserializer extends StdDeserializer<Script<?>> {
 				break;
 			}
 			final String name = text.substring(1, i);
-			scriptProcessor = registry.get(name);
+			scriptEngine = registry.get(name);
 			scriptText = text.substring(i);
 		} else {
-			scriptProcessor = registry.get();
+			scriptEngine = registry.get();
 			scriptText = text;
 		}
 		try {
-			return scriptProcessor.compile(scriptText);
+			return scriptEngine.compile(scriptText);
 		} catch (ScriptCompileException e) {
 			throw new IOException(e);
 		}

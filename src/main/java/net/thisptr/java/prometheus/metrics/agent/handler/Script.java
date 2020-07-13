@@ -5,15 +5,15 @@ import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 
 public class Script<T> {
-	private final SampleProcessor<T> processor;
+	private final ScriptEngine<T> engine;
 	private final T script;
 
-	public Script(final SampleProcessor<T> processor, final T script) {
-		this.processor = processor;
+	public Script(final ScriptEngine<T> engine, final T script) {
+		this.engine = engine;
 		this.script = script;
 	}
 
 	public void execute(final Sample<PrometheusScrapeRule> sample, final PrometheusMetricOutput output) {
-		processor.handle(sample, script, output);
+		engine.handle(sample, script, output);
 	}
 }

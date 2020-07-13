@@ -32,8 +32,8 @@ import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 
-public class JaninoSampleProcessorTest {
-	private final JaninoSampleProcessor sut = new JaninoSampleProcessor();
+public class JaninoScriptEngineTest {
+	private final JaninoScriptEngine sut = new JaninoScriptEngine();
 
 	private static Sample<PrometheusScrapeRule> sample(final ObjectName objectName, final String attributeName) throws MalformedObjectNameException, InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException, IntrospectionException {
 		final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -150,8 +150,8 @@ public class JaninoSampleProcessorTest {
 			}
 		}
 
-		final JaninoSampleProcessor sut1 = new JaninoSampleProcessor();
-		// final JsonQuerySampleProcessor sut2 = new JsonQuerySampleProcessor();
+		final JaninoScriptEngine sut1 = new JaninoScriptEngine();
+		// final JsonQueryScriptEngine sut2 = new JsonQueryScriptEngine();
 		final Script<?> script1 = sut1.compile("transformV1(in, out, \"type\")");
 		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 

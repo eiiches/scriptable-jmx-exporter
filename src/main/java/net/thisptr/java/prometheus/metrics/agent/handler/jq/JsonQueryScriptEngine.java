@@ -16,11 +16,11 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.RootScope;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessor;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 
-public class JsonQuerySampleProcessor implements SampleProcessor<JsonQuery> {
-	private static final Logger LOG = Logger.getLogger(JsonQuerySampleProcessor.class.getName());
+public class JsonQueryScriptEngine implements ScriptEngine<JsonQuery> {
+	private static final Logger LOG = Logger.getLogger(JsonQueryScriptEngine.class.getName());
 
 	public static final JsonQuery DEFAULT_TRANSFORM;
 	static {
@@ -33,7 +33,7 @@ public class JsonQuerySampleProcessor implements SampleProcessor<JsonQuery> {
 
 	private final Scope scope;
 
-	public JsonQuerySampleProcessor() {
+	public JsonQueryScriptEngine() {
 		this.scope = RootScope.getInstance();
 	}
 

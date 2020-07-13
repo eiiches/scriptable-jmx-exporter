@@ -4,7 +4,7 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 
-public interface SampleProcessor<T> {
+public interface ScriptEngine<T> {
 
 	public static class ScriptCompileException extends Exception {
 		private static final long serialVersionUID = 1L;

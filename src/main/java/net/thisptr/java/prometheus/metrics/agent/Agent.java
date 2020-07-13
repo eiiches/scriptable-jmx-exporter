@@ -25,9 +25,9 @@ import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher.ConfigListener;
 import net.thisptr.java.prometheus.metrics.agent.config.FilePollingConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.StaticConfigWatcher;
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessorRegistry;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor;
-import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine;
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQueryScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreValidators;
 
 public class Agent {
@@ -38,9 +38,9 @@ public class Agent {
 	private static volatile PrometheusExporterHttpHandler HANDLER;
 
 	static {
-		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
-		registry.add("jq", new JsonQuerySampleProcessor());
-		registry.add("java", new JaninoSampleProcessor());
+		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
+		registry.add("jq", new JsonQueryScriptEngine());
+		registry.add("java", new JaninoScriptEngine());
 		registry.setDefault("jq");
 	}
 

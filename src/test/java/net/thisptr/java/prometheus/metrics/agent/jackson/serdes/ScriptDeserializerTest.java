@@ -8,17 +8,17 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessorRegistry;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor;
-import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine;
+import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQueryScriptEngine;
 
 public class ScriptDeserializerTest {
 
 	static {
-		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
-		registry.add("jq", new JsonQuerySampleProcessor());
-		registry.add("java", new JaninoSampleProcessor());
+		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
+		registry.add("jq", new JsonQueryScriptEngine());
+		registry.add("java", new JaninoScriptEngine());
 		registry.setDefault("jq");
 	}
 
