@@ -9,11 +9,7 @@ Features
 --------
 
 - By default, this agent exposes all the MBeans available.
-- Scraping behavior can be customized using jq scripts.
-
-### Features missing
-
-- TYPE annotations.
+- Scraping behavior can be customized using jq or java.
 
 Installation
 ------------
