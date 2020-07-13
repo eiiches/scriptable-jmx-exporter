@@ -1,3 +1,5 @@
+*If you are reading this on `develop` branch, some of the features may not be present yet on the released versions.*
+
 java-prometheus-metrics-agent
 =============================
 
@@ -47,6 +49,9 @@ java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 Configuration
 -------------
 
+Configurations are automatically reloaded whenever the file (`<PATH_TO_CONFIG_YAML>` in the description above) is modified.
+It's easier to start with a simple configuration (e.g. [java-prometheus-metrics-agent-default.yaml](https://github.com/eiiches/java-prometheus-metrics-agent/blob/develop/src/main/resources/java-prometheus-metrics-agent-default.yaml) which is the default configuration picked when no configuration is provided on command line) and incrementally edit the configuration file while actually running your software.
+
 ### Example
 
 ```yaml
@@ -54,7 +59,9 @@ Configuration
 server:
     bind_address: '0.0.0.0:18090'
 options:
-    include_timestamp: true # This is the default value.
+    include_timestamp: true # Include scraping timestamp for each metrics (default).
+    include_type: true # Enable TYPE comments (default).
+    include_help: true # Enable HELP comments (default).
     minimum_response_time: 3000 # Generate /metrics response slowly in 3 seconds to avoid CPU spikes.
 rules:
   - pattern:
@@ -108,6 +115,8 @@ See [wiki](https://github.com/eiiches/java-prometheus-metrics-agent/wiki) for mo
 | Key | Default | Description |
 |-|-|-|
 | `options.include_timestamp` | `true` | Specifies whether /metrics response should include a timestamp at which the metric is scraped. |
+| `options.include_help` | `true` | Enables HELP comment. |
+| `options.include_type` | `true` | Enables TYPE comment. |
 | `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
 
 These options can also be specified as /metrics parameters. E.g. `/metrics?minimum_response_time=1000`.
