@@ -1,11 +1,22 @@
 server:
   bind_address: 0.0.0.0:18090
+options:
+  include_help: true
 rules:
 - pattern:
   - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
   - java.lang:type=Threading:AllThreadIds
   - jdk.management.jfr
   skip: true
-- pattern: 'java\\.lang|java\\.nio|jboss\\.threads|org\\.xnio'
-  transform: '!java defaultTransformV1(in, out, "type")'
-- transform: '!java defaultTransformV1(in, out)'
+- pattern: 'java\\.lang|java\\.nio|jboss\\.threads'
+  transform: |
+    !java
+    defaultTransformV1(in, out, "type");
+- pattern: 'net\\.thisptr\\.java\\.prometheus\\.metrics\\.agent\\.shade\\.org\\.xnio'
+  transform: |
+    !java
+    in.name = new ObjectName("org.xnio", in.name.getKeyPropertyList());
+    defaultTransformV1(in, out, "type");
+- transform: |
+    !java
+    defaultTransformV1(in, out);
