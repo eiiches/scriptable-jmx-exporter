@@ -45,6 +45,24 @@ java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_YAML> ...
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 ```
 
+### Example
+
+```sh
+# set configurations directly on command line
+java -javaagent:java-prometheus-metrics-agent-0.0.6.jar='{"server":{"bind_address":"0.0.0.0:18090"},"options":{"include_help":false},"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java defaultTransformV1(in, out, \"type\")"}]}' ...
+```
+
+```sh
+# load config from /etc/foo.yaml
+java -javaagent:java-prometheus-metrics-agent-0.0.6.jar=@/etc/foo.yaml ...
+# load config from foo.yaml on the current working directly
+java -javaagent:java-prometheus-metrics-agent-0.0.6.jar=@foo.yaml ...
+```
+
+```sh
+# load config from foo.yaml on classpath
+java -javaagent:java-prometheus-metrics-agent-0.0.6.jar=@classpath:foo.yaml ...
+```
 
 Configuration
 -------------
