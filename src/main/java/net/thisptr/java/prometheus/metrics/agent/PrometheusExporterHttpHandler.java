@@ -30,6 +30,7 @@ import io.undertow.util.StatusCodes;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
+import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
 /**
@@ -96,6 +97,19 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		}
 
 		return options;
+	}
+
+	private static class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule> {
+		private final PrometheusMetricOutput output;
+
+		public PrometheusScrapeOutput(final PrometheusMetricOutput output) {
+			this.output = output;
+		}
+
+		@Override
+		public void emit(final Sample<PrometheusScrapeRule> sample) {
+			sample.rule.transform.execute(sample, output);
+		}
 	}
 
 	public void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
