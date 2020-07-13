@@ -9,24 +9,31 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.net.HostAndPort;
 
-import fi.iki.elonen.NanoHTTPD;
+import io.undertow.Undertow;
+import io.undertow.predicate.Predicates;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.encoding.ContentEncodingRepository;
+import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import net.thisptr.java.prometheus.metrics.agent.config.ClassPathPollingConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.Config;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.config.ConfigWatcher.ConfigListener;
+import net.thisptr.java.prometheus.metrics.agent.config.FilePollingConfigWatcher;
+import net.thisptr.java.prometheus.metrics.agent.config.StaticConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.handler.SampleProcessorRegistry;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoSampleProcessor;
 import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQuerySampleProcessor;
-import net.thisptr.java.prometheus.metrics.agent.config.FilePollingConfigWatcher;
-import net.thisptr.java.prometheus.metrics.agent.config.StaticConfigWatcher;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreValidators;
 
 public class Agent {
 	private static final Logger LOG = Logger.getLogger(Agent.class.getName());
 	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
-	private static PrometheusExporterServer SERVER;
+	private static Undertow SERVER;
+	private static volatile PrometheusExporterHttpHandler HANDLER;
 
 	static {
 		final SampleProcessorRegistry registry = SampleProcessorRegistry.getInstance();
@@ -59,9 +66,9 @@ public class Agent {
 	 * @param timeout
 	 * @throws Throwable
 	 */
-	private static void safeStart(final NanoHTTPD server, final int timeout, final boolean daemon) throws Throwable {
+	private static void safeStart(final Undertow server) throws Throwable {
 		try {
-			server.start(timeout, daemon);
+			server.start();
 		} catch (final Throwable th) {
 			try {
 				server.stop(); // closes a server socket.
@@ -72,30 +79,42 @@ public class Agent {
 		}
 	}
 
+	private static Undertow newServer(final HostAndPort hostAndPort) {
+		final HttpHandler thisHandler = exchange -> HANDLER.handleRequest(exchange);
+		final EncodingHandler encodingHandler = new EncodingHandler(new ContentEncodingRepository()
+				.addEncodingHandler("gzip",
+						new GzipEncodingProvider(), 50,
+						Predicates.parse("max-content-size[5]")))
+								.setNext(thisHandler);
+		return Undertow.builder()
+				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
+				.setHandler(encodingHandler)
+				.build();
+	}
+
 	public static void premain(final String args) throws Throwable {
 		LOG.log(Level.INFO, "Starting Prometheus Metrics Agent...");
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Prometheus Metrics Agent...");
-				final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(newConfig.rules, newConfig.labels, newConfig.options);
+				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.labels, newConfig.options);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
 					} catch (final Throwable th) {
 						LOG.log(Level.WARNING, "Failed to stop Prometheus Metrics Agent server for reconfiguration.", th);
 					}
-					SERVER = new PrometheusExporterServer(newConfig.server.bindAddress, handler);
-					safeStart(SERVER, NanoHTTPD.SOCKET_READ_TIMEOUT, true);
-				} else {
-					SERVER.configure(handler);
+					SERVER = newServer(newConfig.server.bindAddress);
+					safeStart(SERVER);
 				}
+				HANDLER = handler;
 				LOG.log(Level.INFO, "Successfully reconfigured Prometheus Metrics Agent.");
 			});
 
 			final Config initialConfig = watcher.config();
-			final PrometheusExporterServerHandler handler = new PrometheusExporterServerHandler(initialConfig.rules, initialConfig.labels, initialConfig.options);
-			SERVER = new PrometheusExporterServer(initialConfig.server.bindAddress, handler);
-			safeStart(SERVER, NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+			HANDLER = new PrometheusExporterHttpHandler(initialConfig.rules, initialConfig.labels, initialConfig.options);
+			SERVER = newServer(initialConfig.server.bindAddress);
+			safeStart(SERVER);
 			watcher.start();
 		} catch (final Throwable th) {
 			LOG.log(Level.SEVERE, "Failed to start Prometheus Metrics Agent.", th);

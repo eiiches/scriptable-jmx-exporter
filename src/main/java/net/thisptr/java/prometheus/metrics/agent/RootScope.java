@@ -22,7 +22,7 @@ public class RootScope {
 	static {
 		INSTANCE = Scope.newEmptyScope();
 		BuiltinFunctionLoader.getInstance().loadFunctions(Versions.JQ_1_6, INSTANCE);
-		try (Reader reader = new InputStreamReader(PrometheusExporterServer.class.getClassLoader().getResourceAsStream("prometheus.jq"))) {
+		try (Reader reader = new InputStreamReader(RootScope.class.getClassLoader().getResourceAsStream("prometheus.jq"))) {
 			final List<String> lines = CharStreams.readLines(reader).stream()
 					.filter(line -> !line.trim().startsWith("#"))
 					.collect(Collectors.toList());
