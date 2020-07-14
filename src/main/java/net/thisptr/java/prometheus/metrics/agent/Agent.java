@@ -34,6 +34,8 @@ public class Agent {
 	private static final Logger LOG = Logger.getLogger(Agent.class.getName());
 	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
+	static final String DEFAULT_CLASSPATH_CONFIG_FILE = "java-prometheus-metrics-agent-default.yaml";
+
 	private static Undertow SERVER;
 	private static volatile PrometheusExporterHttpHandler HANDLER;
 
@@ -46,7 +48,7 @@ public class Agent {
 
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		if (args == null)
-			args = "@classpath:java-prometheus-metrics-agent-default.yaml";
+			args = "@classpath:" + DEFAULT_CLASSPATH_CONFIG_FILE;
 		if (args.isEmpty()) {
 			return new StaticConfigWatcher(new Config());
 		} else if (args.startsWith("@classpath:")) {
