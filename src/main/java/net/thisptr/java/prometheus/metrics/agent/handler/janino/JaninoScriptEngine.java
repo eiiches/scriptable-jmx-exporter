@@ -10,9 +10,10 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine.Transformer;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.SnakeCasingFunction;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.AttributeValue;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValue;
@@ -21,7 +22,8 @@ import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValu
 public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 
 	private static final String SCRIPT_HEADER = ""
-			+ "import static " + TransformV1Function.class.getName() + ".*" + ";";
+			+ "import static " + TransformV1Function.class.getName() + ".*" + ";"
+			+ "import static " + SnakeCasingFunction.class.getName() + ".*" + ";";
 
 	private static final String SCRIPT_FOOTER = ""
 			+ ";";
