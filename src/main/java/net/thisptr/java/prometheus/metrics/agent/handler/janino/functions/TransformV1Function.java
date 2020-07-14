@@ -148,11 +148,15 @@ public class TransformV1Function {
 		case "java.lang.Long": /* fall through */
 		case "java.lang.Short": /* fall through */
 		case "java.lang.Byte":
-			emit(nameKeys, labels, names, input, output, value != null ? ((Number) value).doubleValue() : Double.NaN);
+			if (value == null)
+				break;
+			emit(nameKeys, labels, names, input, output, ((Number) value).doubleValue());
 			break;
 		case "boolean": /* fall through */
 		case "java.lang.Boolean":
-			emit(nameKeys, labels, names, input, output, value != null ? ((Boolean) value ? 1 : 0) : Double.NaN);
+			if (value == null)
+				break;
+			emit(nameKeys, labels, names, input, output, (Boolean) value ? 1 : 0);
 			break;
 		case "javax.management.ObjectName": /* fall through */
 		case "java.lang.String":
@@ -160,7 +164,9 @@ public class TransformV1Function {
 			break;
 		case "char": /* fall through */
 		case "java.lang.Character":
-			emit(nameKeys, labels, names, input, output, value != null ? ((Character) value).charValue() : Double.NaN);
+			if (value == null)
+				break;
+			emit(nameKeys, labels, names, input, output, ((Character) value).charValue());
 			break;
 		case "javax.management.openmbean.CompositeData":
 			if (value == null) // we can't reliably determine the details of the CompositeData type.
