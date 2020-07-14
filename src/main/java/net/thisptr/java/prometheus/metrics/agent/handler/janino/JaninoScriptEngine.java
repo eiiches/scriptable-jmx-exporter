@@ -4,6 +4,8 @@ import javax.management.ObjectName;
 
 import org.codehaus.janino.ScriptEvaluator;
 
+import com.google.common.base.CaseFormat;
+
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
@@ -36,6 +38,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				AttributeValue.class.getName(),
 				MetricValue.class.getName(),
 				MetricValueOutput.class.getName(),
+				CaseFormat.class.getName(),
 		});
 		try {
 			final Transformer compiledScript = (Transformer) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, Transformer.class, new String[] { "in", "out" });
