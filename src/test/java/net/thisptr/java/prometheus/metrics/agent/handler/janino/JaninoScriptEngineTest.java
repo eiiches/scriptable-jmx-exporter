@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.management.AttributeNotFoundException;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
@@ -55,6 +55,19 @@ public class JaninoScriptEngineTest {
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
 		assertThat(metrics.get(0).name).isEqualTo("java.lang:OperatingSystem:ProcessCpuLoad");
 		assertThat(metrics.get(0).labels).isEmpty();
+	}
+
+	@Test
+	void testNonExistentKeyProperty() throws Exception {
+		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
+
+		final List<PrometheusMetric> metrics = new ArrayList<>();
+		sut.compile("transformV1(in, out, \"non_existent_key\")").execute(sample, metrics::add);
+
+		assertThat(metrics.size()).isEqualTo(1);
+		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
+		assertThat(metrics.get(0).name).isEqualTo("java.lang:ProcessCpuLoad");
+		assertThat(metrics.get(0).labels).containsExactlyInAnyOrderEntriesOf(Collections.singletonMap("type", "OperatingSystem"));
 	}
 
 	@Test

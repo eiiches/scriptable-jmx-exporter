@@ -204,8 +204,14 @@ public class TransformV1Function {
 		final StringBuilder nameBuilder = new StringBuilder();
 		nameBuilder.append(input.name.getDomain());
 		for (final String nameKey : nameKeys) {
+			final String metricLabelValue = metricLabels.get(nameKey);
+			if (metricLabelValue == null)
+				continue;
 			nameBuilder.append(":");
-			nameBuilder.append(metricLabels.get(nameKey));
+			nameBuilder.append(metricLabelValue);
+		}
+		for (final String nameKey : nameKeys) {
+			metricLabels.remove(nameKey);
 		}
 
 		final StringBuilder attributeNameBuilder = new StringBuilder();
@@ -215,10 +221,6 @@ public class TransformV1Function {
 				attributeNameBuilder.append("_");
 				attributeNameBuilder.append(name);
 			}
-		}
-
-		for (final String nameKey : nameKeys) {
-			metricLabels.remove(nameKey);
 		}
 
 		nameBuilder.append(":");
