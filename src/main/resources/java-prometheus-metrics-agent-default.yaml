@@ -10,7 +10,7 @@ rules:
 - pattern: 'net\\.thisptr\\.java\\.prometheus\\.metrics\\.agent\\.shade\\.org\\.xnio'
   transform: |
     !java
-    in.name = new ObjectName("org.xnio", in.name.getKeyPropertyList());
+    in.domain = "org.xnio";
     transformV1(in, out, "type");
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads'
   transform: |

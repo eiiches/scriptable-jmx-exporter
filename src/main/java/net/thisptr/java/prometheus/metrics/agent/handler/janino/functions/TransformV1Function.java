@@ -6,9 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -185,24 +185,44 @@ public class TransformV1Function {
 				unfoldArray(nameKeys, labels, names, value, type, input, output);
 			} else {
 				if (SUPPRESSED_TYPES.add(type))
-					LOG.warning(String.format("Got unsupported type \"%s\" while processing %s:%s. Further warnings are suppressed for the type.", type, input.name, input.attributeInfo.getName()));
+					LOG.warning(String.format("Got unsupported type \"%s:%s\" while processing %s:%s. Further warnings are suppressed for the type.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
 				break;
 			}
 		}
 	}
 
-	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final AttributeValue input, final MetricValueOutput output, final double value) {
-		// TODO: Move this somewhere so that we don't have to allocate the hash table on every invocation.
-		final Hashtable<String, String> keyProperties = input.name.getKeyPropertyList();
+	/**
+	 * Formats human-readable ObjectName for logging or debugging purpose. Do not expect consistent formatting.
+	 * The format is subject to change without notice.
+	 * 
+	 * @param domain
+	 * @param keyProperties
+	 * @return
+	 */
+	private static String formatObjectNameForLogging(final String domain, final Map<String, String> keyProperties) {
+		final StringBuilder builder = new StringBuilder();
+		builder.append(domain);
+		builder.append(':');
+		String sep = "";
+		for (final Entry<String, String> entry : keyProperties.entrySet()) {
+			builder.append(sep);
+			builder.append(entry.getKey());
+			builder.append('=');
+			builder.append(entry.getValue());
+			sep = ",";
+		}
+		return builder.toString();
+	}
 
-		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + keyProperties.size());
+	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final AttributeValue input, final MetricValueOutput output, final double value) {
+		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + input.keyProperties.size());
 		labels.forEach((label, labelValue) -> {
 			metricLabels.put(label, labelValue);
 		});
-		keyProperties.forEach((k, v) -> metricLabels.put(k, v));
+		input.keyProperties.forEach((k, v) -> metricLabels.put(k, v));
 
 		final StringBuilder nameBuilder = new StringBuilder();
-		nameBuilder.append(input.name.getDomain());
+		nameBuilder.append(input.domain);
 		for (final String nameKey : nameKeys) {
 			final String metricLabelValue = metricLabels.get(nameKey);
 			if (metricLabelValue == null)
@@ -215,7 +235,7 @@ public class TransformV1Function {
 		}
 
 		final StringBuilder attributeNameBuilder = new StringBuilder();
-		attributeNameBuilder.append(input.attributeInfo.getName());
+		attributeNameBuilder.append(input.attributeName);
 		for (final String name : names) {
 			if (name != null) {
 				attributeNameBuilder.append("_");
@@ -231,13 +251,13 @@ public class TransformV1Function {
 		m.value = value;
 		m.labels = metricLabels;
 		m.timestamp = input.timestamp;
-		m.help = input.attributeInfo.getDescription();
+		m.help = input.attributeDescription;
 		output.emit(m);
 	}
 
 	public static void transformV1(final AttributeValue sample, final MetricValueOutput output, final String... propertiesToUseInMetricName) {
 		final Labels labels = new Labels();
 		final List<String> names = new ArrayList<>();
-		unfold(Arrays.asList(propertiesToUseInMetricName), labels, names, sample.value, sample.attributeInfo.getType(), sample, output);
+		unfold(Arrays.asList(propertiesToUseInMetricName), labels, names, sample.value, sample.attributeType, sample, output);
 	}
 }

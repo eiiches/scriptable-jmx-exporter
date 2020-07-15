@@ -54,9 +54,12 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 	public void handle(final Sample<PrometheusScrapeRule> sample, final Transformer script, final PrometheusMetricOutput output) {
 		// We copy all the fields to decouple !java scripts and the rest of the code base.
 		final AttributeValue in = new AttributeValue();
-		in.attributeInfo = sample.attribute;
-		in.mbeanInfo = sample.info;
-		in.name = sample.name;
+		in.attributeDescription = sample.attribute.getDescription();
+		in.attributeName = sample.attribute.getName();
+		in.attributeType = sample.attribute.getType();
+		in.beanDescription = sample.info.getDescription();
+		in.domain = sample.name.getDomain();
+		in.keyProperties = sample.name.getKeyPropertyList();
 		in.timestamp = sample.timestamp;
 		in.value = sample.value;
 		try {
