@@ -1,6 +1,8 @@
-package net.thisptr.java.prometheus.metrics.agent.handler.janino.functions;
+package net.thisptr.java.prometheus.metrics.agent.handler.janino.api.fn;
 
 import java.util.logging.Logger;
+
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.internal.TransformV1Function;
 
 public class LogFunction {
 	private static final Logger LOG = Logger.getLogger(TransformV1Function.class.getName());

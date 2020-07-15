@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.agent.handler.janino.functions;
+package net.thisptr.java.prometheus.metrics.agent.handler.janino.internal;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -21,9 +21,9 @@ import javax.management.openmbean.TabularType;
 
 import com.google.common.collect.Maps;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.AttributeValue;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValue;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValueOutput;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.AttributeValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.MetricValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.MetricValueOutput;
 import net.thisptr.java.prometheus.metrics.agent.misc.MutableInteger;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreClasses;
 

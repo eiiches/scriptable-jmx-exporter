@@ -11,11 +11,11 @@ rules:
   transform: |
     !java
     in.domain = "org.xnio";
-    transformV1(in, out, "type");
+    V1.transform(in, out, "type");
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads'
   transform: |
     !java
-    transformV1(in, out, "type");
+    V1.transform(in, out, "type");
 - transform: |
     !java
-    transformV1(in, out, "type");
+    V1.transform(in, out, "type");

@@ -34,7 +34,6 @@ import io.undertow.util.StatusCodes;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -42,7 +41,7 @@ import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
  * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md
  */
 public class PrometheusExporterHttpHandler implements HttpHandler {
-	private static final Logger LOG = Logger.getLogger(TransformV1Function.class.getName());
+	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private final Scraper<PrometheusScrapeRule> scraper;

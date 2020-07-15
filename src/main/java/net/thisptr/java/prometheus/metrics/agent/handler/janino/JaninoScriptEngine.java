@@ -4,8 +4,6 @@ import javax.management.ObjectName;
 
 import org.codehaus.janino.ScriptEvaluator;
 
-import com.google.common.base.CaseFormat;
-
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
@@ -13,18 +11,15 @@ import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeR
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine.Transformer;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.LogFunction;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.SnakeCasingFunction;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.AttributeValue;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValue;
-import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.MetricValueOutput;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.AttributeValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.MetricValue;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.MetricValueOutput;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.fn.LogFunction;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.api.v1.V1;
 
 public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 
 	private static final String SCRIPT_HEADER = ""
-			+ "import static " + TransformV1Function.class.getName() + ".*" + ";"
-			+ "import static " + SnakeCasingFunction.class.getName() + ".*" + ";"
 			+ "import static " + LogFunction.class.getName() + ".*" + ";";
 
 	private static final String SCRIPT_FOOTER = ""
@@ -42,7 +37,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				AttributeValue.class.getName(),
 				MetricValue.class.getName(),
 				MetricValueOutput.class.getName(),
-				CaseFormat.class.getName(),
+				V1.class.getName(),
 		});
 		try {
 			final Transformer compiledScript = (Transformer) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, Transformer.class, new String[] { "in", "out" });

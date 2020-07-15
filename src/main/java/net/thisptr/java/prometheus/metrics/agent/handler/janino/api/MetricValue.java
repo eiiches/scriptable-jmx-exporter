@@ -1,4 +1,4 @@
-package net.thisptr.java.prometheus.metrics.agent.handler.janino.iface;
+package net.thisptr.java.prometheus.metrics.agent.handler.janino.api;
 
 import java.util.Map;
 

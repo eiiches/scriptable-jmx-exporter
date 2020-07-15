@@ -49,7 +49,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
@@ -62,7 +62,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("transformV1(in, out, \"non_existent_key\")").execute(sample, metrics::add);
+		sut.compile("V1.transform(in, out, \"non_existent_key\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
@@ -75,7 +75,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
@@ -92,7 +92,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(4);
 
@@ -138,7 +138,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("transformV1(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(metrics));
 
@@ -165,7 +165,7 @@ public class JaninoScriptEngineTest {
 
 		final JaninoScriptEngine sut1 = new JaninoScriptEngine();
 		// final JsonQueryScriptEngine sut2 = new JsonQueryScriptEngine();
-		final Script<?> script1 = sut1.compile("transformV1(in, out, \"type\")");
+		final Script<?> script1 = sut1.compile("V1.transform(in, out, \"type\")");
 		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 
 		final long start = System.currentTimeMillis();
