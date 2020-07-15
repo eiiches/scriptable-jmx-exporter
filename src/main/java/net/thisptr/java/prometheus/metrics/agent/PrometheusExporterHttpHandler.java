@@ -17,6 +17,8 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -32,6 +34,7 @@ import io.undertow.util.StatusCodes;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -39,6 +42,7 @@ import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
  * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md
  */
 public class PrometheusExporterHttpHandler implements HttpHandler {
+	private static final Logger LOG = Logger.getLogger(TransformV1Function.class.getName());
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private final Scraper<PrometheusScrapeRule> scraper;
@@ -115,7 +119,11 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 
 		@Override
 		public void emit(final Sample<PrometheusScrapeRule> sample) {
-			sample.rule.transform.execute(sample, output);
+			try {
+				sample.rule.transform.execute(sample, output);
+			} catch (Throwable th) {
+				LOG.log(Level.WARNING, "Got exception while executing user script.", th);
+			}
 		}
 	}
 
