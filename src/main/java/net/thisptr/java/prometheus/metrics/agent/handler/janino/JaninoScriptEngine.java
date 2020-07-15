@@ -13,6 +13,7 @@ import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeR
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine.Transformer;
+import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.LogFunction;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.SnakeCasingFunction;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.functions.TransformV1Function;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.iface.AttributeValue;
@@ -23,7 +24,8 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 
 	private static final String SCRIPT_HEADER = ""
 			+ "import static " + TransformV1Function.class.getName() + ".*" + ";"
-			+ "import static " + SnakeCasingFunction.class.getName() + ".*" + ";";
+			+ "import static " + SnakeCasingFunction.class.getName() + ".*" + ";"
+			+ "import static " + LogFunction.class.getName() + ".*" + ";";
 
 	private static final String SCRIPT_FOOTER = ""
 			+ ";";
