@@ -1,6 +1,5 @@
 package net.thisptr.java.prometheus.metrics.agent.handler.janino.api;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.management.MBeanAttributeInfo;
@@ -8,12 +7,11 @@ import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
+import net.thisptr.java.prometheus.metrics.agent.jackson.serdes.ToStringSerializer;
 
 /**
  * This class represents a single MBean attribute value and its metadata.
@@ -69,21 +67,6 @@ public class AttributeValue {
 	 */
 	@JsonProperty("timestamp")
 	public long timestamp;
-
-	public static class ToStringSerializer extends StdSerializer<Object> {
-		private static final long serialVersionUID = -3355464005202101593L;
-
-		public ToStringSerializer() {
-			super(Object.class);
-		}
-
-		@Override
-		public void serialize(final Object value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
-			if (value == null)
-				gen.writeNull();
-			gen.writeString(value.toString());
-		}
-	}
 
 	/**
 	 * The value of the MBean attribute.
