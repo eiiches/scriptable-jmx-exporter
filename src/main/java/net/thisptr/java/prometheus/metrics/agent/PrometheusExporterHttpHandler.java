@@ -121,7 +121,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 			try {
 				sample.rule.transform.execute(sample, output);
 			} catch (Throwable th) {
-				LOG.log(Level.WARNING, "Got exception while executing user script.", th);
+				LOG.log(Level.WARNING, String.format("Got exception while executing user script for %s:%s (type = %s)", sample.name, sample.attribute.getName(), sample.attribute.getType()), th);
 			}
 		}
 	}
