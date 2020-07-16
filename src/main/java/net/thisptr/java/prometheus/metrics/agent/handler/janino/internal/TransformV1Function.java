@@ -30,7 +30,56 @@ import net.thisptr.java.prometheus.metrics.agent.utils.MoreClasses;
 public class TransformV1Function {
 	private static final Logger LOG = Logger.getLogger(TransformV1Function.class.getName());
 
-	private static final Set<String> SUPPRESSED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+	public static class ObjectAndAttributeName {
+		private final String domain;
+		private final Map<String, String> keyProperties;
+		private final String attributeName;
+
+		public ObjectAndAttributeName(final String domain, final Map<String, String> keyProperties, final String attributeName) {
+			this.domain = domain;
+			this.keyProperties = keyProperties;
+			this.attributeName = attributeName;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((attributeName == null) ? 0 : attributeName.hashCode());
+			result = prime * result + ((domain == null) ? 0 : domain.hashCode());
+			result = prime * result + ((keyProperties == null) ? 0 : keyProperties.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectAndAttributeName other = (ObjectAndAttributeName) obj;
+			if (attributeName == null) {
+				if (other.attributeName != null)
+					return false;
+			} else if (!attributeName.equals(other.attributeName))
+				return false;
+			if (domain == null) {
+				if (other.domain != null)
+					return false;
+			} else if (!domain.equals(other.domain))
+				return false;
+			if (keyProperties == null) {
+				if (other.keyProperties != null)
+					return false;
+			} else if (!keyProperties.equals(other.keyProperties))
+				return false;
+			return true;
+		}
+	}
+
+	private static final Set<ObjectAndAttributeName> SUPPRESSED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap<ObjectAndAttributeName, Boolean>());
 
 	static class Labels {
 		private final Map<String, MutableInteger> counts = new HashMap<>();
@@ -125,6 +174,22 @@ public class TransformV1Function {
 		}
 	}
 
+	private static void unfoldByDynamicType(final List<String> nameKeys, final Labels labels, final List<String> names, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
+		if (value instanceof Number) {
+			emit(nameKeys, labels, names, input, output, ((Number) value).doubleValue());
+		} else if (value instanceof Boolean) {
+			emit(nameKeys, labels, names, input, output, (Boolean) value ? 1 : 0);
+		} else if (value instanceof CompositeData) {
+			unfoldCompositeData(nameKeys, labels, names, (CompositeData) value, input, output);
+		} else if (value instanceof TabularData) {
+			unfoldTabularData(nameKeys, labels, names, (TabularData) value, input, output);
+		} else {
+			if (SUPPRESSED_TYPES.add(new ObjectAndAttributeName(input.domain, input.keyProperties, input.attributeName)))
+				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s:%s. Further warnings are suppressed for the attribute.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
+		}
+		// TODO: handle arrays, characters, strings and ObjectName
+	}
+
 	/**
 	 * @param nameKeys
 	 * @param labels
@@ -178,14 +243,20 @@ public class TransformV1Function {
 				break;
 			unfoldTabularData(nameKeys, labels, names, (TabularData) value, input, output);
 			break;
+		case "java.lang.Object":
+			// If the reported type is java.lang.Object, let's try to guess from the actual value.
+			if (value == null)
+				break;
+			unfoldByDynamicType(nameKeys, labels, names, value, type, input, output);
+			break;
 		default:
 			if (type.startsWith("[")) { // array type
 				if (value == null)
 					break;
 				unfoldArray(nameKeys, labels, names, value, type, input, output);
 			} else {
-				if (SUPPRESSED_TYPES.add(type))
-					LOG.warning(String.format("Got unsupported type \"%s:%s\" while processing %s:%s. Further warnings are suppressed for the type.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
+				if (SUPPRESSED_TYPES.add(new ObjectAndAttributeName(input.domain, input.keyProperties, input.attributeName)))
+					LOG.warning(String.format("Got unsupported type \"%s\" while processing %s:%s. Further warnings are suppressed for the attribute.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
 				break;
 			}
 		}
