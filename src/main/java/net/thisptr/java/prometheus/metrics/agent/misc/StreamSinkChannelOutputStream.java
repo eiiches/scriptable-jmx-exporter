@@ -25,9 +25,11 @@ public class StreamSinkChannelOutputStream extends OutputStream {
 	@Override
 	public void flush() throws IOException {
 		buf.flip();
-		while (buf.hasRemaining()) {
+		while (true) {
+			channel.write(buf); // Let's first try without awaitWritable() which is somewhat CPU intensive.
+			if (!buf.hasRemaining())
+				break;
 			channel.awaitWritable();
-			channel.write(buf);
 		}
 		buf.flip();
 	}
