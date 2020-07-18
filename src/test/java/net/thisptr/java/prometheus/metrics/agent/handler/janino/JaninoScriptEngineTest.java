@@ -31,6 +31,7 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetric;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
+import net.thisptr.java.prometheus.metrics.agent.misc.FastObjectName;
 
 public class JaninoScriptEngineTest {
 	private final JaninoScriptEngine sut = new JaninoScriptEngine();
@@ -41,7 +42,7 @@ public class JaninoScriptEngineTest {
 		final long timestamp = System.currentTimeMillis();
 		final MBeanInfo mbeanInfo = server.getMBeanInfo(objectName);
 		final MBeanAttributeInfo attributeInfo = Arrays.stream(mbeanInfo.getAttributes()).filter(a -> attributeName.equals(a.getName())).findFirst().get();
-		return new Sample<PrometheusScrapeRule>(null, timestamp, objectName, mbeanInfo, attributeInfo, value);
+		return new Sample<PrometheusScrapeRule>(null, timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
 	}
 
 	@Test

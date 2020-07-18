@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import javax.management.ObjectName;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.thisptr.java.prometheus.metrics.agent.javacc.AttributeNamePatternParser;
 
 public class AttributeNamePattern {
@@ -24,8 +26,8 @@ public class AttributeNamePattern {
 		this.attribute = attribute != null ? Pattern.compile(attribute) : null;
 	}
 
-	public boolean matches(final ObjectName name, final String attribute) {
-		if (!nameMatches(name))
+	public boolean matches(final String domainToTest, final Map<String, String> keyPropertiesToTest, final String attribute) {
+		if (!nameMatches(domainToTest, keyPropertiesToTest))
 			return false;
 
 		if (this.attribute != null && (attribute == null || !this.attribute.matcher(attribute).matches()))
@@ -34,17 +36,21 @@ public class AttributeNamePattern {
 		return true;
 	}
 
+	@VisibleForTesting
+	boolean matches(final ObjectName name, final String attribute) {
+		return matches(name.getDomain(), name.getKeyPropertyList(), attribute);
+	}
+
 	public static AttributeNamePattern compile(final String patternText) {
 		return AttributeNamePatternParser.parse(patternText);
 	}
 
-	public boolean nameMatches(final ObjectName name) {
-		if (domain != null && !domain.matcher(name.getDomain()).matches())
+	public boolean nameMatches(final String domainToTest, final Map<String, String> keyPropertiesToTest) {
+		if (domain != null && !domain.matcher(domainToTest).matches())
 			return false;
 
-		final Map<String, String> target = name.getKeyPropertyList();
 		for (final Map.Entry<String, Pattern> patternEntry : keys.entrySet()) {
-			String targetValue = target.get(patternEntry.getKey());
+			String targetValue = keyPropertiesToTest.get(patternEntry.getKey());
 			if (targetValue == null)
 				return false;
 			if (targetValue.startsWith("\""))

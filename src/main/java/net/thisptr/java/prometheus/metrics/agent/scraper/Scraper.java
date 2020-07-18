@@ -26,6 +26,7 @@ import com.google.common.cache.LoadingCache;
 import net.thisptr.jackson.jq.internal.misc.Pair;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
+import net.thisptr.java.prometheus.metrics.agent.misc.FastObjectName;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreCollections;
 
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
@@ -43,6 +44,15 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				}
 			});
 
+	private final LoadingCache<ObjectName, FastObjectName> objectNameCache = CacheBuilder.newBuilder()
+			.refreshAfterWrite(300, TimeUnit.SECONDS)
+			.build(new CacheLoader<ObjectName, FastObjectName>() {
+				@Override
+				public FastObjectName load(final ObjectName name) throws Exception {
+					return new FastObjectName(name);
+				}
+			});
+
 	private final LoadingCache<ObjectName, Set<String>> bannedMBeanAttributes = CacheBuilder.newBuilder()
 			.expireAfterWrite(600, TimeUnit.SECONDS)
 			.build(new CacheLoader<ObjectName, Set<String>>() {
@@ -57,13 +67,13 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		this.rules = rules;
 	}
 
-	private Pair<Boolean, ScrapeRuleType> findRuleEarly(final ObjectName name) {
+	private Pair<Boolean, ScrapeRuleType> findRuleEarly(final FastObjectName name) {
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
 				return Pair.of(true, rule); // found
 			boolean nameMatches = false;
 			for (final AttributeNamePattern pattern : rule.patterns()) {
-				if (pattern.nameMatches(name)) {
+				if (pattern.nameMatches(name.domain(), name.keyProperties())) {
 					nameMatches = true;
 					if (pattern.attribute == null)
 						return Pair.of(true, rule); // found
@@ -75,24 +85,24 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		return Pair.of(true, null); // default rule should be used
 	}
 
-	private ScrapeRuleType findRule(final ObjectName name, final String attribute) {
+	private ScrapeRuleType findRule(final FastObjectName name, final String attribute) {
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
 				return rule;
 			for (final AttributeNamePattern pattern : rule.patterns())
-				if (pattern.matches(name, attribute))
+				if (pattern.matches(name.domain(), name.keyProperties(), attribute))
 					return rule;
 		}
 		return null;
 	}
 
 	private class AttributeScrapeRequest {
-		public final ObjectName name;
+		public final FastObjectName name;
 		public final MBeanInfo info;
 		public final MBeanAttributeInfo attribute;
 		public final ScrapeRuleType rule;
 
-		public AttributeScrapeRequest(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule) {
+		public AttributeScrapeRequest(final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule) {
 			this.name = name;
 			this.info = info;
 			this.attribute = attribute;
@@ -116,7 +126,9 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			return;
 		}
 
-		for (final ObjectName name : names) {
+		for (final ObjectName _name : names) {
+			final FastObjectName name = objectNameCache.getUnchecked(_name);
+
 			// Filter early by ObjectName because server.getMBeanInfo() is really slow.
 			final Pair<Boolean, ScrapeRuleType> ruleByName = findRuleEarly(name);
 			if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
@@ -126,13 +138,13 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 
 			final MBeanInfo info;
 			try {
-				info = mbeanInfoCache.get(name);
+				info = mbeanInfoCache.get(name.objectName());
 			} catch (final Throwable th) {
 				LOG.log(Level.FINER, "Failed to obtain MBeanInfo (name = " + name + ")", th);
 				continue;
 			}
 
-			final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(name);
+			final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(name.objectName());
 
 			for (final MBeanAttributeInfo attribute : info.getAttributes()) {
 				try {
@@ -167,15 +179,15 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		});
 	}
 
-	private void scrape(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule, final ScrapeOutput<ScrapeRuleType> output) throws InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException {
+	private void scrape(final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule, final ScrapeOutput<ScrapeRuleType> output) throws InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException {
 		final long timestamp = System.currentTimeMillis();
 		final Object value;
 		try {
-			value = server.getAttribute(name, attribute.getName());
+			value = server.getAttribute(name.objectName(), attribute.getName());
 		} catch (final RuntimeMBeanException e) {
 			if (e.getCause() instanceof UnsupportedOperationException) {
 				// ban attributes temporarily
-				banAttribute(name, info, attribute);
+				banAttribute(name.objectName(), info, attribute);
 				return;
 			}
 			throw e;

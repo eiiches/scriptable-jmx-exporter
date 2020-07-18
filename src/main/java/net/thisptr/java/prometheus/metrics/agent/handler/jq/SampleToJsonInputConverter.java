@@ -3,7 +3,6 @@ package net.thisptr.java.prometheus.metrics.agent.handler.jq;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -134,8 +133,8 @@ public class SampleToJsonInputConverter implements Converter<Sample<?>, JsonNode
 		out.put("type", TextNode.valueOf(sample.attribute.getType()));
 		out.put("mbean_description", TextNode.valueOf(sample.info.getDescription()));
 		out.put("value", valueJson != null ? valueJson : NullNode.getInstance());
-		out.put("domain", TextNode.valueOf(sample.name.getDomain()));
-		final Hashtable<String, String> propertyList = sample.name.getKeyPropertyList();
+		out.put("domain", TextNode.valueOf(sample.name.domain()));
+		final Map<String, String> propertyList = sample.name.keyProperties();
 		final Map<String, JsonNode> properties = Maps.newHashMapWithExpectedSize(propertyList.size());
 		propertyList.forEach((k, v) -> {
 			if (v.startsWith("\""))
