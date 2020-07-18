@@ -1,10 +1,7 @@
 package net.thisptr.java.prometheus.metrics.agent;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -27,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.common.base.Joiner;
 
+import io.undertow.connector.ByteBufferPool;
+import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -34,6 +33,7 @@ import io.undertow.util.StatusCodes;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.OptionsConfig;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
+import net.thisptr.java.prometheus.metrics.agent.misc.StreamSinkChannelOutputStream;
 import net.thisptr.java.prometheus.metrics.agent.scraper.ScrapeOutput;
 import net.thisptr.java.prometheus.metrics.agent.scraper.Scraper;
 
@@ -127,7 +127,6 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	}
 
 	public void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
-
 		final Map<String, JsonNode> labels = makeLabels();
 		final OptionsConfig options = getOptions(exchange);
 
@@ -141,38 +140,46 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8");
 		exchange.setStatusCode(StatusCodes.OK);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8");
 
-		final StringBuilder builder = new StringBuilder();
-		try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(builder, options.includeTimestamp)) {
-			allMetrics.forEach((name, metrics) -> {
-				if (metrics.isEmpty())
-					return;
-				if (options.includeHelp) {
-					final Set<String> helps = new HashSet<>();
-					metrics.forEach((metric) -> {
-						helps.add(metric.help);
-					});
-					pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
-				}
-				if (options.includeType) {
-					final String type = metrics.get(0).type;
-					if (type != null) {
-						pwriter.writeType(name, type);
-					}
-				}
-				metrics.forEach((metric) -> {
+		final ByteBufferPool byteBufferPool = exchange.getConnection().getByteBufferPool();
+		final PooledByteBuffer byteBuffer = byteBufferPool.allocate();
+		try {
+			final StreamSinkChannelOutputStream os = new StreamSinkChannelOutputStream(byteBuffer.getBuffer(), exchange.getResponseChannel());
+			try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(os, options.includeTimestamp)) {
+				allMetrics.forEach((name, metrics) -> {
 					try {
-						pwriter.write(metric);
+						if (metrics.isEmpty())
+							return;
+						if (options.includeHelp) {
+							final Set<String> helps = new HashSet<>();
+							metrics.forEach((metric) -> {
+								helps.add(metric.help);
+							});
+							pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+						}
+						if (options.includeType) {
+							final String type = metrics.get(0).type;
+							if (type != null) {
+								pwriter.writeType(name, type);
+							}
+						}
+						metrics.forEach((metric) -> {
+							try {
+								pwriter.write(metric);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+						});
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}
 				});
-			});
+			}
+		} finally {
+			byteBuffer.close();
 		}
-
-		exchange.getResponseSender().send(builder.toString());
 	}
 
 	@Override
@@ -181,28 +188,17 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 			exchange.dispatch(this);
 			return;
 		}
-		try {
-			switch (exchange.getRequestPath()) {
-			case "/metrics":
-				if (!exchange.getRequestMethod().equalToString("GET")) {
-					exchange.setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
-					return;
-				}
-				handleGetMetrics(exchange);
-				break;
-			default:
-				exchange.setStatusCode(StatusCodes.NOT_FOUND);
-				break;
+		switch (exchange.getRequestPath()) {
+		case "/metrics":
+			if (!exchange.getRequestMethod().equalToString("GET")) {
+				exchange.setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
+				return;
 			}
-		} catch (Throwable th) {
-			exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR);
-			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-				try (PrintWriter writer = new PrintWriter(baos)) {
-					th.printStackTrace(writer);
-				}
-				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; charset=utf-8");
-				exchange.getResponseSender().send(ByteBuffer.wrap(baos.toByteArray()));
-			}
+			handleGetMetrics(exchange);
+			break;
+		default:
+			exchange.setStatusCode(StatusCodes.NOT_FOUND);
+			break;
 		}
 	}
 }

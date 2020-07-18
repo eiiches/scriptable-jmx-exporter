@@ -2,14 +2,16 @@ package net.thisptr.java.prometheus.metrics.agent;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map.Entry;
 
 public class PrometheusMetricWriter implements Closeable {
-	private final StringBuilder builder;
+	private final OutputStream os;
 	private final boolean includeTimestamp;
 
-	public PrometheusMetricWriter(final StringBuilder builder, final boolean includeTimestamp) {
-		this.builder = builder;
+	public PrometheusMetricWriter(final OutputStream os, final boolean includeTimestamp) {
+		this.os = os;
 		this.includeTimestamp = includeTimestamp;
 	}
 
@@ -18,12 +20,13 @@ public class PrometheusMetricWriter implements Closeable {
 	 *
 	 * @param name
 	 * @return
+	 * @throws IOException
 	 * @see https://prometheus.io/docs/concepts/data_model/
 	 * @see {@link #sanitizeLabelName(String)}
 	 */
-	private static void sanitizeMetricName(final StringBuilder builder, final String name) {
+	private static void sanitizeMetricName(final OutputStream os, final String name) throws IOException {
 		if (name.isEmpty()) {// An empty name is not allowed.
-			builder.append('_');
+			os.write('_');
 			return;
 		}
 		final int length = name.length();
@@ -35,9 +38,9 @@ public class PrometheusMetricWriter implements Closeable {
 					|| (ch == '_')
 					|| (ch == ':');
 			if (valid) {
-				builder.append(ch);
+				os.write(ch);
 			} else {
-				builder.append('_');
+				os.write('_');
 			}
 		}
 	}
@@ -51,13 +54,14 @@ public class PrometheusMetricWriter implements Closeable {
 	 *
 	 * @param name
 	 * @return
+	 * @throws IOException
 	 *
 	 * @see https://prometheus.io/docs/concepts/data_model/
 	 * @see {@link #sanitizeMetricName(String)}
 	 */
-	private static void sanitizeLabelName(final StringBuilder builder, final String name) {
+	private static void sanitizeLabelName(final OutputStream os, final String name) throws IOException {
 		if (name.isEmpty()) { // An empty name is not allowed.
-			builder.append('_');
+			os.write('_');
 			return;
 		}
 		final int length = name.length();
@@ -68,86 +72,134 @@ public class PrometheusMetricWriter implements Closeable {
 					|| ('0' <= ch && ch <= '9' && i != 0)
 					|| (ch == '_');
 			if (valid) {
-				builder.append(ch);
+				os.write(ch);
 			} else {
-				builder.append('_');
+				os.write('_');
 			}
 		}
 	}
 
 	public void write(final PrometheusMetric metric) throws IOException {
-		sanitizeMetricName(builder, metric.name);
+		sanitizeMetricName(os, metric.name);
 		if (!metric.labels.isEmpty()) {
-			builder.append('{');
+			os.write('{');
 			for (final Entry<String, String> entry : metric.labels.entrySet()) {
-				sanitizeLabelName(builder, entry.getKey());
-				builder.append('=');
-				sanitizeLabelValue(builder, entry.getValue());
-				builder.append(',');
+				sanitizeLabelName(os, entry.getKey());
+				os.write('=');
+				sanitizeLabelValue(os, entry.getValue());
+				os.write(',');
 			}
-			builder.append('}');
+			os.write('}');
 		}
-		builder.append(' ');
-		builder.append(metric.value);
+		os.write(' ');
+		writeTextUtf8(os, String.valueOf(metric.value)); // TODO: avoid string allocation
 		if (includeTimestamp && metric.timestamp != 0) {
-			builder.append(' ');
-			builder.append(metric.timestamp);
+			os.write(' ');
+			writeTextUtf8(os, String.valueOf(metric.timestamp)); // TODO: avoid string allocation
 		}
-		builder.append('\n');
+		os.write('\n');
 	}
 
-	private static void sanitizeLabelValue(final StringBuilder builder, final String text) {
+	private static void sanitizeLabelValue(final OutputStream os, final String text) throws IOException {
+		os.write('"');
 		if (text == null) {
-			builder.append('"');
-			builder.append("null");
-			builder.append('"');
+			os.write(NULL);
 		} else {
-			builder.append('"');
-			final int length = text.length();
-			for (int i = 0; i < length; ++i) {
-				final char ch = text.charAt(i);
-				switch (ch) {
-				case '\\':
-					builder.append('\\');
-					builder.append('\\');
-					break;
-				case '\n':
-					builder.append('\\');
-					builder.append('\n');
-					break;
-				case '"':
-					builder.append('\\');
-					builder.append('\"');
-					break;
-				default:
-					builder.append(ch);
-				}
-			}
-			builder.append('"');
+			writeTextUtf8Escaped(text, os, true);
 		}
+		os.write('"');
 	}
 
 	@Override
-	public void close() throws IOException {}
-
-	public void writeHelp(final String name, final String help) {
-		builder.append("# HELP ");
-		sanitizeMetricName(builder, name);
-		builder.append(' ');
-		for (int i = 0; i < help.length(); ++i) {
-			char ch = help.charAt(i);
-			if (ch == '\n')
-				ch = ' ';
-			builder.append(ch);
-		}
-		builder.append('\n');
+	public void close() throws IOException {
+		os.close();
 	}
 
-	public void writeType(final String name, final String type) {
-		builder.append("# TYPE ");
-		sanitizeMetricName(builder, name);
-		builder.append(' ');
-		builder.append(type);
-		builder.append('\n');
+	private static final byte[] HELP = "HELP".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] TYPE = "TYPE".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] NULL = "null".getBytes(StandardCharsets.UTF_8);
+
+	private static void writeTextUtf8(final OutputStream os, final String text) throws IOException {
+		final int length = text.length();
+		for (int i = 0; i < length; ++i) {
+			final char ch = text.charAt(i);
+			if (ch < 0x80) {
+				os.write((byte) ch);
+			} else if (Character.isHighSurrogate(ch)) {
+				final int codePoint = Character.toCodePoint(ch, text.charAt(++i));
+				writeUnicode(os, codePoint);
+			} else {
+				writeUnicode(os, ch);
+			}
+		}
+	}
+
+	private static void writeTextUtf8Escaped(final String text, final OutputStream os, final boolean escapeDoubleQuotes) throws IOException {
+		final int length = text.length();
+		for (int i = 0; i < length; ++i) {
+			final char ch = text.charAt(i);
+			switch (ch) {
+			case '\\':
+				os.write('\\');
+				os.write('\\');
+				break;
+			case '\n':
+				os.write('\\');
+				os.write('n');
+				break;
+			case '"':
+				if (escapeDoubleQuotes)
+					os.write('\\');
+				os.write('"');
+				break;
+			default:
+				if (Character.isHighSurrogate(ch)) {
+					final int codePoint = Character.toCodePoint(ch, text.charAt(++i));
+					writeUnicode(os, codePoint);
+				} else {
+					writeUnicode(os, ch);
+				}
+			}
+		}
+	}
+
+	private void writeAnnotation(final String metricName, final byte[] annotationType, final String value) throws IOException {
+		os.write('#');
+		os.write(' ');
+		os.write(annotationType);
+		os.write(' ');
+		sanitizeMetricName(os, metricName);
+		os.write(' ');
+		writeTextUtf8Escaped(value, os, false);
+		os.write('\n');
+	}
+
+	public void writeHelp(final String name, final String helpText) throws IOException {
+		writeAnnotation(name, HELP, helpText);
+	}
+
+	public void writeType(final String name, final String typeText) throws IOException {
+		writeAnnotation(name, TYPE, typeText);
+	}
+
+	private static void writeUnicode(final OutputStream os, final int codePoint) throws IOException {
+		// https://en.wikipedia.org/wiki/UTF-8#Description
+		if (codePoint < 0x80) {
+			os.write(codePoint);
+		} else if (codePoint < 0x800) {
+			os.write(0b1100_0000 | codePoint >>> 6);
+			os.write(0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+		} else if (codePoint < 0x10000) {
+			os.write(0b1110_0000 | (codePoint >>> 12));
+			os.write(0x1000_0000 | (codePoint >>> 6) & 0b0011_1111);
+			os.write(0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+		} else if (codePoint < 0x110000) {
+			os.write(0b1111_0000 | (codePoint >>> 18));
+			os.write(0x1000_0000 | (codePoint >>> 12) & 0b0011_1111);
+			os.write(0x1000_0000 | (codePoint >>> 6) & 0b0011_1111);
+			os.write(0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+		} else {
+			throw new IllegalArgumentException("invalid codepoint: " + codePoint);
+		}
 	}
 }
