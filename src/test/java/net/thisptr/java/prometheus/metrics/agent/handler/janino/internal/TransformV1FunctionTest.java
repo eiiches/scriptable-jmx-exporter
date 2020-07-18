@@ -21,9 +21,9 @@ public class TransformV1FunctionTest {
 		labels.push("label", "3");
 		labels.push("foo", "1");
 		assertThat(labels.size()).isEqualTo(6);
-		labels.pop();
+		labels.pop("foo");
 		assertThat(labels.size()).isEqualTo(5);
-		labels.pop();
+		labels.pop("label");
 		assertThat(labels.size()).isEqualTo(4);
 		labels.push("label", "3");
 		assertThat(labels.size()).isEqualTo(5);

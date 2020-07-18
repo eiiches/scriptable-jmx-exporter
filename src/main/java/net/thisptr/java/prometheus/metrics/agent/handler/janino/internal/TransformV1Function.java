@@ -88,31 +88,32 @@ public class TransformV1Function {
 		private final List<Integer> dups = new ArrayList<>();
 
 		public void push(final String label, final String value) {
-			labels.add(label);
+			final int dup = counts.computeIfAbsent(label, (dummy) -> new MutableInteger()).getAndIncrement();
+			if (dup == 0) {
+				labels.add(label);
+			} else {
+				labels.add(label + "_" + dup);
+			}
 			values.add(value);
-			dups.add(Integer.valueOf(counts.computeIfAbsent(label, (dummy) -> new MutableInteger()).getAndIncrement()));
+			dups.add(dup);
 		}
 
-		public void pop() {
-			final int index = labels.size() - 1;
-			final String label = labels.get(index);
+		/**
+		 * Removes the last pushed label-value pair. Must be invoked in reverse order of push().
+		 * 
+		 * @param label This must be the same label as given to the corresponding push().
+		 */
+		public void pop(final String label) {
 			if (counts.get(label).decrementAndGet() <= 0)
 				counts.remove(label);
+			final int index = labels.size() - 1;
 			labels.remove(index);
 			values.remove(index);
 		}
 
 		public void forEach(final BiConsumer<String, String> fn) {
-			for (int i = 0; i < labels.size(); ++i) {
-				final String label;
-				final int dup = dups.get(i);
-				if (dup == 0) {
-					label = labels.get(i);
-				} else {
-					label = labels.get(i) + "_" + dup;
-				}
-				fn.accept(label, values.get(i));
-			}
+			for (int i = 0; i < labels.size(); ++i)
+				fn.accept(labels.get(i), values.get(i));
 		}
 
 		public int size() {
@@ -127,7 +128,7 @@ public class TransformV1Function {
 			final Object element = Array.get(arrayValue, i);
 			labels.push("index", String.valueOf(i));
 			unfold(namer, labels, element, elementType, input, output);
-			labels.pop();
+			labels.pop("index");
 		}
 	}
 
@@ -144,29 +145,38 @@ public class TransformV1Function {
 		final TabularType tabularType = tabularData.getTabularType();
 		final CompositeType rowType = tabularType.getRowType();
 		final List<String> indexColumnNames = tabularType.getIndexNames();
-		final List<String> nonIndexColumnNames = new ArrayList<>();
-		for (final String columnName : rowType.keySet()) {
+
+		final Set<String> columnNames = rowType.keySet();
+		final List<String> nonIndexColumnNames = new ArrayList<>(Math.max(0, columnNames.size() - indexColumnNames.size()));
+		for (final String columnName : columnNames) {
 			if (indexColumnNames.contains(columnName))
 				continue;
 			nonIndexColumnNames.add(columnName);
+		}
+		final List<String> nonIndexColumnTypes = new ArrayList<>(nonIndexColumnNames.size());
+		for (final String nonIndexColumnName : nonIndexColumnNames) {
+			nonIndexColumnTypes.add(rowType.getType(nonIndexColumnName).getClassName());
 		}
 
 		@SuppressWarnings("unchecked")
 		final Collection<CompositeData> rows = (Collection<CompositeData>) tabularData.values();
 		for (final CompositeData row : rows) {
-			for (final String indexColumnName : indexColumnNames) {
+			for (int i = 0; i < indexColumnNames.size(); ++i) {
+				final String indexColumnName = indexColumnNames.get(i);
 				// TODO: proper string conversion
 				labels.push(indexColumnName, String.valueOf(row.get(indexColumnName)));
 			}
 
-			for (final String columnName : nonIndexColumnNames) {
+			for (int i = 0; i < nonIndexColumnNames.size(); ++i) {
+				final String columnName = nonIndexColumnNames.get(i);
+				final String columnType = nonIndexColumnTypes.get(i);
 				final int mark = namer.push(columnName);
-				unfold(namer, labels, row.get(columnName), rowType.getType(columnName).getClassName(), input, output);
+				unfold(namer, labels, row.get(columnName), columnType, input, output);
 				namer.pop(mark);
 			}
 
-			for (int i = 0; i < indexColumnNames.size(); ++i) {
-				labels.pop();
+			for (int i = indexColumnNames.size() - 1; i >= 0; --i) { // reverse order
+				labels.pop(indexColumnNames.get(i));
 			}
 		}
 	}
