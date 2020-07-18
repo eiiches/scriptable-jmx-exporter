@@ -177,6 +177,10 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 
 	@Override
 	public void handleRequest(final HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
 		try {
 			switch (exchange.getRequestPath()) {
 			case "/metrics":
