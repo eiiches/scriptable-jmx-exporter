@@ -33,7 +33,7 @@ public class AttributeValue {
 	public String domain;
 
 	/**
-	 * {@link ObjectName#getKeyPropertyList()}
+	 * {@link ObjectName#getKeyPropertyList()}, with values unquoted.
 	 */
 	@JsonProperty("key_properties")
 	public Map<String, String> keyProperties;

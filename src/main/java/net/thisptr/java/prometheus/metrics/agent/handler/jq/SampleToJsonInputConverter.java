@@ -137,8 +137,6 @@ public class SampleToJsonInputConverter implements Converter<Sample<?>, JsonNode
 		final Map<String, String> propertyList = sample.name.keyProperties();
 		final Map<String, JsonNode> properties = Maps.newHashMapWithExpectedSize(propertyList.size());
 		propertyList.forEach((k, v) -> {
-			if (v.startsWith("\""))
-				v = ObjectName.unquote(v);
 			properties.put(k, TextNode.valueOf(v));
 		});
 		out.put("description", TextNode.valueOf(sample.attribute.getDescription()));

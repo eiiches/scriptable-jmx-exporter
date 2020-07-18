@@ -37,8 +37,9 @@ public class AttributeNamePattern {
 	}
 
 	@VisibleForTesting
-	boolean matches(final ObjectName name, final String attribute) {
-		return matches(name.getDomain(), name.getKeyPropertyList(), attribute);
+	boolean matches(final ObjectName name_, final String attribute) {
+		final FastObjectName name = new FastObjectName(name_);
+		return matches(name.domain(), name.keyProperties(), attribute);
 	}
 
 	public static AttributeNamePattern compile(final String patternText) {
@@ -53,8 +54,6 @@ public class AttributeNamePattern {
 			String targetValue = keyPropertiesToTest.get(patternEntry.getKey());
 			if (targetValue == null)
 				return false;
-			if (targetValue.startsWith("\""))
-				targetValue = ObjectName.unquote(targetValue);
 			if (!patternEntry.getValue().matcher(targetValue).matches())
 				return false;
 		}
