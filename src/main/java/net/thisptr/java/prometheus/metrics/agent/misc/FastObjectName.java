@@ -36,28 +36,20 @@ public class FastObjectName {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		FastObjectName other = (FastObjectName) obj;
-		if (objectName == null) {
-			if (other.objectName != null)
-				return false;
-		} else if (!objectName.equals(other.objectName))
-			return false;
-		return true;
+		final FastObjectName other = (FastObjectName) obj;
+		return objectName.equals(other.objectName);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((objectName == null) ? 0 : objectName.hashCode());
-		return result;
+		return objectName.hashCode();
 	}
 
 	@Override
