@@ -199,8 +199,6 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; charset=utf-8");
 				exchange.getResponseSender().send(ByteBuffer.wrap(baos.toByteArray()));
 			}
-		} finally {
-			exchange.endExchange();
 		}
 	}
 }
