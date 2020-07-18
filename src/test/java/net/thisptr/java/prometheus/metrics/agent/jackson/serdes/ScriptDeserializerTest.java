@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
 import net.thisptr.java.prometheus.metrics.agent.handler.janino.JaninoScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.jq.JsonQueryScriptEngine;
 

@@ -16,8 +16,8 @@ import net.thisptr.java.prometheus.metrics.agent.PrometheusMetricOutput;
 import net.thisptr.java.prometheus.metrics.agent.RootScope;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.Script;
+import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 
 public class JsonQueryScriptEngine implements ScriptEngine<JsonQuery> {
 	private static final Logger LOG = Logger.getLogger(JsonQueryScriptEngine.class.getName());

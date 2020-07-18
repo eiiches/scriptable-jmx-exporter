@@ -7,10 +7,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
+import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine;
 import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngine.ScriptCompileException;
 import net.thisptr.java.prometheus.metrics.agent.handler.ScriptEngineRegistry;
-import net.thisptr.java.prometheus.metrics.agent.handler.Script;
 
 public class ScriptDeserializer extends StdDeserializer<Script<?>> {
 	private static final long serialVersionUID = -2699557268566596799L;
