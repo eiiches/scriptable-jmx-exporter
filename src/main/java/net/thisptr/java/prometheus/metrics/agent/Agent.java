@@ -123,7 +123,7 @@ public class Agent {
 			watcher.start();
 		} catch (final Throwable th) {
 			LOG.log(Level.SEVERE, "Failed to start Prometheus Metrics Agent.", th);
-			throw th;
+			System.exit(1);
 		}
 	}
 }
