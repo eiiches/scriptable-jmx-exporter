@@ -23,10 +23,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import net.thisptr.jackson.jq.internal.misc.Pair;
 import net.thisptr.java.prometheus.metrics.agent.Sample;
 import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
 import net.thisptr.java.prometheus.metrics.agent.misc.FastObjectName;
+import net.thisptr.java.prometheus.metrics.agent.misc.Pair;
 import net.thisptr.java.prometheus.metrics.agent.utils.MoreCollections;
 
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
@@ -45,11 +45,29 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			});
 
 	private final LoadingCache<ObjectName, FastObjectName> objectNameCache = CacheBuilder.newBuilder()
-			.refreshAfterWrite(300, TimeUnit.SECONDS)
+			.refreshAfterWrite(600, TimeUnit.SECONDS)
 			.build(new CacheLoader<ObjectName, FastObjectName>() {
 				@Override
-				public FastObjectName load(final ObjectName name) throws Exception {
+				public FastObjectName load(final ObjectName name) {
 					return new FastObjectName(name);
+				}
+			});
+
+	private final LoadingCache<FastObjectName, Pair<Boolean, ScrapeRuleType>> findRuleEarlyCache = CacheBuilder.newBuilder()
+			.refreshAfterWrite(600, TimeUnit.SECONDS)
+			.build(new CacheLoader<FastObjectName, Pair<Boolean, ScrapeRuleType>>() {
+				@Override
+				public Pair<Boolean, ScrapeRuleType> load(final FastObjectName name) {
+					return findRuleEarlyNoCache(name);
+				}
+			});
+
+	private final LoadingCache<Pair<FastObjectName, String>, ScrapeRuleType> findRuleCache = CacheBuilder.newBuilder()
+			.refreshAfterWrite(600, TimeUnit.SECONDS)
+			.build(new CacheLoader<Pair<FastObjectName, String>, ScrapeRuleType>() {
+				@Override
+				public ScrapeRuleType load(final Pair<FastObjectName, String> args) throws Exception {
+					return findRuleNoCache(args._1, args._2);
 				}
 			});
 
@@ -68,6 +86,10 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	}
 
 	private Pair<Boolean, ScrapeRuleType> findRuleEarly(final FastObjectName name) {
+		return findRuleEarlyCache.getUnchecked(name);
+	}
+
+	private Pair<Boolean, ScrapeRuleType> findRuleEarlyNoCache(final FastObjectName name) {
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
 				return Pair.of(true, rule); // found
@@ -86,6 +108,10 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	}
 
 	private ScrapeRuleType findRule(final FastObjectName name, final String attribute) {
+		return findRuleCache.getUnchecked(Pair.of(name, attribute));
+	}
+
+	private ScrapeRuleType findRuleNoCache(final FastObjectName name, final String attribute) {
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
 				return rule;
