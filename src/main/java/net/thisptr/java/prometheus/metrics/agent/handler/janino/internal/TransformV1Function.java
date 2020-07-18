@@ -2,7 +2,6 @@ package net.thisptr.java.prometheus.metrics.agent.handler.janino.internal;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -121,29 +120,27 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void unfoldArray(final List<String> nameKeys, final Labels labels, final List<String> names, final Object arrayValue, final String arrayType, final AttributeValue input, final MetricValueOutput output) {
+	private static void unfoldArray(final MetricNamer namer, final Labels labels, final Object arrayValue, final String arrayType, final AttributeValue input, final MetricValueOutput output) {
 		final String elementType = MoreClasses.elementTypeNameOf(arrayType);
 		int length = Array.getLength(arrayValue);
 		for (int i = 0; i < length; ++i) {
 			final Object element = Array.get(arrayValue, i);
-			names.add(null);
 			labels.push("index", String.valueOf(i));
-			unfold(nameKeys, labels, names, element, elementType, input, output);
+			unfold(namer, labels, element, elementType, input, output);
 			labels.pop();
-			names.remove(names.size() - 1);
 		}
 	}
 
-	private static void unfoldCompositeData(final List<String> nameKeys, final Labels labels, final List<String> names, final CompositeData compositeData, final AttributeValue input, final MetricValueOutput output) {
+	private static void unfoldCompositeData(final MetricNamer namer, final Labels labels, final CompositeData compositeData, final AttributeValue input, final MetricValueOutput output) {
 		final CompositeType compositeType = compositeData.getCompositeType();
 		for (final String key : compositeType.keySet()) {
-			names.add(key);
-			unfold(nameKeys, labels, names, compositeData.get(key), compositeType.getType(key).getClassName(), input, output);
-			names.remove(names.size() - 1);
+			final int mark = namer.push(key);
+			unfold(namer, labels, compositeData.get(key), compositeType.getType(key).getClassName(), input, output);
+			namer.pop(mark);
 		}
 	}
 
-	private static void unfoldTabularData(final List<String> nameKeys, final Labels labels, final List<String> names, final TabularData tabularData, final AttributeValue input, final MetricValueOutput output) {
+	private static void unfoldTabularData(final MetricNamer namer, final Labels labels, final TabularData tabularData, final AttributeValue input, final MetricValueOutput output) {
 		final TabularType tabularType = tabularData.getTabularType();
 		final CompositeType rowType = tabularType.getRowType();
 		final List<String> indexColumnNames = tabularType.getIndexNames();
@@ -163,9 +160,9 @@ public class TransformV1Function {
 			}
 
 			for (final String columnName : nonIndexColumnNames) {
-				names.add(columnName);
-				unfold(nameKeys, labels, names, row.get(columnName), rowType.getType(columnName).getClassName(), input, output);
-				names.remove(names.size() - 1);
+				final int mark = namer.push(columnName);
+				unfold(namer, labels, row.get(columnName), rowType.getType(columnName).getClassName(), input, output);
+				namer.pop(mark);
 			}
 
 			for (int i = 0; i < indexColumnNames.size(); ++i) {
@@ -174,15 +171,15 @@ public class TransformV1Function {
 		}
 	}
 
-	private static void unfoldByDynamicType(final List<String> nameKeys, final Labels labels, final List<String> names, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
+	private static void unfoldByDynamicType(final MetricNamer namer, final Labels labels, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
 		if (value instanceof Number) {
-			emit(nameKeys, labels, names, input, output, ((Number) value).doubleValue());
+			emit(namer, labels, input, output, ((Number) value).doubleValue());
 		} else if (value instanceof Boolean) {
-			emit(nameKeys, labels, names, input, output, (Boolean) value ? 1 : 0);
+			emit(namer, labels, input, output, (Boolean) value ? 1 : 0);
 		} else if (value instanceof CompositeData) {
-			unfoldCompositeData(nameKeys, labels, names, (CompositeData) value, input, output);
+			unfoldCompositeData(namer, labels, (CompositeData) value, input, output);
 		} else if (value instanceof TabularData) {
-			unfoldTabularData(nameKeys, labels, names, (TabularData) value, input, output);
+			unfoldTabularData(namer, labels, (TabularData) value, input, output);
 		} else {
 			if (SUPPRESSED_TYPES.add(new ObjectAndAttributeName(input.domain, input.keyProperties, input.attributeName)))
 				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s:%s. Further warnings are suppressed for the attribute.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
@@ -191,15 +188,15 @@ public class TransformV1Function {
 	}
 
 	/**
-	 * @param nameKeys
+	 * @param namer
 	 * @param labels
 	 * @param names
 	 * @param value
-	 * @param type     a string representation of the type of the value. The format is the same as {@link Class#getName()}.
+	 * @param type   a string representation of the type of the value. The format is the same as {@link Class#getName()}.
 	 * @param input
 	 * @param output
 	 */
-	private static void unfold(final List<String> nameKeys, final Labels labels, final List<String> names, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
+	private static void unfold(final MetricNamer namer, final Labels labels, final Object value, final String type, final AttributeValue input, final MetricValueOutput output) {
 		switch (type) {
 		case "double": /* fall through */
 		case "float": /* fall through */
@@ -215,13 +212,13 @@ public class TransformV1Function {
 		case "java.lang.Byte":
 			if (value == null)
 				break;
-			emit(nameKeys, labels, names, input, output, ((Number) value).doubleValue());
+			emit(namer, labels, input, output, ((Number) value).doubleValue());
 			break;
 		case "boolean": /* fall through */
 		case "java.lang.Boolean":
 			if (value == null)
 				break;
-			emit(nameKeys, labels, names, input, output, (Boolean) value ? 1 : 0);
+			emit(namer, labels, input, output, (Boolean) value ? 1 : 0);
 			break;
 		case "javax.management.ObjectName": /* fall through */
 		case "java.lang.String":
@@ -231,29 +228,29 @@ public class TransformV1Function {
 		case "java.lang.Character":
 			if (value == null)
 				break;
-			emit(nameKeys, labels, names, input, output, ((Character) value).charValue());
+			emit(namer, labels, input, output, ((Character) value).charValue());
 			break;
 		case "javax.management.openmbean.CompositeData":
 			if (value == null) // we can't reliably determine the details of the CompositeData type.
 				break;
-			unfoldCompositeData(nameKeys, labels, names, (CompositeData) value, input, output);
+			unfoldCompositeData(namer, labels, (CompositeData) value, input, output);
 			break;
 		case "javax.management.openmbean.TabularData":
 			if (value == null)
 				break;
-			unfoldTabularData(nameKeys, labels, names, (TabularData) value, input, output);
+			unfoldTabularData(namer, labels, (TabularData) value, input, output);
 			break;
 		case "java.lang.Object":
 			// If the reported type is java.lang.Object, let's try to guess from the actual value.
 			if (value == null)
 				break;
-			unfoldByDynamicType(nameKeys, labels, names, value, type, input, output);
+			unfoldByDynamicType(namer, labels, value, type, input, output);
 			break;
 		default:
 			if (type.startsWith("[")) { // array type
 				if (value == null)
 					break;
-				unfoldArray(nameKeys, labels, names, value, type, input, output);
+				unfoldArray(namer, labels, value, type, input, output);
 			} else {
 				if (SUPPRESSED_TYPES.add(new ObjectAndAttributeName(input.domain, input.keyProperties, input.attributeName)))
 					LOG.warning(String.format("Got unsupported type \"%s\" while processing %s:%s. Further warnings are suppressed for the attribute.", type, formatObjectNameForLogging(input.domain, input.keyProperties), input.attributeName));
@@ -285,40 +282,14 @@ public class TransformV1Function {
 		return builder.toString();
 	}
 
-	private static void emit(final List<String> nameKeys, final Labels labels, final List<String> names, final AttributeValue input, final MetricValueOutput output, final double value) {
-		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size() + input.keyProperties.size());
+	private static void emit(final MetricNamer namer, final Labels labels, final AttributeValue input, final MetricValueOutput output, final double value) {
+		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size());
 		labels.forEach((label, labelValue) -> {
 			metricLabels.put(label, labelValue);
 		});
-		input.keyProperties.forEach((k, v) -> metricLabels.put(k, v));
-
-		final StringBuilder nameBuilder = new StringBuilder();
-		nameBuilder.append(input.domain);
-		for (final String nameKey : nameKeys) {
-			final String metricLabelValue = metricLabels.get(nameKey);
-			if (metricLabelValue == null)
-				continue;
-			nameBuilder.append(":");
-			nameBuilder.append(metricLabelValue);
-		}
-		for (final String nameKey : nameKeys) {
-			metricLabels.remove(nameKey);
-		}
-
-		final StringBuilder attributeNameBuilder = new StringBuilder();
-		attributeNameBuilder.append(input.attributeName);
-		for (final String name : names) {
-			if (name != null) {
-				attributeNameBuilder.append("_");
-				attributeNameBuilder.append(name);
-			}
-		}
-
-		nameBuilder.append(":");
-		nameBuilder.append(attributeNameBuilder);
 
 		final MetricValue m = new MetricValue();
-		m.name = nameBuilder.toString();
+		m.name = namer.toString();
 		m.value = value;
 		m.labels = metricLabels;
 		m.timestamp = input.timestamp;
@@ -326,9 +297,60 @@ public class TransformV1Function {
 		output.emit(m);
 	}
 
-	public static void transformV1(final AttributeValue sample, final MetricValueOutput output, final String... propertiesToUseInMetricName) {
+	private static class MetricNamer {
+		private final StringBuilder nameBuilder;
+
+		public MetricNamer(final String domain, final Map<String, String> keyProperties, final String attributeName, final String[] nameKeys) {
+			this.nameBuilder = new StringBuilder();
+			this.nameBuilder.append(domain);
+			for (final String nameKey : nameKeys) {
+				final String metricLabelValue = keyProperties.get(nameKey);
+				if (metricLabelValue == null)
+					continue;
+				this.nameBuilder.append(':');
+				this.nameBuilder.append(metricLabelValue);
+			}
+			this.nameBuilder.append(':');
+			this.nameBuilder.append(attributeName);
+		}
+
+		public int push(final String name) {
+			final int length = nameBuilder.length();
+			nameBuilder.append('_');
+			nameBuilder.append(name);
+			return length;
+		}
+
+		/**
+		 * @param mark which was returned by the corresponding push()
+		 */
+		public void pop(final int mark) {
+			nameBuilder.setLength(mark);
+		}
+
+		public String toString() {
+			return nameBuilder.toString();
+		}
+	}
+
+	private static boolean contains(final String[] set, final String value) {
+		// This logic is O(N), but is justified as N is usually 1 or 2.
+		for (final String elementInSet : set)
+			if (elementInSet.equals(value))
+				return true;
+		return false;
+	}
+
+	public static void transformV1(final AttributeValue sample, final MetricValueOutput output, final String... propertiesToUseAsMetricName) {
+		final MetricNamer namer = new MetricNamer(sample.domain, sample.keyProperties, sample.attributeName, propertiesToUseAsMetricName);
+
 		final Labels labels = new Labels();
-		final List<String> names = new ArrayList<>();
-		unfold(Arrays.asList(propertiesToUseInMetricName), labels, names, sample.value, sample.attributeType, sample, output);
+		sample.keyProperties.forEach((k, v) -> {
+			if (contains(propertiesToUseAsMetricName, k))
+				return;
+			labels.push(k, v);
+		});
+
+		unfold(namer, labels, sample.value, sample.attributeType, sample, output);
 	}
 }
