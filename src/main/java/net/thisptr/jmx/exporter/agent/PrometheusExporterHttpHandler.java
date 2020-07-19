@@ -155,9 +155,13 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 						if (options.includeHelp) {
 							final Set<String> helps = new HashSet<>();
 							metrics.forEach((metric) -> {
+								if (metric.help == null)
+									return;
 								helps.add(metric.help);
 							});
-							pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+							if (!helps.isEmpty()) {
+								pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+							}
 						}
 						if (options.includeType) {
 							final String type = metrics.get(0).type;
