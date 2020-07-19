@@ -7,14 +7,14 @@ options {
 }
 
 PARSER_BEGIN(AttributeNamePatternParser)
-	package net.thisptr.java.prometheus.metrics.agent.javacc;
+	package net.thisptr.jmx.exporter.agent.javacc;
 
 	import java.io.StringReader;
 	import java.util.Map;
 	import java.util.Collections;
 	import java.util.HashMap;
 
-	import net.thisptr.java.prometheus.metrics.agent.misc.AttributeNamePattern;
+	import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 
 	@SuppressWarnings("unused")
 	public class AttributeNamePatternParser {

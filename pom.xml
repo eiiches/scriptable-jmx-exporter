@@ -6,12 +6,12 @@
 	</prerequisites>
 
 	<groupId>net.thisptr</groupId>
-	<artifactId>java-prometheus-metrics-agent</artifactId>
+	<artifactId>scriptable-jmx-exporter</artifactId>
 	<name>Prometheus Metrics Agent</name>
 	<packaging>jar</packaging>
 	<version>0.0.6-SNAPSHOT</version>
 	<description>Java agent for collecting and reporting metrics to Prometheus</description>
-	<url>https://github.com/eiiches/java-prometheus-metrics-agent</url>
+	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
 
 	<licenses>
 		<license>
@@ -29,9 +29,9 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</connection>
-		<developerConnection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</developerConnection>
-		<url>git@github.com:eiiches/java-prometheus-metrics-agent.git</url>
+		<connection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</connection>
+		<developerConnection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</developerConnection>
+		<url>git@github.com:eiiches/scriptable-jmx-exporter.git</url>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -151,75 +151,75 @@
 							<relocations>
 								<relocation>
 									<pattern>com.google</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.google</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.google</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.hibernate</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.hibernate</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.hibernate</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.jcodings</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jcodings</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jcodings</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.joni</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.joni</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.joni</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>net.thisptr.jackson.jq</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.net.thisptr.jackson.jq</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.net.thisptr.jackson.jq</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.yaml.snakeyaml</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.yaml.snakeyaml</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.yaml.snakeyaml</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.fasterxml</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.fasterxml</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.fasterxml</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>io.undertow</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.io.undertow</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.io.undertow</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.xnio</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.xnio</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.xnio</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.codehaus</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.codehaus</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.wildfly</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.wildfly</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.wildfly</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.jboss</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jboss</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jboss</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.validation</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.validation</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.validation</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.annotation</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.annotation</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.annotation</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.checkerframework</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.checkerframework</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.checkerframework</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.sun.el</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.sun.el</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.sun.el</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.el</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.el</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.el</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.codehaus.mojo.animal_sniffer</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
 								</relocation>
 							</relocations>
 							<minimizeJar>false</minimizeJar>
@@ -278,7 +278,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<excludePackageNames>net.thisptr.java.prometheus.metrics.agent.javacc</excludePackageNames>
+					<excludePackageNames>net.thisptr.jmx.exporter.agent.javacc</excludePackageNames>
 				</configuration>
 			</plugin>
 			<plugin>
