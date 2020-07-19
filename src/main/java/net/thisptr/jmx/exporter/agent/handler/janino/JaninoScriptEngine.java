@@ -1,7 +1,5 @@
 package net.thisptr.jmx.exporter.agent.handler.janino;
 
-import javax.management.ObjectName;
-
 import org.codehaus.janino.ScriptEvaluator;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
@@ -33,7 +31,6 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 	public Script<Transformer> compile(final String script) throws ScriptCompileException {
 		final ScriptEvaluator se = new ScriptEvaluator();
 		se.setDefaultImports(new String[] {
-				ObjectName.class.getName(),
 				AttributeValue.class.getName(),
 				MetricValue.class.getName(),
 				MetricValueOutput.class.getName(),
