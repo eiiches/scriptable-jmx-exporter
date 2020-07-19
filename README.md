@@ -138,7 +138,7 @@ labels: |
   }
 ```
 
-This YAML is mapped to [Config](src/main/java/net/thisptr/java/prometheus/metrics/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
+This YAML is mapped to [Config](src/main/java/net/thisptr/jmx/exporter/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
 
 See [wiki](https://github.com/eiiches/scriptable-jmx-exporter/wiki) for real-world examples.
 
@@ -196,13 +196,13 @@ Java scripting is powered by [Janino](https://janino-compiler.github.io/janino/)
     V1.transform(in, out, "type", V1.snakeCase());
 ```
 
-Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/java/prometheus/metrics/agent/handler/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/java/prometheus/metrics/agent/handler/janino/api/MetricValueOutput.java)) is provided.
+Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValueOutput.java)) is provided.
 
-What the script has to do is to, transform `in`, which is a value (and metadata) of MBean attribute, into a [MetricValue](src/main/java/net/thisptr/java/prometheus/metrics/agent/handler/janino/api/MetricValue.java) object and call `out.emit(...)` with the metric object.
+What the script has to do is to, transform `in`, which is a value (and metadata) of MBean attribute, into a [MetricValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValue.java) object and call `out.emit(...)` with the metric object.
 
 #### Helper Functions (V1)
 
-Implementing the transformation from scratch is not easy. So, we provide [V1](src/main/java/net/thisptr/java/prometheus/metrics/agent/handler/janino/api/v1/V1.java), a set of generic helper functions.
+Implementing the transformation from scratch is not easy. So, we provide [V1](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/v1/V1.java), a set of generic helper functions.
 In most cases, doing one of the following is sufficient to achieve the desired output.
  * Change arguments to `V1.transform(...)`
  * Modify `in` before calling `V1.transform(...)`
