@@ -32,6 +32,10 @@ I needed something that can scrape many MBeans with a small number of rules. Wri
 Installation
 ------------
 
+#### Requirements
+
+* Java 8 or newer
+
 #### Download from the Maven Central (Recommended)
 
 [https://repo1.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.5/java-prometheus-metrics-agent-0.0.5.jar](https://repo1.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.5/java-prometheus-metrics-agent-0.0.5.jar)
