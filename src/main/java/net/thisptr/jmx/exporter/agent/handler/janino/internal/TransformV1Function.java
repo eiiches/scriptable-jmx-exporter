@@ -4,7 +4,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -81,11 +80,18 @@ public class TransformV1Function {
 	private static final Set<ObjectAndAttributeName> SUPPRESSED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap<ObjectAndAttributeName, Boolean>());
 
 	static class Labels {
-		private final Map<String, MutableInteger> counts = new HashMap<>();
+		private final Map<String, MutableInteger> counts;
 
-		private final List<String> labels = new ArrayList<>();
-		private final List<String> values = new ArrayList<>();
-		private final List<Integer> dups = new ArrayList<>();
+		private final List<String> labels;
+		private final List<String> values;
+		private final List<Integer> dups;
+
+		public Labels(final int expectedSize) {
+			this.labels = new ArrayList<>(expectedSize);
+			this.values = new ArrayList<>(expectedSize);
+			this.dups = new ArrayList<>(expectedSize);
+			this.counts = Maps.newHashMapWithExpectedSize(expectedSize);
+		}
 
 		public void push(final String label, final String value) {
 			final int dup = counts.computeIfAbsent(label, (dummy) -> new MutableInteger()).getAndIncrement();
@@ -354,7 +360,8 @@ public class TransformV1Function {
 	public static void transformV1(final AttributeValue sample, final MetricValueOutput output, final String... propertiesToUseAsMetricName) {
 		final MetricNamer namer = new MetricNamer(sample.domain, sample.keyProperties, sample.attributeName, propertiesToUseAsMetricName);
 
-		final Labels labels = new Labels();
+		final int expectedNumLabels = sample.keyProperties.size() - propertiesToUseAsMetricName.length;
+		final Labels labels = new Labels(Math.max(0, expectedNumLabels));
 		sample.keyProperties.forEach((k, v) -> {
 			if (contains(propertiesToUseAsMetricName, k))
 				return;

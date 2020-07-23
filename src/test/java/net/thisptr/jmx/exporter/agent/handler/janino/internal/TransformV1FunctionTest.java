@@ -13,7 +13,7 @@ public class TransformV1FunctionTest {
 
 	@Test
 	void testLabels() throws Exception {
-		final Labels labels = new Labels();
+		final Labels labels = new Labels(1);
 		labels.push("label", "1");
 		labels.push("key", "1");
 		labels.push("label", "2");
