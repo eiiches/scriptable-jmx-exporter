@@ -96,7 +96,7 @@ It's generally considered safe (in a sense that it will not interrupt running wo
 ```yaml
 # You can omit `server` and `options` if you are happy with the default values
 server:
-  bind_address: '0.0.0.0:18090' # default
+  bind_address: '0.0.0.0:9639' # default
 options:
   include_timestamp: true # Include scraping timestamp for each metrics (default).
   include_type: true # Enable TYPE comments (default).
@@ -131,7 +131,7 @@ See [wiki](https://github.com/eiiches/scriptable-jmx-exporter/wiki) for real-wor
 
 | Key | Default | Description |
 |-|-|-|
-| `server.bind_address` | `0.0.0.0:18090` | IP and port to listen and servce metrics on. |
+| `server.bind_address` | `0.0.0.0:9639` | IP and port to listen and servce metrics on. |
 
 ### Handler Options
 

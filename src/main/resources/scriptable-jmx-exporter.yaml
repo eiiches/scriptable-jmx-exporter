@@ -1,5 +1,5 @@
 server:
-  bind_address: 0.0.0.0:18090
+  bind_address: 0.0.0.0:9639
 options: {}
 rules:
 - pattern:

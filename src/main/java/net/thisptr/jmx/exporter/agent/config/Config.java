@@ -34,7 +34,7 @@ public class Config {
 		@NotNull
 		@JsonProperty("bind_address")
 		@JsonDeserialize(using = HostAndPortDeserializer.class)
-		public HostAndPort bindAddress = HostAndPort.fromString("0.0.0.0:18090");
+		public HostAndPort bindAddress = HostAndPort.fromString("0.0.0.0:9639");
 	}
 
 	@Valid
