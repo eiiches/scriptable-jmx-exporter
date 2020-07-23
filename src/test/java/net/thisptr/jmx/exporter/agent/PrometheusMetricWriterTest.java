@@ -21,7 +21,7 @@ public class PrometheusMetricWriterTest {
 			metric.labels.put("", "foo");
 			writer.write(metric);
 		}
-		assertThat(baos.toByteArray()).isEqualTo("_{_=\"foo\",} 1.0\n".getBytes(StandardCharsets.UTF_8));
+		assertThat(baos.toByteArray()).isEqualTo("_{_=\"foo\",} 1\n".getBytes(StandardCharsets.UTF_8));
 	}
 
 	@Test
@@ -36,7 +36,7 @@ public class PrometheusMetricWriterTest {
 			metric.timestamp = 10000000000000L;
 			writer.write(metric);
 		}
-		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_{labelName_b__=\"foo\",} 1.0 10000000000000\n".getBytes(StandardCharsets.UTF_8));
+		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_{labelName_b__=\"foo\",} 1 10000000000000\n".getBytes(StandardCharsets.UTF_8));
 	}
 
 	@Test
@@ -49,6 +49,6 @@ public class PrometheusMetricWriterTest {
 			metric.labels = new HashMap<>();
 			writer.write(metric);
 		}
-		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_ 1.0\n".getBytes(StandardCharsets.UTF_8));
+		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_ 1\n".getBytes(StandardCharsets.UTF_8));
 	}
 }

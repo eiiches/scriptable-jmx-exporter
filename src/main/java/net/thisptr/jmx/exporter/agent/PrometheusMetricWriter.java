@@ -179,10 +179,16 @@ public class PrometheusMetricWriter implements Closeable {
 			bytes[this.position++] = '}';
 		}
 
-		final String valueText = String.valueOf(metric.value); // TODO: avoid string allocation
-		ensureAtLeast(1 /* ' ' */ + valueText.length() + 1 /* \n */);
-		bytes[this.position++] = ' ';
-		this.position = writeTextUtf8(bytes, this.position, valueText);
+		if (metric.value == (long) metric.value) {
+			ensureAtLeast(1 /* ' ' */ + 20 + 1 /* \n */);
+			bytes[this.position++] = ' ';
+			this.position = MoreLongs.writeAsString((long) metric.value, bytes, this.position);
+		} else {
+			final String valueText = String.valueOf(metric.value); // TODO: avoid string allocation
+			ensureAtLeast(1 /* ' ' */ + valueText.length() + 1 /* \n */);
+			bytes[this.position++] = ' ';
+			this.position = writeTextUtf8(bytes, this.position, valueText);
+		}
 
 		if (includeTimestamp && metric.timestamp != 0) {
 			ensureAtLeast(1 /* ' ' */ + 20 + 1 /* \n */); // Long.MIN_VALUE is 20 chars long.
