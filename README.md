@@ -93,53 +93,34 @@ It's generally considered safe (in a sense that it will not interrupt running wo
 
 ### Full Example
 
-TBD: rewrite in java
-
 ```yaml
-# You can omit `server` object if you use default `bind_address`.
+# You can omit `server` and `options` if you are happy with the default values
 server:
-  bind_address: '0.0.0.0:18090'
+  bind_address: '0.0.0.0:18090' # default
 options:
   include_timestamp: true # Include scraping timestamp for each metrics (default).
   include_type: true # Enable TYPE comments (default).
   include_help: true # Enable HELP comments (default).
-  minimum_response_time: 3000 # Generate /metrics response slowly in 3 seconds to avoid CPU spikes.
 rules:
 - pattern:
+  # Drop less useful attributes JVM exposes.
   - 'com\\.sun\\.management:type=HotSpotDiagnostic:DiagnosticOptions'
   - 'java\\.lang:type=Threading:AllThreadIds'
   - 'jdk\\.management\\.jfr'
-  # Drop less useful attributes JVM exposes.
-  skip: true
-- pattern:
-  - '::.*MinuteRate'
-  - '::MeanRate'
   # Some instrumentation libraries (such as Dropwizard Metrics) expose pre-calculated rate statistics.
   # Since Prometheus can calculate these values by itself, we don't need them. Skip.
+  - '::.*MinuteRate'
+  - '::MeanRate'
   skip: true
-- pattern: 'java.lang:type=GarbageCollector:LastGcInfo'
-  # NOTE: You probably don't need to do this; Just a demo.
-  # For MBean attributes in `java.lang` domain, put the value of the `type` key property and
-  # the attribute name in Prometheus metric names, separated by colons. Also, rename `memoryUsageAfterGc_key`
-  # and `memoryUsageBeforeGc_key` labels auto-generated from TabularData to `heap`.
+# Rule for known MBeans.
+- pattern: 'java\\.lang|java\\.nio|jboss\\.threads|net\\.thisptr\\.jmx\\.exporter\\.agent.*'
   transform: |
-      default_transform_v1(["type"]; true; {memoryUsageAfterGc_key: "heap", memoryUsageBeforeGc_key: "heap"})
-- pattern: 'java.lang'
-  # NOTE: You probably don't need to do this; Just a demo.
-  # For MBean attributes in `java.lang` domain, put the value of the `type` key property and
-  # the attribute name in Prometheus metric names, separated by colons.
-  transform: |
-      default_transform_v1(["type"]; true)
-- pattern: 'procfs'
-  # Default transform is default_transform_v1, so this rule is effectively a no-op. Just for a demo purpose.
-  transform: default_transform_v1
-# Add os_version and jvm_version labels to all metrics.
-labels: |
-  {
-    os_version: jmx("java.lang:type=OperatingSystem"; "Version"),
-    jvm_version: jmx("java.lang:type=Runtime"; "VmVersion"),
-    app_version: "1.0.1"
-  }
+    !java
+    V1.transform(in, out, "type", V1.snakeCase());
+# Default rule to cover the rest.
+- transform: |
+    !java
+    V1.transform(in, out, "type", V1.snakeCase());
 ```
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/jmx/exporter/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
