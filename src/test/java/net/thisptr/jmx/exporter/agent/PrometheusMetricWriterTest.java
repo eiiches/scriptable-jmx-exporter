@@ -3,6 +3,7 @@ package net.thisptr.jmx.exporter.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
@@ -12,7 +13,7 @@ public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithEmptyMetricAndLabelName() throws Exception {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(baos, false)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), false)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "";
 			metric.value = 1.0;
@@ -26,7 +27,7 @@ public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithLabels() throws Exception {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(baos, true)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), true)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "metricName_a:@";
 			metric.value = 1.0;
@@ -41,7 +42,7 @@ public class PrometheusMetricWriterTest {
 	@Test
 	void testWriteWithEmptyLabels() throws Exception {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(baos, false)) {
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), false)) {
 			final PrometheusMetric metric = new PrometheusMetric();
 			metric.name = "metricName_a:@";
 			metric.value = 1.0;

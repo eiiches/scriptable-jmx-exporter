@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -17,12 +15,13 @@ import java.util.function.LongConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.xnio.channels.StreamSinkChannel;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.google.common.base.Joiner;
 
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
@@ -31,9 +30,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jmx.exporter.agent.PrometheusMetricWriter.WritableByteChannelController;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.jmx.exporter.agent.misc.StreamSinkChannelOutputStream;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 
@@ -143,24 +142,20 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		exchange.setStatusCode(StatusCodes.OK);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8");
 
-		final ByteBufferPool byteBufferPool = exchange.getConnection().getByteBufferPool();
+		final ByteBufferPool byteBufferPool = exchange.getConnection().getByteBufferPool().getArrayBackedPool();
 		final PooledByteBuffer byteBuffer = byteBufferPool.allocate();
 		try {
-			final StreamSinkChannelOutputStream os = new StreamSinkChannelOutputStream(byteBuffer.getBuffer(), exchange.getResponseChannel());
-			try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(os, options.includeTimestamp)) {
+			final StreamSinkChannel channel = exchange.getResponseChannel();
+			final WritableByteChannelController controller = channel::awaitWritable;
+			try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(channel, controller, byteBuffer.getBuffer(), options.includeTimestamp)) {
 				allMetrics.forEach((name, metrics) -> {
 					try {
 						if (metrics.isEmpty())
 							return;
 						if (options.includeHelp) {
-							final Set<String> helps = new HashSet<>();
-							metrics.forEach((metric) -> {
-								if (metric.help == null)
-									return;
-								helps.add(metric.help);
-							});
-							if (!helps.isEmpty()) {
-								pwriter.writeHelp(name, Joiner.on(" / ").join(helps));
+							final String help = metrics.get(0).help;
+							if (help != null) {
+								pwriter.writeHelp(name, help);
 							}
 						}
 						if (options.includeType) {
