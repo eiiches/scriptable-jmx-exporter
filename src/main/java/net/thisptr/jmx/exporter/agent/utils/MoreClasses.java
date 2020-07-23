@@ -9,7 +9,7 @@ public class MoreClasses {
 	 * @return a string representation of the element type. The format is the same as {@link Class#getName()}.
 	 */
 	public static String elementTypeNameOf(final String type) {
-		if (type.charAt(0) != '[' || type.length() < 2)
+		if (type.length() < 2 || type.charAt(0) != '[')
 			throw new IllegalArgumentException(type + " is not a valid array type");
 		switch (type.charAt(1)) {
 		case 'L':
