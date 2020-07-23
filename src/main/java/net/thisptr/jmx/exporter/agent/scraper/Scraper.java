@@ -31,8 +31,10 @@ import net.thisptr.jmx.exporter.agent.utils.MoreCollections;
 public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
 
-	private final List<ScrapeRuleType> rules;
 	private final MBeanServer server;
+
+	private final List<ScrapeRuleType> rules;
+	private final ScrapeRuleType defaultRule;
 
 	/**
 	 * Caches an MBeanInfo for an MBean.
@@ -90,9 +92,10 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				}
 			});
 
-	public Scraper(final MBeanServer server, final List<ScrapeRuleType> rules) {
+	public Scraper(final MBeanServer server, final List<ScrapeRuleType> rules, ScrapeRuleType defaultRule) {
 		this.server = server;
 		this.rules = rules;
+		this.defaultRule = defaultRule;
 	}
 
 	private Pair<Boolean, ScrapeRuleType> findRuleEarly(final FastObjectName name) {
@@ -114,7 +117,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			if (nameMatches)
 				return Pair.of(false, null); // match depends on attribute, abort
 		}
-		return Pair.of(true, null); // default rule should be used
+		return Pair.of(true, defaultRule); // default rule should be used
 	}
 
 	private ScrapeRuleType findRule(final FastObjectName name, final String attribute) {
@@ -129,7 +132,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				if (pattern.matches(name.domain(), name.keyProperties(), attribute))
 					return rule;
 		}
-		return null;
+		return defaultRule;
 	}
 
 	private class AttributeRule {

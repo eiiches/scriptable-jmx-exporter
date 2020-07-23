@@ -45,7 +45,7 @@ public class ScraperTest {
 	@Test
 	void testName() throws Exception {
 		final List<Rule> rules = Arrays.asList(new Rule(AttributeNamePattern.compile("java.lang:type=OperatingSystem:SystemCpuLoad"), false), new Rule(null, true));
-		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
+		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, null);
 
 		final Set<JsonNode> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
@@ -57,7 +57,7 @@ public class ScraperTest {
 
 	@Test
 	void testSlowScrape() throws Exception {
-		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList());
+		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList(), null);
 
 		final long start = System.currentTimeMillis();
 

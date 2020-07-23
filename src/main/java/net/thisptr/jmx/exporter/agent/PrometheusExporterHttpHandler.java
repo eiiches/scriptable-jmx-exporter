@@ -33,6 +33,8 @@ import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jmx.exporter.agent.PrometheusMetricWriter.WritableByteChannelController;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
+import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
+import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 
@@ -43,6 +45,18 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
+	private static final PrometheusScrapeRule DEFAULT_RULE;
+
+	static {
+		try {
+			DEFAULT_RULE = new PrometheusScrapeRule();
+			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compile("V1.transform(in, out, \"type\", V1.snakeCase());");
+			DEFAULT_RULE.patterns = Collections.emptyList();
+		} catch (final ScriptCompileException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private final Scraper<PrometheusScrapeRule> scraper;
 	private final JsonQuery labels;
 	private final OptionsConfig options;
@@ -50,7 +64,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	public PrometheusExporterHttpHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels, final OptionsConfig options) {
 		this.labels = labels;
 		this.options = options;
-		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules);
+		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, DEFAULT_RULE);
 	}
 
 	private Map<String, JsonNode> makeLabels() throws IOException {
