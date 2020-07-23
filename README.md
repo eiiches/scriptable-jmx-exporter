@@ -21,12 +21,16 @@ Features
   - Converting a textual attribute to a numeric value (normal metric) or metric label with value 1 (info-style metric).
   - Decomposing complex MBean name into metric labels.
 - Performance. Goal is to enable a large number of metrics (~50k) at shorter intervals (>1s) without impacting workloads.
-  - See [benchmark](#benchmark) (TBD).
+  - See [benchmark](#benchmark).
 
 ### Why another exporter? There's a bunch of exporters and there's even the official one.
 
 I needed something that can scrape many MBeans with a small number of rules. Writing a regex for each set of *key properties* (key=value,... part of MBean name) was impossibly hard, especially when
 *key properties* doesn't always have a consistent order depending on how it is constructed (because it's just a hash table).
+
+### Non-Goals
+
+- This exporter is not a drop-in replacement for other exporters. While it might be possible to produce the same /metrics content, it will likely clutter/bloat the configuration file. Compatibility to other exporters is not our goal.
 
 
 Installation
@@ -91,7 +95,7 @@ So, whenever you need to write a new configuration, it's easier to start with a 
 If the agent fails to load a new configuration, most likely due to configuration error, the agent will continue to use the previous configuration. On the contrary, application startup will fail if the configuration has any errors.
 It's generally considered safe (in a sense that it will not interrupt running workloads) to reconfigure agents on a production cluster while they are running. 
 
-### Full Example
+### Example
 
 ```yaml
 # You can omit `server` and `options` if you are happy with the default values
@@ -383,8 +387,19 @@ Alternatively, you can also use `System.out.printf(...)` or `System.err.printf(.
 Benchmark
 ---------
 
-TBD
+First, it's almost impossible to do a fair comparison. The responses are not the same. Even the number of metrics is not the same.
+Please also keep in mind that performance is highly dependent on the configurations and these numbers are very specific to the configurations we used for this benchmark.
 
+See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. Here's the results:
+
+| Exporter | # of metrics | Throughput [req/s] |
+|-|-|
+| scriptable-jmx-exporter (*1) | 5254 | 552.03 |
+| jmx_exporter 0.13.0 | 3157 (*2) | 12.14 |
+
+(\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4.
+(\*1) We didn't add metrics TYPE hints for many metrics, even where jmx_exporter does.
+(\*2) The Kafka example from the official repository seems to be missing some metrics, such as `kafka.server:type=socket-server-metrics:ConnectionCloseTotal`, etc.
 
 References
 ----------
