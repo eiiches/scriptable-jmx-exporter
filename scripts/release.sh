@@ -15,7 +15,7 @@ next_version="$2"
 develop_branch=develop
 master_branch=master
 release_branch=release-$version
-tag_name=java-prometheus-metrics-agent-$version
+tag_name=v$version
 
 if git rev-parse $tag_name > /dev/null 2>&1; then
 	echo "Git tag already exists: $tag_name" 1>&2
