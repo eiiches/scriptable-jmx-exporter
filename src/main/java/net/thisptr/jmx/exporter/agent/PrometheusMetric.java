@@ -2,7 +2,10 @@ package net.thisptr.jmx.exporter.agent;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 public class PrometheusMetric {
 
@@ -23,4 +26,7 @@ public class PrometheusMetric {
 
 	@JsonProperty("type")
 	public String type;
+
+	@JsonIgnore
+	public StringWriter nameWriter;
 }

@@ -12,6 +12,7 @@ import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine.Transfor
 import net.thisptr.jmx.exporter.agent.handler.janino.api.AttributeValue;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValue;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValueOutput;
+import net.thisptr.jmx.exporter.agent.handler.janino.api._InternalUseDoNotImportProxyAccessor;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.fn.LogFunction;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.v1.V1;
 
@@ -65,6 +66,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				metric.timestamp = m.timestamp;
 				metric.help = m.help;
 				metric.type = m.type;
+				metric.nameWriter = _InternalUseDoNotImportProxyAccessor.getNameWriter(m);
 				output.emit(metric);
 			});
 		} catch (Exception e) {

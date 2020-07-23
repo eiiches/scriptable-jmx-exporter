@@ -153,15 +153,17 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 						if (metrics.isEmpty())
 							return;
 						if (options.includeHelp) {
-							final String help = metrics.get(0).help;
+							final PrometheusMetric m = metrics.get(0);
+							final String help = m.help;
 							if (help != null) {
-								pwriter.writeHelp(name, help);
+								pwriter.writeHelp(name, m.nameWriter, help);
 							}
 						}
 						if (options.includeType) {
-							final String type = metrics.get(0).type;
+							final PrometheusMetric m = metrics.get(0);
+							final String type = m.type;
 							if (type != null) {
-								pwriter.writeType(name, type);
+								pwriter.writeType(name, m.nameWriter, type);
 							}
 						}
 						metrics.forEach((metric) -> {

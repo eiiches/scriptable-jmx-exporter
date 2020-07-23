@@ -2,11 +2,14 @@ package net.thisptr.jmx.exporter.agent.handler.janino.api;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 /**
  * This class represents a single Prometheus metric sample.
@@ -26,6 +29,12 @@ public class MetricValue {
 	 */
 	@JsonProperty("name")
 	public String name;
+
+	/*
+	 * THIS FIELD IS NOT PART OF THE API. DO NOT USE FROM TRANSFORM SCRIPTS.
+	 */
+	@JsonIgnore
+	/* package private */ StringWriter nameWriter;
 
 	/**
 	 * Labels.

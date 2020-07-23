@@ -1,24 +1,74 @@
 package net.thisptr.jmx.exporter.agent.handler.janino.api.v1;
 
-import java.util.regex.Pattern;
-
-import com.google.common.base.CaseFormat;
-
 import net.thisptr.jmx.exporter.agent.handler.janino.api.AttributeValue;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValue;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValueOutput;
+import net.thisptr.jmx.exporter.agent.handler.janino.api._InternalUseDoNotImportProxyAccessor;
 import net.thisptr.jmx.exporter.agent.handler.janino.internal.TransformV1Function;
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 public class V1 {
-	private static final Pattern COLON_UNDERSCORE = Pattern.compile("[:_]+");
-
 	public interface MetricValueModifier {
 		void apply(MetricValue m);
 	}
 
+	// @VisibleForTesting
+	static class SnakeCaseWriter implements StringWriter {
+		private static final SnakeCaseWriter INSTANCE = new SnakeCaseWriter();
+
+		public static SnakeCaseWriter getInstance() {
+			return INSTANCE;
+		}
+
+		@Override
+		public int expectedSize(final String name) {
+			// worst case: all CAPITAL -> c_a_p_i_t_a_l
+			return Math.max(1, name.length() * 2);
+		}
+
+		@Override
+		public int write(final String name, final byte[] bytes, int index) {
+			final int savedIndex = index;
+			int length = name.length();
+			boolean underscore = false;
+			for (int i = 0; i < length; ++i) {
+				final char ch = name.charAt(i);
+				if ('a' <= ch && ch <= 'z') {
+					bytes[index++] = (byte) ch;
+					underscore = false;
+				} else if ('A' <= ch && ch <= 'Z') {
+					if (!underscore && savedIndex != index)
+						bytes[index++] = '_';
+					bytes[index++] = (byte) (ch + ('a' - 'A'));
+					underscore = false;
+				} else if (ch == ':' || ch == '_') {
+					if (!underscore) {
+						bytes[index++] = '_';
+						underscore = true;
+					}
+				} else if ('0' <= ch && ch <= '9') {
+					if (savedIndex == index)
+						bytes[index++] = '_'; // first char cannot be a number; prepend _;
+					bytes[index++] = (byte) ch;
+					underscore = false;
+				} else {
+					if (Character.isHighSurrogate(ch))
+						++i;
+					if (!underscore) {
+						bytes[index++] = '_';
+						underscore = true;
+					}
+				}
+			}
+			if (savedIndex == index) { // empty metric name is not allowed
+				bytes[index++] = '_';
+			}
+			return index;
+		}
+	}
+
 	private static final MetricValueModifier SNAKE_CASE = (m) -> {
-		m.name = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, m.name);
-		m.name = COLON_UNDERSCORE.matcher(m.name).replaceAll("_");
+		_InternalUseDoNotImportProxyAccessor.setNameWriter(m, SnakeCaseWriter.getInstance());
 	};
 
 	public static MetricValueModifier snakeCase() {

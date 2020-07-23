@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
 
 public class PrometheusMetricWriter implements Closeable {
@@ -155,8 +156,13 @@ public class PrometheusMetricWriter implements Closeable {
 	}
 
 	public void write(final PrometheusMetric metric) throws IOException {
-		ensureAtLeast(Math.max(1, metric.name.length()) + 1 /* { */);
-		this.position = sanitizeMetricName(bytes, this.position, metric.name);
+		if (metric.nameWriter != null) {
+			ensureAtLeast(metric.nameWriter.expectedSize(metric.name) + 1 /* { */);
+			this.position = metric.nameWriter.write(metric.name, bytes, this.position);
+		} else {
+			ensureAtLeast(Math.max(1, metric.name.length()) + 1 /* { */);
+			this.position = sanitizeMetricName(bytes, this.position, metric.name);
+		}
 
 		if (metric.labels != null && !metric.labels.isEmpty()) {
 			bytes[this.position++] = '{';
@@ -305,8 +311,8 @@ public class PrometheusMetricWriter implements Closeable {
 		return index;
 	}
 
-	private void writeAnnotation(final String metricName, final byte[] annotationType, final String value) throws IOException {
-		final int size = 5 + annotationType.length + Math.max(1, metricName.length()) + value.length() * 3;
+	private void writeAnnotation(final String metricName, final StringWriter writer, final byte[] annotationType, final String value) throws IOException {
+		final int size = 5 + annotationType.length + (writer != null ? writer.expectedSize(metricName) : Math.max(1, metricName.length())) + value.length() * 3;
 		ensureAtLeast(size);
 		int index = this.position;
 		bytes[index++] = '#';
@@ -314,19 +320,23 @@ public class PrometheusMetricWriter implements Closeable {
 		for (int i = 0; i < annotationType.length; ++i)
 			bytes[index++] = annotationType[i];
 		bytes[index++] = ' ';
-		index = sanitizeMetricName(bytes, index, metricName);
+		if (writer != null) {
+			index = writer.write(metricName, bytes, index);
+		} else {
+			index = sanitizeMetricName(bytes, index, metricName);
+		}
 		bytes[index++] = ' ';
 		index = writeTextUtf8Escaped(bytes, index, value, false);
 		bytes[index++] = '\n';
 		this.position = index;
 	}
 
-	public void writeHelp(final String name, final String helpText) throws IOException {
-		writeAnnotation(name, HELP, helpText);
+	public void writeHelp(final String name, final StringWriter writer, final String helpText) throws IOException {
+		writeAnnotation(name, writer, HELP, helpText);
 	}
 
-	public void writeType(final String name, final String typeText) throws IOException {
-		writeAnnotation(name, TYPE, typeText);
+	public void writeType(final String name, final StringWriter writer, final String typeText) throws IOException {
+		writeAnnotation(name, writer, TYPE, typeText);
 	}
 
 	private static int writeUnicode(final byte[] bytes, int index, final int codePoint) {

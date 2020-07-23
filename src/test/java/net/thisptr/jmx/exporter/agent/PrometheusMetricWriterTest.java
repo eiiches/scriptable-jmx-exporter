@@ -129,7 +129,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(20)
 	void testType(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeType("test", "counter");
+			w.writeType("test", null, "counter");
 		});
 		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}
@@ -137,7 +137,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(30)
 	void testHelp(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeHelp("test", "🎼あЛa\n\" \\ ");
+			w.writeHelp("test", null, "🎼あЛa\n\" \\ ");
 		});
 		assertThat(actual).isEqualTo("# HELP test 🎼あЛa\\n\" \\\\ \n");
 	}
