@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class OutputStreamWritableByteChannel implements WritableByteChannel {
 	private final OutputStream os;
@@ -14,9 +15,9 @@ public class OutputStreamWritableByteChannel implements WritableByteChannel {
 
 	@Override
 	public int write(final ByteBuffer buf) throws IOException {
-		os.write(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
-		final int written = buf.remaining();
-		buf.position(buf.limit());
+		final int written = ThreadLocalRandom.current().nextInt(buf.remaining() + 1);
+		os.write(buf.array(), buf.arrayOffset() + buf.position(), written);
+		buf.position(buf.position() + written);
 		return written;
 	}
 

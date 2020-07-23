@@ -11,9 +11,8 @@ import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
 public class PrometheusMetricWriter implements Closeable {
 	private final boolean includeTimestamp;
 
-	private final ByteBuffer buf;
-
-	private final byte[] bytes;
+	private ByteBuffer buf;
+	private byte[] bytes;
 	private int position;
 
 	private final WritableByteChannel channel;
@@ -60,10 +59,13 @@ public class PrometheusMetricWriter implements Closeable {
 		if (bytes.length - index < length) {
 			flush();
 			this.position = 0;
+			if (bytes.length < length) { // the buffer is too small
+				// allocate a new buffer large enough to accommodate next writes
+				this.buf = ByteBuffer.allocate(length);
+				this.bytes = buf.array();
+				return 0;
+			}
 			return 0;
-		}
-		if (bytes.length < length) {
-			throw new IllegalStateException("TODO"); // FIXME
 		}
 		return index;
 	}
@@ -156,7 +158,7 @@ public class PrometheusMetricWriter implements Closeable {
 		ensureAtLeast(Math.max(1, metric.name.length()) + 1 /* { */);
 		this.position = sanitizeMetricName(bytes, this.position, metric.name);
 
-		if (!metric.labels.isEmpty()) {
+		if (metric.labels != null && !metric.labels.isEmpty()) {
 			bytes[this.position++] = '{';
 			metric.labels.forEach((labelName, labelValue) -> {
 				final int size = 2 /* = and , */
@@ -316,6 +318,7 @@ public class PrometheusMetricWriter implements Closeable {
 		bytes[index++] = ' ';
 		index = writeTextUtf8Escaped(bytes, index, value, false);
 		bytes[index++] = '\n';
+		this.position = index;
 	}
 
 	public void writeHelp(final String name, final String helpText) throws IOException {
@@ -332,16 +335,16 @@ public class PrometheusMetricWriter implements Closeable {
 			bytes[index++] = (byte) codePoint;
 		} else if (codePoint < 0x800) {
 			bytes[index++] = (byte) (0b1100_0000 | codePoint >>> 6);
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 0) & 0b0011_1111);
 		} else if (codePoint < 0x10000) {
 			bytes[index++] = (byte) (0b1110_0000 | (codePoint >>> 12));
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 6) & 0b0011_1111);
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 6) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 0) & 0b0011_1111);
 		} else if (codePoint < 0x110000) {
 			bytes[index++] = (byte) (0b1111_0000 | (codePoint >>> 18));
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 12) & 0b0011_1111);
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 6) & 0b0011_1111);
-			bytes[index++] = (byte) (0x1000_0000 | (codePoint >>> 0) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 12) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 6) & 0b0011_1111);
+			bytes[index++] = (byte) (0b1000_0000 | (codePoint >>> 0) & 0b0011_1111);
 		} else {
 			throw new IllegalArgumentException("invalid codepoint: " + codePoint);
 		}

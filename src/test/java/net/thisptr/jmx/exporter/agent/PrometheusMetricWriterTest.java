@@ -3,52 +3,142 @@ package net.thisptr.jmx.exporter.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 
 public class PrometheusMetricWriterTest {
-	@Test
-	void testWriteWithEmptyMetricAndLabelName() throws Exception {
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), false)) {
-			final PrometheusMetric metric = new PrometheusMetric();
-			metric.name = "";
-			metric.value = 1.0;
-			metric.labels = new HashMap<>();
-			metric.labels.put("", "foo");
-			writer.write(metric);
-		}
-		assertThat(baos.toByteArray()).isEqualTo("_{_=\"foo\",} 1\n".getBytes(StandardCharsets.UTF_8));
+	private static String toString(final PrometheusMetric m, final int bufSize, final boolean includeTimestamp) throws IOException {
+		return toString(bufSize, includeTimestamp, (writer) -> {
+			writer.write(m);
+		});
 	}
 
-	@Test
-	void testWriteWithLabels() throws Exception {
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), true)) {
-			final PrometheusMetric metric = new PrometheusMetric();
-			metric.name = "metricName_a:@";
-			metric.value = 1.0;
-			metric.labels = new HashMap<>();
-			metric.labels.put("labelName_b:@", "foo");
-			metric.timestamp = 10000000000000L;
-			writer.write(metric);
-		}
-		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_{labelName_b__=\"foo\",} 1 10000000000000\n".getBytes(StandardCharsets.UTF_8));
+	private interface PrometheusMetricWriterTask {
+		void execute(PrometheusMetricWriter writer) throws IOException;
 	}
 
-	@Test
-	void testWriteWithEmptyLabels() throws Exception {
+	private static String toString(final int bufSize, final boolean includeTimestamp, final PrometheusMetricWriterTask fn) throws IOException {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(16 * 1024), false)) {
-			final PrometheusMetric metric = new PrometheusMetric();
-			metric.name = "metricName_a:@";
-			metric.value = 1.0;
-			metric.labels = new HashMap<>();
-			writer.write(metric);
+		try (PrometheusMetricWriter writer = new PrometheusMetricWriter(new OutputStreamWritableByteChannel(baos), () -> {}, ByteBuffer.allocate(bufSize), includeTimestamp)) {
+			fn.execute(writer);
 		}
-		assertThat(baos.toByteArray()).isEqualTo("metricName_a:_ 1\n".getBytes(StandardCharsets.UTF_8));
+		return new String(baos.toByteArray(), StandardCharsets.UTF_8);
+	}
+
+	@RepeatedTest(50)
+	void testUnicodeInLabels(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("🎼あЛa\n\"\\", "🎼あЛa\n\" \\ ");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("test{___a___=\"🎼あЛa\\n\\\" \\\\ \",} 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testUnicodeInMetricNames(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "🎼あЛa\n\"\\";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("___a___ 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testNumberInLabelNames(final RepetitionInfo info) throws IOException {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("0123456789a#", "");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("test{_123456789a_=\"\",} 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testNumberInMeticName(final RepetitionInfo info) throws IOException {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "00123456789a#";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_0123456789a_ 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testWriteWithSmallBuffer(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("", "foo");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_{_=\"foo\",} 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testWriteWithEmptyMetricAndLabelName(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("", "foo");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_{_=\"foo\",} 1\n");
+	}
+
+	@RepeatedTest(50)
+	void testWriteWithLabels(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "metricName_a:@";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("labelName_b:@", "foo");
+		m.timestamp = 10000000000000L;
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("metricName_a:_{labelName_b__=\"foo\",} 1 10000000000000\n");
+	}
+
+	@RepeatedTest(20)
+	void testFloatingPointValues(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.5;
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test 1.5\n");
+	}
+
+	@RepeatedTest(20)
+	void testNullLabels(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.labels = new HashMap<>();
+		m.labels.put("foo", null);
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test{foo=\"null\",} 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testWriteWithEmptyLabels(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric metric = new PrometheusMetric();
+		metric.name = "metricName_a:@";
+		metric.value = 1.0;
+		metric.labels = new HashMap<>();
+		assertThat(toString(metric, info.getCurrentRepetition(), false)).isEqualTo("metricName_a:_ 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testType(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeType("test", "counter");
+		});
+		assertThat(actual).isEqualTo("# TYPE test counter\n");
+	}
+
+	@RepeatedTest(30)
+	void testHelp(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeHelp("test", "🎼あЛa\n\" \\ ");
+		});
+		assertThat(actual).isEqualTo("# HELP test 🎼あЛa\\n\" \\\\ \n");
 	}
 }
