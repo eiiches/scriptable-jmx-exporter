@@ -2,7 +2,6 @@ package net.thisptr.jmx.exporter.agent.utils;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
