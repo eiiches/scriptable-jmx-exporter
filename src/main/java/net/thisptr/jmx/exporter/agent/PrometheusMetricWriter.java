@@ -6,6 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
+import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
+
 public class PrometheusMetricWriter implements Closeable {
 	private final boolean includeTimestamp;
 
@@ -183,10 +185,9 @@ public class PrometheusMetricWriter implements Closeable {
 		this.position = writeTextUtf8(bytes, this.position, valueText);
 
 		if (includeTimestamp && metric.timestamp != 0) {
-			final String timestampText = String.valueOf(metric.timestamp);
-			ensureAtLeast(1 /* ' ' */ + timestampText.length() + 1 /* \n */);
+			ensureAtLeast(1 /* ' ' */ + 20 + 1 /* \n */); // Long.MIN_VALUE is 20 chars long.
 			bytes[this.position++] = ' ';
-			this.position = writeTextUtf8(bytes, this.position, timestampText); // TODO: avoid string allocation
+			this.position = MoreLongs.writeAsString(metric.timestamp, bytes, this.position);
 		}
 
 		bytes[this.position++] = '\n';
