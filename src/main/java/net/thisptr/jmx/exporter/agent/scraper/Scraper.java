@@ -2,22 +2,21 @@ package net.thisptr.jmx.exporter.agent.scraper;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
+import javax.management.Attribute;
+import javax.management.AttributeList;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
-import javax.management.RuntimeMBeanException;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -35,26 +34,33 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private final List<ScrapeRuleType> rules;
 	private final MBeanServer server;
 
-	private final LoadingCache<ObjectName, MBeanInfo> mbeanInfoCache = CacheBuilder.newBuilder()
+	/**
+	 * Caches an MBeanInfo for an MBean.
+	 *
+	 * <p>
+	 * MBeanInfo should only be cached for a limited amount of time, because there's a dynamic MBean
+	 * which can change its interface dynamically at runtime. Section 2.3.2.2 of JMX Specification 1.4
+	 * explicitly states that an MBeanInfo of a dynamic MBean is allowed to vary, while noting implications
+	 * of this behavior.
+	 * </p>
+	 *
+	 * @see https://docs.oracle.com/javase/8/docs/technotes/guides/jmx/JMX_1_4_specification.pdf
+	 */
+	private final LoadingCache<ObjectName, CachedMBeanInfo> mbeanInfoCache = CacheBuilder.newBuilder()
 			.refreshAfterWrite(60, TimeUnit.SECONDS)
-			.build(new CacheLoader<ObjectName, MBeanInfo>() {
+			.build(new CacheLoader<ObjectName, CachedMBeanInfo>() {
 				@Override
-				public MBeanInfo load(final ObjectName name) throws Exception {
-					return server.getMBeanInfo(name);
+				public CachedMBeanInfo load(final ObjectName name) {
+					return prepare(name);
 				}
 			});
 
-	private final LoadingCache<ObjectName, FastObjectName> objectNameCache = CacheBuilder.newBuilder()
-			.refreshAfterWrite(600, TimeUnit.SECONDS)
-			.build(new CacheLoader<ObjectName, FastObjectName>() {
-				@Override
-				public FastObjectName load(final ObjectName name) {
-					return new FastObjectName(name);
-				}
-			});
-
+	/**
+	 * Caches a scrape rule for an MBean. While the mappings never change, we need to drop stale entries to
+	 * avoid consuming too much memory.
+	 */
 	private final LoadingCache<FastObjectName, Pair<Boolean, ScrapeRuleType>> findRuleEarlyCache = CacheBuilder.newBuilder()
-			.refreshAfterWrite(600, TimeUnit.SECONDS)
+			.expireAfterWrite(600, TimeUnit.SECONDS)
 			.build(new CacheLoader<FastObjectName, Pair<Boolean, ScrapeRuleType>>() {
 				@Override
 				public Pair<Boolean, ScrapeRuleType> load(final FastObjectName name) {
@@ -62,8 +68,12 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				}
 			});
 
+	/**
+	 * Caches a scrape rule for an MBean attribute. While the mappings never change, we need to drop stale entries to
+	 * avoid consuming too much memory.
+	 */
 	private final LoadingCache<Pair<FastObjectName, String>, ScrapeRuleType> findRuleCache = CacheBuilder.newBuilder()
-			.refreshAfterWrite(600, TimeUnit.SECONDS)
+			.expireAfterWrite(600, TimeUnit.SECONDS)
 			.build(new CacheLoader<Pair<FastObjectName, String>, ScrapeRuleType>() {
 				@Override
 				public ScrapeRuleType load(final Pair<FastObjectName, String> args) throws Exception {
@@ -122,15 +132,11 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		return null;
 	}
 
-	private class AttributeScrapeRequest {
-		public final FastObjectName name;
-		public final MBeanInfo info;
+	private class AttributeRule {
 		public final MBeanAttributeInfo attribute;
 		public final ScrapeRuleType rule;
 
-		public AttributeScrapeRequest(final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule) {
-			this.name = name;
-			this.info = info;
+		public AttributeRule(final MBeanAttributeInfo attribute, final ScrapeRuleType rule) {
 			this.attribute = attribute;
 			this.rule = rule;
 		}
@@ -140,9 +146,73 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		scrape(output, 0L, TimeUnit.MILLISECONDS);
 	}
 
-	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final long duration, final TimeUnit unit) throws InterruptedException {
-		final List<AttributeScrapeRequest> requests = new ArrayList<>();
+	public final CachedMBeanInfo NULL_CACHED_MBEAN_INFO = new CachedMBeanInfo(null, null, null, null);
 
+	private class CachedMBeanInfo {
+		public final FastObjectName name;
+		public final MBeanInfo info;
+
+		public final Map<String, AttributeRule> requests;
+		public final String[] attributeNamesToGet;
+
+		public CachedMBeanInfo(final FastObjectName name, final MBeanInfo info, final Map<String, AttributeRule> requests, final String[] attributeNamesToRequest) {
+			this.name = name;
+			this.info = info;
+			this.attributeNamesToGet = attributeNamesToRequest;
+			this.requests = requests;
+		}
+	}
+
+	private CachedMBeanInfo prepare(final ObjectName _name) {
+		final FastObjectName name = new FastObjectName(_name);
+
+		// Filter early by ObjectName because server.getMBeanInfo() is really slow.
+		final Pair<Boolean, ScrapeRuleType> ruleByName = findRuleEarly(name);
+		if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
+			if (ruleByName._2 != null && ruleByName._2.skip()) // and if the rule is to skip MBean
+				return NULL_CACHED_MBEAN_INFO;
+		}
+
+		final MBeanInfo info;
+		try {
+			info = server.getMBeanInfo(_name);
+		} catch (final Throwable th) {
+			LOG.log(Level.FINER, "Failed to obtain MBeanInfo (name = " + name + ")", th);
+			return NULL_CACHED_MBEAN_INFO;
+		}
+
+		final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(_name);
+
+		final Map<String, AttributeRule> requests = new HashMap<>();
+		final List<String> attributes = new ArrayList<>();
+		for (final MBeanAttributeInfo attribute : info.getAttributes()) {
+			try {
+				if (!attribute.isReadable())
+					continue;
+
+				if (bannedAttributes != null && bannedAttributes.contains(attribute.getName()))
+					continue;
+
+				final ScrapeRuleType rule;
+				if (ruleByName._1) {
+					rule = ruleByName._2;
+				} else {
+					rule = findRule(name, attribute.getName());
+					if (rule != null && rule.skip())
+						continue;
+				}
+
+				requests.put(attribute.getName(), new AttributeRule(attribute, rule));
+				attributes.add(attribute.getName());
+			} catch (final Throwable th) {
+				LOG.log(Level.WARNING, "Failed to process MBean attribute (name = " + name + ", attribute = " + attribute.getName() + ").", th);
+			}
+		}
+
+		return new CachedMBeanInfo(name, info, requests, attributes.toArray(new String[0]));
+	}
+
+	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final long duration, final TimeUnit unit) throws InterruptedException {
 		// We use server.queryNames() here, instead of server.queryMBeans(), to avoid costly server.getMBeanInfo() invoked internally.
 		final Set<ObjectName> names;
 		try {
@@ -152,74 +222,52 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			return;
 		}
 
-		for (final ObjectName _name : names) {
-			final FastObjectName name = objectNameCache.getUnchecked(_name);
+		MoreCollections.forEachSlowlyOverDuration(names, duration, unit, (_name) -> {
+			final CachedMBeanInfo info = mbeanInfoCache.getUnchecked(_name);
+			if (info == NULL_CACHED_MBEAN_INFO)
+				return;
 
-			// Filter early by ObjectName because server.getMBeanInfo() is really slow.
-			final Pair<Boolean, ScrapeRuleType> ruleByName = findRuleEarly(name);
-			if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
-				if (ruleByName._2 != null && ruleByName._2.skip()) // and if the rule is to skip MBean
-					continue;
-			}
-
-			final MBeanInfo info;
+			final long timestamp;
+			final AttributeList obtainedAttributes;
 			try {
-				info = mbeanInfoCache.get(name.objectName());
-			} catch (final Throwable th) {
-				LOG.log(Level.FINER, "Failed to obtain MBeanInfo (name = " + name + ")", th);
-				continue;
-			}
-
-			final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(name.objectName());
-
-			for (final MBeanAttributeInfo attribute : info.getAttributes()) {
-				try {
-					if (!attribute.isReadable())
-						continue;
-
-					if (bannedAttributes != null && bannedAttributes.contains(attribute.getName()))
-						continue;
-
-					final ScrapeRuleType rule;
-					if (ruleByName._1) {
-						rule = ruleByName._2;
-					} else {
-						rule = findRule(name, attribute.getName());
-						if (rule != null && rule.skip())
-							continue;
-					}
-
-					requests.add(new AttributeScrapeRequest(name, info, attribute, rule));
-				} catch (final Throwable th) {
-					LOG.log(Level.WARNING, "Failed to process MBean attribute (name = " + name + ", attribute = " + attribute.getName() + ").", th);
-				}
-			}
-		}
-
-		MoreCollections.forEachSlowlyOverDuration(requests, duration, unit, (request) -> {
-			try {
-				scrape(request.name, request.info, request.attribute, request.rule, output);
-			} catch (final Throwable th) {
-				LOG.log(Level.FINER, "Failed to scrape the attribute of the MBean instance (name = " + request.name + ", attribute = " + request.attribute.getName() + ")", th);
-			}
-		});
-	}
-
-	private void scrape(final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final ScrapeRuleType rule, final ScrapeOutput<ScrapeRuleType> output) throws InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException {
-		final long timestamp = System.currentTimeMillis();
-		final Object value;
-		try {
-			value = server.getAttribute(name.objectName(), attribute.getName());
-		} catch (final RuntimeMBeanException e) {
-			if (e.getCause() instanceof UnsupportedOperationException) {
-				// ban attributes temporarily
-				banAttribute(name.objectName(), info, attribute);
+				timestamp = System.currentTimeMillis();
+				// NOTE: We assume the results are not always in the same order as the arguments as the javadoc
+				// doesn't say anything about it.
+				obtainedAttributes = server.getAttributes(_name, info.attributeNamesToGet);
+			} catch (final Throwable e) {
+				LOG.log(Level.WARNING, "Failed to process MBean (name = " + _name + ")", e);
 				return;
 			}
-			throw e;
-		}
 
-		output.emit(new Sample<>(rule, timestamp, name, info, attribute, value));
+			if (obtainedAttributes.size() == info.attributeNamesToGet.length) { // all retrieved
+				for (final Attribute attribute : obtainedAttributes.asList()) {
+					final AttributeRule request = info.requests.get(attribute.getName());
+					output.emit(new Sample<>(request.rule, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
+				}
+			} else { // some of the attributes could not be retrieved; we need to check which attributes are missing
+				final Map<String, AttributeRule> requests = new HashMap<>(info.requests);
+				final String[] successfulAttributeNames = new String[obtainedAttributes.size()];
+				int i = 0;
+				for (final Attribute attribute : obtainedAttributes.asList()) {
+					final AttributeRule request = requests.remove(attribute.getName());
+					output.emit(new Sample<>(request.rule, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
+					successfulAttributeNames[i++] = attribute.getName();
+				}
+				requests.forEach((attributeName, request) -> {
+					try {
+						server.getAttribute(_name, attributeName);
+					} catch (final Throwable th) {
+						if (th.getCause() instanceof UnsupportedOperationException) {
+							// Disable attribute for 10 minutes, iff unsupported.
+							banAttribute(_name, attributeName);
+						}
+						LOG.log(Level.FINER, "Failed to obtain MBean attribute (name = " + _name + ", attribute = " + attributeName + ").", th);
+					}
+				});
+				// Anyway, exclude failed attribute for 1 minutes.
+				mbeanInfoCache.put(_name, new CachedMBeanInfo(info.name, info.info, info.requests, successfulAttributeNames));
+			}
+		});
 	}
 
 	/**
@@ -228,8 +276,9 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	 * @param name
 	 * @param info
 	 * @param attribute
+	 * @return
 	 */
-	private void banAttribute(final ObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute) {
-		bannedMBeanAttributes.getUnchecked(name).add(attribute.getName());
+	private boolean banAttribute(final ObjectName name, final String attribute) {
+		return bannedMBeanAttributes.getUnchecked(name).add(attribute);
 	}
 }
