@@ -42,7 +42,7 @@ Installation
 
 #### Download from the Maven Central (Recommended)
 
-[https://repo1.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.5/java-prometheus-metrics-agent-0.0.5.jar](https://repo1.maven.org/maven2/net/thisptr/java-prometheus-metrics-agent/0.0.5/java-prometheus-metrics-agent-0.0.5.jar)
+[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar)
 
 #### Building from source
 
