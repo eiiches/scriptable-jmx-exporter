@@ -1,1 +1,1 @@
-Premain-Class: net.thisptr.java.prometheus.metrics.agent.Agent
+Premain-Class: net.thisptr.jmx.exporter.agent.Agent

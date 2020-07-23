@@ -1,2 +1,7 @@
 /dependency-reduced-pom.xml
 /target/
+/.classpath
+/.settings
+/.project
+/pom.xml.releaseBackup
+/release.properties

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<prerequisites>                                                   
-		<maven>3.0.4</maven>                                            
-	</prerequisites>     
+	<prerequisites>
+		<maven>3.0.5</maven>
+	</prerequisites>
 
 	<groupId>net.thisptr</groupId>
-	<artifactId>java-prometheus-metrics-agent</artifactId>
+	<artifactId>scriptable-jmx-exporter</artifactId>
 	<name>Prometheus Metrics Agent</name>
 	<packaging>jar</packaging>
-	<version>0.0.5</version>
+	<version>0.0.6</version>
 	<description>Java agent for collecting and reporting metrics to Prometheus</description>
-	<url>https://github.com/eiiches/java-prometheus-metrics-agent</url>
+	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
 
 	<licenses>
 		<license>
@@ -29,10 +29,10 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</connection>
-		<developerConnection>scm:git:git@github.com:eiiches/java-prometheus-metrics-agent.git</developerConnection>
-		<url>git@github.com:eiiches/java-prometheus-metrics-agent.git</url>
-		<tag>java-prometheus-metrics-agent-0.0.5</tag>
+		<connection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</connection>
+		<developerConnection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</developerConnection>
+		<url>git@github.com:eiiches/scriptable-jmx-exporter.git</url>
+		<tag>v0.0.6</tag>
 	</scm>
 
 	<distributionManagement>
@@ -50,32 +50,37 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.9.10</version>
+			<version>2.11.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
-			<version>2.9.10</version>
+			<version>2.11.1</version>
 		</dependency>
 		<dependency>
 			<groupId>net.thisptr</groupId>
 			<artifactId>jackson-jq-extra</artifactId>
-			<version>1.0.0-preview.20190925</version>
+			<version>1.0.0-preview.20191208</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.janino</groupId>
+			<artifactId>janino</artifactId>
+			<version>3.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>6.0.12.Final</version>
+			<version>6.1.5.Final</version>
 		</dependency>
 		<dependency>
-			<groupId>org.nanohttpd</groupId>
-			<artifactId>nanohttpd</artifactId>
-			<version>2.3.1</version>
+			<groupId>io.undertow</groupId>
+			<artifactId>undertow-core</artifactId>
+			<version>2.1.3.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>28.1-jre</version>
+			<version>29.0-jre</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish</groupId>
@@ -85,37 +90,37 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.5.2</version>
+			<version>5.7.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-params</artifactId>
-			<version>5.5.2</version>
+			<version>5.7.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency> <!-- for eclipse, to be removed in future -->
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-launcher</artifactId>
-			<version>1.5.2</version>
+			<version>1.7.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency> <!-- for eclipse, to be removed in future -->
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.5.2</version>
+			<version>5.7.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency> <!-- for eclipse, to be removed in future -->
 			<groupId>org.junit.vintage</groupId>
 			<artifactId>junit-vintage-engine</artifactId>
-			<version>5.5.2</version>
+			<version>5.7.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
-			<version>3.13.2</version>
+			<version>3.16.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -125,7 +130,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.2.1</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -133,66 +138,88 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
 							<relocations>
 								<relocation>
 									<pattern>com.google</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.google</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.google</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.hibernate</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.hibernate</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.hibernate</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.jcodings</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jcodings</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jcodings</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.joni</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.joni</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.joni</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>net.thisptr.jackson.jq</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.net.thisptr.jackson.jq</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.net.thisptr.jackson.jq</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.yaml.snakeyaml</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.yaml.snakeyaml</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.yaml.snakeyaml</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.fasterxml</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.fasterxml</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.fasterxml</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>org.jboss.logging</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.jboss.logging</shadedPattern>
+									<pattern>io.undertow</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.io.undertow</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.xnio</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.xnio</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.codehaus</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.wildfly</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.wildfly</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.jboss</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jboss</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.validation</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.validation</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>fi.iki.elonen</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.fi.iki.elonen</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.validation</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.annotation</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.annotation</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.annotation</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.checkerframework</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.checkerframework</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.checkerframework</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.sun.el</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.com.sun.el</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.sun.el</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.el</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.javax.el</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.el</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.codehaus.mojo.animal_sniffer</pattern>
-									<shadedPattern>net.thisptr.java.prometheus.metrics.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
 								</relocation>
 							</relocations>
 							<minimizeJar>false</minimizeJar>
@@ -227,7 +254,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -241,7 +268,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.2.0</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -251,7 +278,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<excludePackageNames>net.thisptr.java.prometheus.metrics.agent.javacc</excludePackageNames>
+					<excludePackageNames>net.thisptr.jmx.exporter.agent.javacc</excludePackageNames>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -283,7 +310,7 @@
 					<dependency>
 						<groupId>net.java.dev.javacc</groupId>
 						<artifactId>javacc</artifactId>
-						<version>7.0.4</version>
+						<version>7.0.9</version>
 					</dependency>
 				</dependencies>
 				<executions>
