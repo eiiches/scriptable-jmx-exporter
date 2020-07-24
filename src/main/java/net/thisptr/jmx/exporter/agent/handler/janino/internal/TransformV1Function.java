@@ -326,8 +326,10 @@ public class TransformV1Function {
 				this.nameBuilder.append(':');
 				this.nameBuilder.append(metricLabelValue);
 			}
-			this.nameBuilder.append(':');
-			this.nameBuilder.append(attributeName);
+			if (attributeName != null) {
+				this.nameBuilder.append(':');
+				this.nameBuilder.append(attributeName);
+			}
 		}
 
 		public int push(final String name) {
