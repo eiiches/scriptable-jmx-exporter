@@ -42,6 +42,8 @@ public class ScraperTest {
 		}
 	}
 
+	private static final Rule DEFAULT_INCLUSION_RULE = new Rule(null, false);
+
 	@Test
 	void testName() throws Exception {
 		final List<Rule> rules = Arrays.asList(new Rule(AttributeNamePattern.compile("java.lang:type=OperatingSystem:SystemCpuLoad"), false), new Rule(null, true));
@@ -57,7 +59,7 @@ public class ScraperTest {
 
 	@Test
 	void testSlowScrape() throws Exception {
-		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList(), null);
+		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList(), DEFAULT_INCLUSION_RULE);
 
 		final long start = System.currentTimeMillis();
 
