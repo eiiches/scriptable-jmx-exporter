@@ -42,7 +42,7 @@ Installation
 
 #### Download from the Maven Central (Recommended)
 
-[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar)
+[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar)
 
 #### Building from source
 
