@@ -83,6 +83,36 @@ public class V1 {
 		return GAUGE;
 	}
 
+	private static final MetricValueModifier COUNTER = (m) -> {
+		m.type = "counter";
+	};
+
+	public static MetricValueModifier counter() {
+		return COUNTER;
+	}
+
+	private static final MetricValueModifier HISTOGRAM = (m) -> {
+		m.type = "histogram";
+	};
+
+	public static MetricValueModifier histogram() {
+		return HISTOGRAM;
+	}
+
+	private static final MetricValueModifier SUMMARY = (m) -> {
+		m.type = "summary";
+	};
+
+	public static MetricValueModifier summary() {
+		return SUMMARY;
+	}
+
+	public static MetricValueModifier suffix(final String suffix) {
+		return (m) -> {
+			m.suffix = suffix;
+		};
+	}
+
 	private static final MetricValueOutput modify(final MetricValueOutput out, final MetricValueModifier... modifiers) {
 		if (modifiers.length == 0)
 			return out;
