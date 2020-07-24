@@ -93,6 +93,10 @@ public class V1 {
 		};
 	}
 
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final MetricValueModifier... modifiers) {
+		TransformV1Function.transformV1(in, modify(out, modifiers));
+	}
+
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final MetricValueModifier... modifiers) {
 		TransformV1Function.transformV1(in, modify(out, modifiers), key1);
 	}
