@@ -27,7 +27,7 @@ public class JsonOutputToMetricConverter implements Converter<JsonNode, Promethe
 		m.value = value != null ? value.asDouble() : 0L;
 
 		final JsonNode timestamp = tree.get("timestamp");
-		m.timestamp = timestamp != null ? timestamp.asLong() : null;
+		m.timestamp = timestamp != null ? timestamp.asLong() : 0L;
 
 		final JsonNode labels = tree.get("labels");
 		if (labels != null) {

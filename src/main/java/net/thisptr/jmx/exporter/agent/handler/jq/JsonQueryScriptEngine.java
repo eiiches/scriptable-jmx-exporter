@@ -49,11 +49,10 @@ public class JsonQueryScriptEngine implements ScriptEngine<JsonQuery> {
 	@Override
 	public void handle(final Sample<PrometheusScrapeRule> sample, final JsonQuery script, final PrometheusMetricOutput output) {
 		final JsonNode mbeanAttributeNode = SampleToJsonInputConverter.getInstance().convert(sample);
-		final JsonQuery transform = sample.rule != null && sample.rule.transform != null ? script : DEFAULT_TRANSFORM;
 
 		final List<JsonNode> metricNodes = new ArrayList<>();
 		try {
-			transform.apply(scope, mbeanAttributeNode, metricNodes::add);
+			script.apply(scope, mbeanAttributeNode, metricNodes::add);
 		} catch (final Throwable th) {
 			LOG.log(Level.INFO, "Failed to transform a MBean attribute (" + mbeanAttributeNode + ") to Prometheus metrics.", th);
 			return;

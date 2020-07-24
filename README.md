@@ -42,7 +42,7 @@ Installation
 
 #### Download from the Maven Central (Recommended)
 
-[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.6/scriptable-jmx-exporter-0.0.6.jar)
+[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar)
 
 #### Building from source
 
@@ -393,7 +393,7 @@ Please also keep in mind that performance is highly dependent on the configurati
 See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. Here's the results:
 
 | Exporter | # of metrics | Throughput [req/s] |
-|-|-|
+|-|-|-|
 | scriptable-jmx-exporter (*1) | 5254 | 552.03 |
 | jmx_exporter 0.13.0 | 3157 (*2) | 12.14 |
 
