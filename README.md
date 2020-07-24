@@ -426,14 +426,14 @@ Please also keep in mind that performance is highly dependent on the configurati
 
 See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. Here's the results:
 
-| Exporter | # of metrics | Throughput [req/s] |
-|-|-|-|
-| scriptable-jmx-exporter (*1) | 5254 | 552.03 |
-| jmx_exporter 0.13.0 | 3157 (*2) | 12.14 |
+| Exporter | Config File (# of lines) | # of Metrics (\*1) | Throughput [req/s] |
+|-|-|-|-|
+| scriptable-jmx-exporter | [scriptable-jmx-exporter.yaml](examples/benchmark-kafka/scriptable-jmx-exporter.yaml) (62) | 3362 | 708.88 |
+| jmx_exporter 0.13.0 | [kafka-2_0_0.yml](https://github.com/prometheus/jmx_exporter/blob/ce04b7dca8615d724d8f447fa25c44ae1c29238b/example_configs/kafka-2_0_0.yml) (103) | 3157 | 12.14 |
 
-(\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4.
-(\*1) We didn't add metrics TYPE hints for many metrics, even where jmx_exporter does.
-(\*2) The Kafka example from the official repository seems to be missing some metrics, such as `kafka.server:type=socket-server-metrics:ConnectionCloseTotal`, etc.
+(\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4. (\*1) kafka-2_0_0.yml seems to be missing a number of metrics, such as `kafka.server:type=socket-server-metrics`.
+We excluded such metrics as well. The difference in the number of metrics mostly comes from how we treat JVM metrics.
+
 
 References
 ----------
