@@ -91,7 +91,7 @@ public class Agent {
 						Predicates.parse("max-content-size(5)")))
 								.setNext(thisHandler);
 		return Undertow.builder()
-				.setWorkerOption(Options.WORKER_NAME, "MBeanExporterIO")
+				.setWorkerOption(Options.WORKER_NAME, "scriptable-jmx-exporter")
 				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
 				.setHandler(encodingHandler)
 				.build();
