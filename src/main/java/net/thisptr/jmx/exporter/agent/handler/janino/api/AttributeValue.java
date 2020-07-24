@@ -44,6 +44,9 @@ public class AttributeValue {
 	@JsonProperty("bean_description")
 	public String beanDescription;
 
+	@JsonProperty("bean_class")
+	public String beanClass;
+
 	/**
 	 * {@link MBeanAttributeInfo#getName()}
 	 */

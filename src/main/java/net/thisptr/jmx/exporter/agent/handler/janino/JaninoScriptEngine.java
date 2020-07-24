@@ -53,6 +53,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 		in.attributeName = sample.attribute.getName();
 		in.attributeType = sample.attribute.getType();
 		in.beanDescription = sample.info.getDescription();
+		in.beanClass = sample.info.getClassName();
 		in.domain = sample.name.domain();
 		in.keyProperties = sample.name.keyProperties();
 		in.timestamp = sample.timestamp;
