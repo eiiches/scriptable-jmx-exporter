@@ -7,10 +7,10 @@
 
 	<groupId>net.thisptr</groupId>
 	<artifactId>scriptable-jmx-exporter</artifactId>
-	<name>Prometheus Metrics Agent</name>
+	<name>Scriptable JMX Exporter</name>
 	<packaging>jar</packaging>
 	<version>0.0.7-SNAPSHOT</version>
-	<description>Java agent for collecting and reporting metrics to Prometheus</description>
+	<description>Java agent for collecting and exposing metrics to Prometheus</description>
 	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
 
 	<licenses>
