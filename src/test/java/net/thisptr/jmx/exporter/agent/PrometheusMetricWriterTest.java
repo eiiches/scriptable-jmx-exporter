@@ -118,6 +118,24 @@ public class PrometheusMetricWriterTest {
 	}
 
 	@RepeatedTest(20)
+	void testEmptySuffix(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.suffix = "";
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testSuffix(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.suffix = "sum";
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test_sum 1\n");
+	}
+
+	@RepeatedTest(20)
 	void testWriteWithEmptyLabels(final RepetitionInfo info) throws Exception {
 		final PrometheusMetric metric = new PrometheusMetric();
 		metric.name = "metricName_a:@";

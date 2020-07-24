@@ -66,6 +66,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				metric.timestamp = m.timestamp;
 				metric.help = m.help;
 				metric.type = m.type;
+				metric.suffix = m.suffix;
 				metric.nameWriter = _InternalUseDoNotImportProxyAccessor.getNameWriter(m);
 				output.emit(metric);
 			});

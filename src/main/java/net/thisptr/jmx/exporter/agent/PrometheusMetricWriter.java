@@ -164,6 +164,12 @@ public class PrometheusMetricWriter implements Closeable {
 			this.position = sanitizeMetricName(bytes, this.position, metric.name);
 		}
 
+		if (metric.suffix != null && !metric.suffix.isEmpty()) {
+			ensureAtLeast(1 /* _ */ + Math.max(1, metric.name.length()) + 1 /* { */);
+			bytes[this.position++] = '_';
+			this.position = sanitizeMetricName(bytes, this.position, metric.suffix);
+		}
+
 		if (metric.labels != null && !metric.labels.isEmpty()) {
 			bytes[this.position++] = '{';
 			metric.labels.forEach((labelName, labelValue) -> {

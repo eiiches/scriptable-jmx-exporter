@@ -36,6 +36,9 @@ public class MetricValue {
 	@JsonIgnore
 	/* package private */ StringWriter nameWriter;
 
+	@JsonProperty("suffix")
+	public String suffix;
+
 	/**
 	 * Labels.
 	 */
