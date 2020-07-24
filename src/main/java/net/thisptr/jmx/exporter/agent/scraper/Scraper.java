@@ -61,11 +61,11 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	 * Caches a scrape rule for an MBean. While the mappings never change, we need to drop stale entries to
 	 * avoid consuming too much memory.
 	 */
-	private final LoadingCache<FastObjectName, Pair<Boolean, ScrapeRuleType>> findRuleEarlyCache = CacheBuilder.newBuilder()
+	private final LoadingCache<FastObjectName, Pair<Boolean, RuleMatch>> findRuleEarlyCache = CacheBuilder.newBuilder()
 			.expireAfterWrite(600, TimeUnit.SECONDS)
-			.build(new CacheLoader<FastObjectName, Pair<Boolean, ScrapeRuleType>>() {
+			.build(new CacheLoader<FastObjectName, Pair<Boolean, RuleMatch>>() {
 				@Override
-				public Pair<Boolean, ScrapeRuleType> load(final FastObjectName name) {
+				public Pair<Boolean, RuleMatch> load(final FastObjectName name) {
 					return findRuleEarlyNoCache(name);
 				}
 			});
@@ -74,11 +74,11 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	 * Caches a scrape rule for an MBean attribute. While the mappings never change, we need to drop stale entries to
 	 * avoid consuming too much memory.
 	 */
-	private final LoadingCache<Pair<FastObjectName, String>, ScrapeRuleType> findRuleCache = CacheBuilder.newBuilder()
+	private final LoadingCache<Pair<FastObjectName, String>, RuleMatch> findRuleCache = CacheBuilder.newBuilder()
 			.expireAfterWrite(600, TimeUnit.SECONDS)
-			.build(new CacheLoader<Pair<FastObjectName, String>, ScrapeRuleType>() {
+			.build(new CacheLoader<Pair<FastObjectName, String>, RuleMatch>() {
 				@Override
-				public ScrapeRuleType load(final Pair<FastObjectName, String> args) throws Exception {
+				public RuleMatch load(final Pair<FastObjectName, String> args) throws Exception {
 					return findRuleNoCache(args._1, args._2);
 				}
 			});
@@ -98,50 +98,55 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		this.defaultRule = defaultRule;
 	}
 
-	private Pair<Boolean, ScrapeRuleType> findRuleEarly(final FastObjectName name) {
+	private Pair<Boolean, RuleMatch> findRuleEarly(final FastObjectName name) {
 		return findRuleEarlyCache.getUnchecked(name);
 	}
 
-	private Pair<Boolean, ScrapeRuleType> findRuleEarlyNoCache(final FastObjectName name) {
+	private Pair<Boolean, RuleMatch> findRuleEarlyNoCache(final FastObjectName name) {
+		final Map<String, String> captures = new HashMap<>();
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
-				return Pair.of(true, rule); // found
+				return Pair.of(true, new RuleMatch(rule, Collections.emptyMap())); // found
 			boolean nameMatches = false;
 			for (final AttributeNamePattern pattern : rule.patterns()) {
-				if (pattern.nameMatches(name.domain(), name.keyProperties())) {
+				if (pattern.nameMatches(name.domain(), name.keyProperties(), captures)) {
 					nameMatches = true;
 					if (pattern.attribute == null)
-						return Pair.of(true, rule); // found
+						return Pair.of(true, new RuleMatch(rule, Collections.unmodifiableMap(captures))); // found
 				}
+				captures.clear();
 			}
 			if (nameMatches)
 				return Pair.of(false, null); // match depends on attribute, abort
 		}
-		return Pair.of(true, defaultRule); // default rule should be used
+		return Pair.of(true, new RuleMatch(defaultRule, Collections.emptyMap())); // default rule should be used
 	}
 
-	private ScrapeRuleType findRule(final FastObjectName name, final String attribute) {
+	private RuleMatch findRule(final FastObjectName name, final String attribute) {
 		return findRuleCache.getUnchecked(Pair.of(name, attribute));
 	}
 
-	private ScrapeRuleType findRuleNoCache(final FastObjectName name, final String attribute) {
+	private RuleMatch findRuleNoCache(final FastObjectName name, final String attribute) {
+		final Map<String, String> captures = new HashMap<>();
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty())
-				return rule;
-			for (final AttributeNamePattern pattern : rule.patterns())
-				if (pattern.matches(name.domain(), name.keyProperties(), attribute))
-					return rule;
+				return new RuleMatch(rule, Collections.emptyMap());
+			for (final AttributeNamePattern pattern : rule.patterns()) {
+				if (pattern.matches(name.domain(), name.keyProperties(), attribute, captures))
+					return new RuleMatch(rule, Collections.unmodifiableMap(captures));
+				captures.clear(); // clear partially matched captures
+			}
 		}
-		return defaultRule;
+		return new RuleMatch(defaultRule, Collections.emptyMap());
 	}
 
 	private class AttributeRule {
 		public final MBeanAttributeInfo attribute;
-		public final ScrapeRuleType rule;
+		public final RuleMatch ruleMatch;
 
-		public AttributeRule(final MBeanAttributeInfo attribute, final ScrapeRuleType rule) {
+		public AttributeRule(final MBeanAttributeInfo attribute, final RuleMatch ruleMatch) {
 			this.attribute = attribute;
-			this.rule = rule;
+			this.ruleMatch = ruleMatch;
 		}
 	}
 
@@ -149,6 +154,9 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		scrape(output, 0L, TimeUnit.MILLISECONDS);
 	}
 
+	/**
+	 * Null object to use with Guava cache, because Guava cache cannot cache null values.
+	 */
 	public final CachedMBeanInfo NULL_CACHED_MBEAN_INFO = new CachedMBeanInfo(null, null, null, null);
 
 	private class CachedMBeanInfo {
@@ -166,13 +174,23 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
+	private class RuleMatch {
+		public final ScrapeRuleType rule;
+		public final Map<String, String> captures;
+
+		public RuleMatch(final ScrapeRuleType rule, final Map<String, String> captures) {
+			this.rule = rule;
+			this.captures = captures;
+		}
+	}
+
 	private CachedMBeanInfo prepare(final ObjectName _name) {
 		final FastObjectName name = new FastObjectName(_name);
 
 		// Filter early by ObjectName because server.getMBeanInfo() is really slow.
-		final Pair<Boolean, ScrapeRuleType> ruleByName = findRuleEarly(name);
+		final Pair<Boolean, RuleMatch> ruleByName = findRuleEarly(name);
 		if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
-			if (ruleByName._2 != null && ruleByName._2.skip()) // and if the rule is to skip MBean
+			if (ruleByName._2.rule.skip()) // and if the rule is to skip MBean
 				return NULL_CACHED_MBEAN_INFO;
 		}
 
@@ -196,16 +214,16 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				if (bannedAttributes != null && bannedAttributes.contains(attribute.getName()))
 					continue;
 
-				final ScrapeRuleType rule;
+				final RuleMatch ruleMatch;
 				if (ruleByName._1) {
-					rule = ruleByName._2;
+					ruleMatch = ruleByName._2;
 				} else {
-					rule = findRule(name, attribute.getName());
-					if (rule != null && rule.skip())
+					ruleMatch = findRule(name, attribute.getName());
+					if (ruleMatch.rule.skip())
 						continue;
 				}
 
-				requests.put(attribute.getName(), new AttributeRule(attribute, rule));
+				requests.put(attribute.getName(), new AttributeRule(attribute, ruleMatch));
 				attributes.add(attribute.getName());
 			} catch (final Throwable th) {
 				LOG.log(Level.WARNING, "Failed to process MBean attribute (name = " + name + ", attribute = " + attribute.getName() + ").", th);
@@ -245,7 +263,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			if (obtainedAttributes.size() == info.attributeNamesToGet.length) { // all retrieved
 				for (final Attribute attribute : obtainedAttributes.asList()) {
 					final AttributeRule request = info.requests.get(attribute.getName());
-					output.emit(new Sample<>(request.rule, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
+					output.emit(new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
 				}
 			} else { // some of the attributes could not be retrieved; we need to check which attributes are missing
 				final Map<String, AttributeRule> requests = new HashMap<>(info.requests);
@@ -253,7 +271,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				int i = 0;
 				for (final Attribute attribute : obtainedAttributes.asList()) {
 					final AttributeRule request = requests.remove(attribute.getName());
-					output.emit(new Sample<>(request.rule, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
+					output.emit(new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
 					successfulAttributeNames[i++] = attribute.getName();
 				}
 				requests.forEach((attributeName, request) -> {

@@ -42,7 +42,7 @@ public class JaninoScriptEngineTest {
 		final long timestamp = System.currentTimeMillis();
 		final MBeanInfo mbeanInfo = server.getMBeanInfo(objectName);
 		final MBeanAttributeInfo attributeInfo = Arrays.stream(mbeanInfo.getAttributes()).filter(a -> attributeName.equals(a.getName())).findFirst().get();
-		return new Sample<PrometheusScrapeRule>(null, timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
+		return new Sample<PrometheusScrapeRule>(null, Collections.emptyMap(), timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
 	}
 
 	@Test

@@ -1,5 +1,7 @@
 package net.thisptr.jmx.exporter.agent.handler.janino;
 
+import java.util.Map;
+
 import org.codehaus.janino.ScriptEvaluator;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
@@ -25,7 +27,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 			+ ";";
 
 	public interface Transformer {
-		void transform(AttributeValue in, MetricValueOutput out) throws Exception;
+		void transform(AttributeValue in, MetricValueOutput out, Map<String, String> match) throws Exception;
 	}
 
 	@Override
@@ -38,7 +40,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				V1.class.getName(),
 		});
 		try {
-			final Transformer compiledScript = (Transformer) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, Transformer.class, new String[] { "in", "out" });
+			final Transformer compiledScript = (Transformer) se.createFastEvaluator(SCRIPT_HEADER + script + SCRIPT_FOOTER, Transformer.class, new String[] { "in", "out", "match" });
 			return new Script<>(this, compiledScript);
 		} catch (Exception e) {
 			throw new ScriptCompileException(e);
@@ -70,7 +72,7 @@ public class JaninoScriptEngine implements ScriptEngine<Transformer> {
 				metric.suffix = m.suffix;
 				metric.nameWriter = _InternalUseDoNotImportProxyAccessor.getNameWriter(m);
 				output.emit(metric);
-			});
+			}, sample.captures);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

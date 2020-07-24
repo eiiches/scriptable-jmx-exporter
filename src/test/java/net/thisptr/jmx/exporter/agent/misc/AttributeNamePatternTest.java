@@ -1,13 +1,27 @@
 package net.thisptr.jmx.exporter.agent.misc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.management.ObjectName;
 
 import org.junit.jupiter.api.Test;
 
 public class AttributeNamePatternTest {
+
+	@Test
+	void testCaptures() throws Exception {
+		final AttributeNamePattern p = AttributeNamePattern.compile("java.lang:type=(?<type>.*)Collector:(?<attr>.*)");
+		final Map<String, String> captures = new HashMap<>();
+		assertThat(p.matches(new ObjectName("java.lang:type=GarbageCollector"), "LastGcInfo", captures)).isTrue();
+		assertThat(captures).hasSize(2);
+		assertThat(captures).containsEntry("type", "Garbage");
+		assertThat(captures).containsEntry("attr", "LastGcInfo");
+	}
 
 	@Test
 	void testMatchesAny() throws Exception {
