@@ -11,11 +11,27 @@ import java.util.HashMap;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
+
 public class PrometheusMetricWriterTest {
 	private static String toString(final PrometheusMetric m, final int bufSize, final boolean includeTimestamp) throws IOException {
 		return toString(bufSize, includeTimestamp, (writer) -> {
 			writer.write(m);
 		});
+	}
+
+	private static final class LowerCaseStringWriter implements StringWriter {
+		@Override
+		public int write(final String name, final byte[] bytes, final int index) {
+			final byte[] src = name.toLowerCase().getBytes(StandardCharsets.UTF_8);
+			System.arraycopy(src, 0, bytes, index, src.length);
+			return index + src.length;
+		}
+
+		@Override
+		public int expectedSize(final String name) {
+			return name.length();
+		}
 	}
 
 	private interface PrometheusMetricWriterTask {
@@ -158,5 +174,31 @@ public class PrometheusMetricWriterTest {
 			w.writeHelp("test", null, "🎼あЛa\n\" \\ ");
 		});
 		assertThat(actual).isEqualTo("# HELP test 🎼あЛa\\n\" \\\\ \n");
+	}
+
+	@RepeatedTest(20)
+	void testCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric metric = new PrometheusMetric();
+		metric.name = "TEST";
+		metric.nameWriter = new LowerCaseStringWriter();
+		metric.value = 1.0;
+		metric.labels = new HashMap<>();
+		assertThat(toString(metric, info.getCurrentRepetition(), false)).isEqualTo("test 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testHelpWithCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeHelp("TEST", new LowerCaseStringWriter(), "value");
+		});
+		assertThat(actual).isEqualTo("# HELP test value\n");
+	}
+
+	@RepeatedTest(20)
+	void testTypeWithCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeType("TEST", new LowerCaseStringWriter(), "counter");
+		});
+		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}
 }
