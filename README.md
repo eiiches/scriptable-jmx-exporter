@@ -49,12 +49,12 @@ curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v0.0.
 # Prepare a simple Pause program, which just keeps sleeping until CTRL-C is pressed.
 cat > Pause.java <<-EOF
 public class Pause {
-	public static void main(final String[] args) throws Exception {
-		System.out.println("Press CTRL-C to quit.");
-		while (true) {
-			Thread.sleep(10000L);
-		}
-	}
+    public static void main(final String[] args) throws Exception {
+        System.out.println("Press CTRL-C to quit.");
+        while (true) {
+            Thread.sleep(10000L);
+        }
+    }
 }
 EOF
 javac Pause.java
