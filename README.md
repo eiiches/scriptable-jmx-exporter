@@ -352,7 +352,17 @@ java_lang_operating_system_available_file_descriptor_count 1048546.0 15951644265
 java_lang_operating_system_open_file_descriptor_count 30.0 1595164426599
 ```
 
+#### Tips
 
+* Prefer rule patterns, instead of using `if` inside transform scripts, to dispatch based on MBean attributes. It's usually faster.
+* Use `static` inside method-local inner class to do things that need to be done once, such as to compile a regex. Note that this SHOULD NOT be used to share mutable states because transform scripts are executed concurrently.
+  ```yaml
+    transform: |
+      class Holder {
+        public static final Pattern PATTERN = Pattern.compile(".*");
+      }
+      log(Holder.PATTERN.matcher("foo").matches());
+  ```
 
 ### jq (Deprecated)
 
