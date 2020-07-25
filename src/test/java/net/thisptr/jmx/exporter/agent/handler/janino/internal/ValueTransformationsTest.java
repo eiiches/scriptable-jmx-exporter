@@ -7,9 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import net.thisptr.jmx.exporter.agent.handler.janino.internal.TransformV1Function.Labels;
-
-public class TransformV1FunctionTest {
+public class ValueTransformationsTest {
 
 	@Test
 	void testLabels() throws Exception {
