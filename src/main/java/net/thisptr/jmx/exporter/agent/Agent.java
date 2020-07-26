@@ -14,7 +14,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.net.HostAndPort;
 
 import io.undertow.Undertow;
-import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
@@ -85,10 +84,8 @@ public class Agent {
 	private static Undertow newServer(final HostAndPort hostAndPort) {
 		final HttpHandler thisHandler = exchange -> HANDLER.handleRequest(exchange);
 		final EncodingHandler encodingHandler = new EncodingHandler(new ContentEncodingRepository()
-				.addEncodingHandler("gzip",
-						new GzipEncodingProvider(), 50,
-						Predicates.parse("max-content-size(5)")))
-								.setNext(thisHandler);
+				.addEncodingHandler("gzip", new GzipEncodingProvider(), 50))
+						.setNext(thisHandler);
 		return Undertow.builder()
 				.setWorkerOption(Options.WORKER_NAME, "scriptable-jmx-exporter")
 				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
