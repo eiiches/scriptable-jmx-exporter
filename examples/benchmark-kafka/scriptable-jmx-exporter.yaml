@@ -1,62 +1,64 @@
+options:
+  include_timestamp: false
 rules:
 - pattern:
   - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
   - java.lang:type=Threading:AllThreadIds
   - jdk.management.jfr
-  skip: true
-- pattern:
-  - 'kafka.*::MeanRate|.*MinuteRate' # can be calculated using rate()
-  - 'kafka.*::RateUnit|LatencyUnit' # unsupported type
-  - 'kafka.server:type=app-info:commit-id|version' # reports wrong type
+  - kafka.*::MeanRate|.*MinuteRate # can be calculated using rate()
+  - kafka.*::RateUnit|LatencyUnit|EventType # unsupported type
+  - kafka:type=kafka.Log4jController
+  - kafka.server:type=app-info:commit-id|version # reports wrong type
   # NOTE: The two patterns below is added to more closely match with the bahavior (whether it's intentional or not) of jmx_exporter's kafka-2_0_0.yml. Comment out these in production.
-  - 'kafka.*::StdDev|Mean|Min|Max' # kafka-2_0_0.yml does not expose these metrics
-  - 'kafka.server:type=socket-server-metrics|controller-channel-metrics|group-coordinator-metrics|txn-marker-channel-metrics|transaction-coordinator-metrics|Fetch|Produce|Request|app-info|kafka-metrics-count'
+  - kafka.*::StdDev|Mean|Min|Max # kafka-2_0_0.yml does not expose these metrics
+  - kafka.server:type=socket-server-metrics|controller-channel-metrics|group-coordinator-metrics|txn-marker-channel-metrics|transaction-coordinator-metrics|Fetch|Produce|Request|app-info|kafka-metrics-count
   skip: true
 - pattern: 'kafka.*::Value'
   transform: |
     !java
-    in.attributeName = null; // don't need _value at the end 'cause it's obvious from the type
-    V1.transform(in, out, "type", "name", V1.gauge(), V1.snakeCase());
+    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "type", "name")
+      .type("gauge")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+- pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
+  condition: mbean.getClassName().endsWith("JmxReporter$Meter")
+  transform: |
+    !java
+    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"), "total")
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .type("counter")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::Count'
+  condition: mbean.getClassName().endsWith("JmxReporter$Histogram") || mbean.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
-    import java.util.HashMap;
-    if (in.beanClass.endsWith("$Meter")) {
-      String name = (String) in.keyProperties.get("name");
-      if (name != null) {
-        in.keyProperties = new HashMap<>(in.keyProperties);
-        if (name.endsWith("PerSec")) {
-          in.keyProperties.put("name", name.substring(0, name.length() - 6));
-        } else if (name.endsWith("Percent")) {
-          in.keyProperties.put("name", name.substring(0, name.length() - 7));
-        }
-      }
-      in.attributeName = "total"; // counter's should ends with _total
-      V1.transform(in, out, "type", "name", V1.snakeCase(), V1.counter());
-    } else if (in.beanClass.endsWith("$Histogram") || in.beanClass.endsWith("$Timer")) {
-      in.attributeName = null;
-      V1.transform(in, out, "type", "name", V1.snakeCase(), V1.suffix("count"), V1.summary());
-    } else {
-      log("unhandled bean class: %s", in.beanClass);
-      V1.transform(in, out, "type", "name", V1.snakeCase());
-    }
+    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .suffix("count")
+      .type("summary")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
+  condition: mbean.getClassName().endsWith("JmxReporter$Histogram") || mbean.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
-    import java.util.HashMap;
-    if (in.beanClass.endsWith("$Histogram") || in.beanClass.endsWith("$Timer")) {
-      in.attributeName = null;
-      in.keyProperties = new HashMap<>(in.keyProperties);
-      in.keyProperties.put("quantile", "0." + match.get("p"));
-      V1.transform(in, out, "type", "name", V1.snakeCase(), V1.summary());
-    } else {
-      log("unhandled bean class: %s", in.beanClass);
-      V1.transform(in, out, "type", "name", V1.snakeCase());
-    }
+    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .addLabel("quantile", "0." + match.get("p"))
+      .type("summary")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*'
   transform: |
     !java
-    V1.transform(in, out, "type", "name", V1.snakeCase());
+    log("unhandled attribute: %s", in);
+    V1.transform(in, out, "type", "name", V1.lowerCase());
 - transform: |
     !java
     V1.transform(in, out, "type", V1.snakeCase());
