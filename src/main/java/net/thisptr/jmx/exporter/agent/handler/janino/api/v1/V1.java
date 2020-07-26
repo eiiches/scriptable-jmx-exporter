@@ -313,7 +313,7 @@ public class V1 {
 			help = null;
 		}
 
-		public void transform(final Object value, final String type, final MetricValueOutput out, final MetricValueModifier... modifiers) {
+		public Builder transform(final Object value, final String type, final MetricValueOutput out, final MetricValueModifier... modifiers) {
 			namer.separator('.'); // always use '.' for nested attributes
 			ValueTransformations.unfold(namer, labels, value, type, (m) -> {
 				m.timestamp = this.timestamp;
@@ -324,14 +324,39 @@ public class V1 {
 					modifier.apply(m);
 				out.emit(m);
 			});
+			return this;
+		}
+
+		public void dispose() {
+			reset();
+			V1.BUILDER_CACHE.get().builder = this;
 		}
 	}
 
+	private static final class ThreadLocalCacheHolder {
+		public Builder builder;
+	}
+
+	private static final ThreadLocal<ThreadLocalCacheHolder> BUILDER_CACHE = new ThreadLocal<ThreadLocalCacheHolder>() {
+		@Override
+		protected ThreadLocalCacheHolder initialValue() {
+			return new ThreadLocalCacheHolder();
+		};
+	};
+
 	public static Builder name(final char separator, final String... names) {
-		return new Builder().separator(separator).appendName(names);
+		final Builder builder;
+		final ThreadLocalCacheHolder holder = BUILDER_CACHE.get();
+		if (holder.builder != null) {
+			builder = holder.builder;
+			holder.builder = null;
+		} else {
+			builder = new Builder();
+		}
+		return builder.separator(separator).appendName(names);
 	}
 
 	public static Builder name(final String... names) {
-		return new Builder().separator(':').appendName(names);
+		return name(':', names);
 	}
 }
