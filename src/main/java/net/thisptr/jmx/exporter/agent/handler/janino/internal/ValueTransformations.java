@@ -174,10 +174,8 @@ public class ValueTransformations {
 	/**
 	 * @param namer
 	 * @param labels
-	 * @param names
 	 * @param value
 	 * @param type   a string representation of the type of the value. The format is the same as {@link Class#getName()}.
-	 * @param input
 	 * @param output
 	 */
 	public static void unfold(final MetricNamer namer, final Labels labels, final Object value, final String type, final MetricValueOutput output) {

@@ -279,6 +279,7 @@
 				</executions>
 				<configuration>
 					<excludePackageNames>net.thisptr.jmx.exporter.agent.javacc</excludePackageNames>
+					<source>8</source>
 				</configuration>
 			</plugin>
 			<plugin>
