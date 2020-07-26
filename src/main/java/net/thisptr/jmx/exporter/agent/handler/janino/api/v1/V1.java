@@ -206,33 +206,20 @@ public class V1 {
 	}
 
 	private static void transformInternal(final AttributeValue in, final MetricValueOutput out, final MetricValueModifier[] modifiers, final String... nameKeys) {
-		final MetricNamer namer = new MetricNamer(0); // FIXME: set expected size
-		namer.push(in.domain);
+		final Builder builder = V1.name(':', in.domain);
 		for (final String nameKey : nameKeys) {
 			final String value = in.keyProperties.get(nameKey);
 			if (value == null)
 				continue;
-			namer.push(value);
+			builder.appendName(value);
 		}
 		if (in.attributeName != null)
-			namer.push(in.attributeName);
-
-		final int expectedNumLabels = in.keyProperties.size() - nameKeys.length;
-		final Labels labels = new Labels(Math.max(0, expectedNumLabels));
-		in.keyProperties.forEach((k, v) -> {
-			if (MoreArrays.contains(nameKeys, k))
-				return;
-			labels.push(k, v);
-		});
-
-		namer.separator('_');
-		ValueTransformations.unfold(namer, labels, in.value, in.attributeType, (m) -> {
-			m.timestamp = in.timestamp;
-			m.help = in.attributeDescription;
-			for (final MetricValueModifier modifier : modifiers)
-				modifier.apply(m);
-			out.emit(m);
-		});
+			builder.appendName(in.attributeName);
+		builder.addLabelsExcluding(in.keyProperties, nameKeys);
+		builder.timestamp(in.timestamp);
+		builder.help(in.attributeDescription);
+		builder.transform(in.value, in.attributeType, out, '_', modifiers);
+		builder.dispose();
 	}
 
 	public static class Builder {
@@ -314,7 +301,11 @@ public class V1 {
 		}
 
 		public Builder transform(final Object value, final String type, final MetricValueOutput out, final MetricValueModifier... modifiers) {
-			namer.separator('.'); // always use '.' for nested attributes
+			return transform(value, type, out, '.', modifiers); // always use '.' for nested attributes
+		}
+
+		private Builder transform(final Object value, final String type, final MetricValueOutput out, final char separator, final MetricValueModifier... modifiers) {
+			namer.separator(separator);
 			ValueTransformations.unfold(namer, labels, value, type, (m) -> {
 				m.timestamp = this.timestamp;
 				m.help = this.help;
