@@ -3,6 +3,7 @@ package net.thisptr.jmx.exporter.agent.scraper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,7 +104,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	}
 
 	private Pair<Boolean, RuleMatch> findRuleEarlyNoCache(final FastObjectName name) {
-		final Map<String, String> captures = new HashMap<>();
+		final Map<String, String> captures = new LinkedHashMap<>(); // LinkedHashMap is used for faster iterations.
 		for (final ScrapeRuleType rule : rules) {
 			if (rule.patterns() == null || rule.patterns().isEmpty()) {
 				if (rule.condition() == null) {
