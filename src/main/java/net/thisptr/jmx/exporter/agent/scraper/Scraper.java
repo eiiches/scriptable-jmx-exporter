@@ -74,12 +74,12 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	 * Caches a scrape rule for an MBean attribute. While the mappings never change, we need to drop stale entries to
 	 * avoid consuming too much memory.
 	 */
-	private final LoadingCache<Pair<FastObjectName, String>, RuleMatch> findRuleCache = CacheBuilder.newBuilder()
+	private final LoadingCache<AttributeRuleCacheKey, RuleMatch> findRuleCache = CacheBuilder.newBuilder()
 			.expireAfterWrite(600, TimeUnit.SECONDS)
-			.build(new CacheLoader<Pair<FastObjectName, String>, RuleMatch>() {
+			.build(new CacheLoader<AttributeRuleCacheKey, RuleMatch>() {
 				@Override
-				public RuleMatch load(final Pair<FastObjectName, String> args) throws Exception {
-					return findRuleNoCache(args._1, args._2);
+				public RuleMatch load(final AttributeRuleCacheKey key) throws Exception {
+					return findRuleNoCache(key);
 				}
 			});
 
@@ -105,37 +105,96 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	private Pair<Boolean, RuleMatch> findRuleEarlyNoCache(final FastObjectName name) {
 		final Map<String, String> captures = new HashMap<>();
 		for (final ScrapeRuleType rule : rules) {
-			if (rule.patterns() == null || rule.patterns().isEmpty())
-				return Pair.of(true, new RuleMatch(rule, Collections.emptyMap())); // found
+			if (rule.patterns() == null || rule.patterns().isEmpty()) {
+				if (rule.condition() == null) {
+					return Pair.of(true, new RuleMatch(rule, Collections.emptyMap())); // found
+				} else {
+					return Pair.of(false, null); // match depends on condition, abort
+				}
+			}
 			boolean nameMatches = false;
 			for (final AttributeNamePattern pattern : rule.patterns()) {
 				if (pattern.nameMatches(name.domain(), name.keyProperties(), captures)) {
 					nameMatches = true;
-					if (pattern.attribute == null)
+					if (pattern.attribute == null && rule.condition() == null)
 						return Pair.of(true, new RuleMatch(rule, Collections.unmodifiableMap(captures))); // found
 				}
 				captures.clear();
 			}
 			if (nameMatches)
-				return Pair.of(false, null); // match depends on attribute, abort
+				return Pair.of(false, null); // match depends on attribute or condition, abort
 		}
 		return Pair.of(true, new RuleMatch(defaultRule, Collections.emptyMap())); // default rule should be used
 	}
 
-	private RuleMatch findRule(final FastObjectName name, final String attribute) {
-		return findRuleCache.getUnchecked(Pair.of(name, attribute));
+	private static class AttributeRuleCacheKey {
+		public final FastObjectName name;
+		public final String attributeName;
+		public final MBeanInfo beanInfo;
+		public final MBeanAttributeInfo attributeInfo;
+
+		public AttributeRuleCacheKey(final FastObjectName name, final String attributeName, final MBeanInfo beanInfo, final MBeanAttributeInfo attributeInfo) {
+			this.name = name;
+			this.attributeName = attributeName;
+			this.beanInfo = beanInfo;
+			this.attributeInfo = attributeInfo;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((attributeName == null) ? 0 : attributeName.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			AttributeRuleCacheKey other = (AttributeRuleCacheKey) obj;
+			if (attributeName == null) {
+				if (other.attributeName != null)
+					return false;
+			} else if (!attributeName.equals(other.attributeName))
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			return true;
+		}
 	}
 
-	private RuleMatch findRuleNoCache(final FastObjectName name, final String attribute) {
+	private RuleMatch findRule(final FastObjectName name, final String attributeName, final MBeanInfo beanInfo, final MBeanAttributeInfo attributeInfo) {
+		return findRuleCache.getUnchecked(new AttributeRuleCacheKey(name, attributeName, beanInfo, attributeInfo));
+	}
+
+	private RuleMatch findRuleNoCache(final AttributeRuleCacheKey key) {
 		final Map<String, String> captures = new HashMap<>();
 		for (final ScrapeRuleType rule : rules) {
-			if (rule.patterns() == null || rule.patterns().isEmpty())
-				return new RuleMatch(rule, Collections.emptyMap());
-			for (final AttributeNamePattern pattern : rule.patterns()) {
-				if (pattern.matches(name.domain(), name.keyProperties(), attribute, captures))
-					return new RuleMatch(rule, Collections.unmodifiableMap(captures));
-				captures.clear(); // clear partially matched captures
+			boolean patternMatches = false;
+			if (rule.patterns() == null || rule.patterns().isEmpty()) {
+				patternMatches = true;
+			} else {
+				for (final AttributeNamePattern pattern : rule.patterns()) {
+					if (pattern.matches(key.name.domain(), key.name.keyProperties(), key.attributeName, captures)) {
+						patternMatches = true;
+						break;
+					}
+					captures.clear(); // clear partially matched captures
+				}
 			}
+			if (!patternMatches)
+				continue;
+			if (rule.condition() == null || rule.condition().evaluate(key.beanInfo, key.attributeInfo))
+				return new RuleMatch(rule, Collections.unmodifiableMap(captures));
 		}
 		return new RuleMatch(defaultRule, Collections.emptyMap());
 	}
@@ -218,7 +277,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				if (ruleByName._1) {
 					ruleMatch = ruleByName._2;
 				} else {
-					ruleMatch = findRule(name, attribute.getName());
+					ruleMatch = findRule(name, attribute.getName(), info, attribute);
 					if (ruleMatch.rule.skip())
 						continue;
 				}

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.jq.SampleToJsonInputConverter;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 
@@ -34,6 +35,11 @@ public class ScraperTest {
 			if (pattern == null)
 				return null;
 			return Arrays.asList(pattern);
+		}
+
+		@Override
+		public ConditionScript condition() {
+			return null;
 		}
 
 		@Override

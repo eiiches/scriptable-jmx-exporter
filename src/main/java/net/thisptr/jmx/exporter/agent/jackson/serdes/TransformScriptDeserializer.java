@@ -7,46 +7,33 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-import net.thisptr.jmx.exporter.agent.handler.Script;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
+import net.thisptr.jmx.exporter.agent.handler.TransformScript;
+import net.thisptr.jmx.exporter.agent.misc.ScriptText;
 
-public class ScriptDeserializer extends StdDeserializer<Script<?>> {
+public class TransformScriptDeserializer extends StdDeserializer<TransformScript> {
 	private static final long serialVersionUID = -2699557268566596799L;
 
-	public ScriptDeserializer() {
-		super(Script.class);
+	private static final String DEFAULT_ENGINE = "jq";
+
+	public TransformScriptDeserializer() {
+		super(TransformScript.class);
 	}
 
 	@Override
-	public Script<?> deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException, JsonProcessingException {
+	public TransformScript deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException, JsonProcessingException {
 		String text = p.readValueAs(String.class);
 		if (text == null)
 			return null;
 
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
-		final ScriptEngine<?> scriptEngine;
-		final String scriptText;
+		final ScriptText scriptText = ScriptText.valueOf(text);
+		final ScriptEngine scriptEngine = registry.get(scriptText.engineName != null ? scriptText.engineName : DEFAULT_ENGINE);
 
-		text = text.trim();
-		if (text.startsWith("!")) {
-			int i = 1;
-			for (; i < text.length(); ++i) {
-				final int ch = text.charAt(i);
-				if ('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z')
-					continue;
-				break;
-			}
-			final String name = text.substring(1, i);
-			scriptEngine = registry.get(name);
-			scriptText = text.substring(i);
-		} else {
-			scriptEngine = registry.get();
-			scriptText = text;
-		}
 		try {
-			return scriptEngine.compile(scriptText);
+			return scriptEngine.compileTransformScript(scriptText.scriptBody);
 		} catch (ScriptCompileException e) {
 			throw new IOException(e);
 		}

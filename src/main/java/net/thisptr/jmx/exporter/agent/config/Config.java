@@ -14,11 +14,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.net.HostAndPort;
 
 import net.thisptr.jackson.jq.JsonQuery;
-import net.thisptr.jmx.exporter.agent.handler.Script;
+import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
+import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.AttributeNamePatternDeserializer;
+import net.thisptr.jmx.exporter.agent.jackson.serdes.ConditionScriptDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.HostAndPortDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.LabelsDeserializer;
-import net.thisptr.jmx.exporter.agent.jackson.serdes.ScriptDeserializer;
+import net.thisptr.jmx.exporter.agent.jackson.serdes.TransformScriptDeserializer;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeRule;
 
@@ -70,12 +72,16 @@ public class Config {
 		@JsonDeserialize(contentUsing = AttributeNamePatternDeserializer.class)
 		public List<AttributeNamePattern> patterns;
 
+		@JsonProperty("condition")
+		@JsonDeserialize(using = ConditionScriptDeserializer.class)
+		public ConditionScript condition;
+
 		@JsonProperty("skip")
 		public boolean skip = false;
 
 		@JsonProperty("transform")
-		@JsonDeserialize(using = ScriptDeserializer.class)
-		public Script<?> transform;
+		@JsonDeserialize(using = TransformScriptDeserializer.class)
+		public TransformScript transform;
 
 		@Override
 		public boolean skip() {
@@ -85,6 +91,11 @@ public class Config {
 		@Override
 		public List<AttributeNamePattern> patterns() {
 			return patterns;
+		}
+
+		@Override
+		public ConditionScript condition() {
+			return condition;
 		}
 	}
 

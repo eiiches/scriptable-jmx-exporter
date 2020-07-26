@@ -16,67 +16,68 @@ import net.thisptr.jmx.exporter.agent.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.RootScope;
 import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.jmx.exporter.agent.handler.Script;
+import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
+import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 
-public class JsonQueryScriptEngine implements ScriptEngine<JsonQuery> {
+public class JsonQueryScriptEngine implements ScriptEngine {
 	private static final Logger LOG = Logger.getLogger(JsonQueryScriptEngine.class.getName());
 
-	public static final JsonQuery DEFAULT_TRANSFORM;
-	static {
-		try {
-			DEFAULT_TRANSFORM = JsonQuery.compile("default_transform_v1", Versions.JQ_1_6);
-		} catch (final JsonQueryException e) {
-			throw new RuntimeException(e);
+	private static class TransformScriptImpl implements TransformScript {
+		private final JsonQuery query;
+		private final Scope scope;
+
+		public TransformScriptImpl(final JsonQuery query) {
+			this.query = query;
+			this.scope = RootScope.getInstance();
 		}
-	}
 
-	private final Scope scope;
+		@Override
+		public void execute(final Sample<PrometheusScrapeRule> sample, final PrometheusMetricOutput output) {
+			final JsonNode mbeanAttributeNode = SampleToJsonInputConverter.getInstance().convert(sample);
 
-	public JsonQueryScriptEngine() {
-		this.scope = RootScope.getInstance();
+			final List<JsonNode> metricNodes = new ArrayList<>();
+			try {
+				query.apply(scope, mbeanAttributeNode, metricNodes::add);
+			} catch (final Throwable th) {
+				LOG.log(Level.INFO, "Failed to transform a MBean attribute (" + mbeanAttributeNode + ") to Prometheus metrics.", th);
+				return;
+			}
+
+			for (final JsonNode metricNode : metricNodes) {
+				try {
+					// debugOutput.accept(metricNode);
+				} catch (final Throwable th) {
+					LOG.log(Level.FINEST, "Swallowed an exception ocurred during a debug output.", th);
+				}
+
+				final PrometheusMetric metric;
+				try {
+					metric = JsonOutputToMetricConverter.getInstance().convert(metricNode);
+				} catch (final Throwable th) {
+					LOG.log(Level.INFO, "Failed to map a Prometheus metric JSON (" + metricNode + ") to an object.", th);
+					continue;
+				}
+
+				metric.timestamp = sample.timestamp;
+
+				output.emit(metric);
+			}
+		}
+
 	}
 
 	@Override
-	public Script<JsonQuery> compile(final String script) throws ScriptCompileException {
+	public TransformScript compileTransformScript(final String script) throws ScriptCompileException {
 		try {
-			return new Script<>(this, JsonQuery.compile(script, Versions.JQ_1_6));
+			return new TransformScriptImpl(JsonQuery.compile(script, Versions.JQ_1_6));
 		} catch (JsonQueryException e) {
 			throw new ScriptCompileException(e);
 		}
 	}
 
 	@Override
-	public void handle(final Sample<PrometheusScrapeRule> sample, final JsonQuery script, final PrometheusMetricOutput output) {
-		final JsonNode mbeanAttributeNode = SampleToJsonInputConverter.getInstance().convert(sample);
-
-		final List<JsonNode> metricNodes = new ArrayList<>();
-		try {
-			script.apply(scope, mbeanAttributeNode, metricNodes::add);
-		} catch (final Throwable th) {
-			LOG.log(Level.INFO, "Failed to transform a MBean attribute (" + mbeanAttributeNode + ") to Prometheus metrics.", th);
-			return;
-		}
-
-		for (final JsonNode metricNode : metricNodes) {
-			try {
-				// debugOutput.accept(metricNode);
-			} catch (final Throwable th) {
-				LOG.log(Level.FINEST, "Swallowed an exception ocurred during a debug output.", th);
-			}
-
-			final PrometheusMetric metric;
-			try {
-				metric = JsonOutputToMetricConverter.getInstance().convert(metricNode);
-			} catch (final Throwable th) {
-				LOG.log(Level.INFO, "Failed to map a Prometheus metric JSON (" + metricNode + ") to an object.", th);
-				continue;
-			}
-
-			metric.timestamp = sample.timestamp;
-
-			output.emit(metric);
-		}
+	public ConditionScript compileConditionScript(final String script) throws ScriptCompileException {
+		throw new UnsupportedOperationException("!jq engine does not support condition scripts");
 	}
-
 }

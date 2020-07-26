@@ -50,7 +50,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	static {
 		try {
 			DEFAULT_RULE = new PrometheusScrapeRule();
-			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compile("V1.transform(in, out, \"type\", V1.snakeCase());");
+			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript("V1.transform(in, out, \"type\", V1.snakeCase());");
 			DEFAULT_RULE.patterns = Collections.emptyList();
 		} catch (final ScriptCompileException e) {
 			throw new RuntimeException(e);

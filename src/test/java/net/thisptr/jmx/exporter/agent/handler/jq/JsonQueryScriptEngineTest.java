@@ -43,7 +43,7 @@ public class JsonQueryScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("default_transform_v1([\"type\"]; true)").execute(sample, metrics::add);
+		sut.compileTransformScript("default_transform_v1([\"type\"]; true)").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);

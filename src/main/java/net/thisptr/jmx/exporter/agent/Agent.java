@@ -43,7 +43,6 @@ public class Agent {
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
 		registry.add("jq", new JsonQueryScriptEngine());
 		registry.add("java", new JaninoScriptEngine());
-		registry.setDefault("jq");
 	}
 
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
