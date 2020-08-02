@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  flume:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - '9639:9639'
+    - '7091:7091'
+    - '1099:1099'
+    - '44444:44444'
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-0.0.8-SNAPSHOT.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    - type: bind
+      source: ./flume-conf.properties
+      target: /opt/apache-flume-1.9.0-bin/conf/flume-conf.properties
+    environment:
+    - JAVA_OPTS=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099
+      -Djava.rmi.server.hostname=localhost
+    # -XX:+PreserveFramePointer
