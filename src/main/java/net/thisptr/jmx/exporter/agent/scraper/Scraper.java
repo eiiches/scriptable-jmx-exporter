@@ -1,6 +1,7 @@
 package net.thisptr.jmx.exporter.agent.scraper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -14,6 +15,7 @@ import java.util.logging.Logger;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -53,7 +55,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			.refreshAfterWrite(60, TimeUnit.SECONDS)
 			.build(new CacheLoader<ObjectName, CachedMBeanInfo>() {
 				@Override
-				public CachedMBeanInfo load(final ObjectName name) {
+				public CachedMBeanInfo load(final ObjectName name) throws InstanceNotFoundException {
 					return prepare(name);
 				}
 			});
@@ -217,7 +219,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 	/**
 	 * Null object to use with Guava cache, because Guava cache cannot cache null values.
 	 */
-	public final CachedMBeanInfo NULL_CACHED_MBEAN_INFO = new CachedMBeanInfo(null, null, null, null);
+	public final CachedMBeanInfo MBEAN_INFO_NEGATIVE_CACHE = new CachedMBeanInfo(null, null, null, null);
 
 	private class CachedMBeanInfo {
 		public final FastObjectName name;
@@ -244,22 +246,30 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
-	private CachedMBeanInfo prepare(final ObjectName _name) {
+	private CachedMBeanInfo prepare(final ObjectName _name) throws InstanceNotFoundException {
 		final FastObjectName name = new FastObjectName(_name);
 
 		// Filter early by ObjectName because server.getMBeanInfo() is really slow.
 		final Pair<Boolean, RuleMatch> ruleByName = findRuleEarly(name);
 		if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
 			if (ruleByName._2.rule.skip()) // and if the rule is to skip MBean
-				return NULL_CACHED_MBEAN_INFO;
+				return MBEAN_INFO_NEGATIVE_CACHE;
 		}
 
 		final MBeanInfo info;
 		try {
 			info = server.getMBeanInfo(_name);
+		} catch (final InstanceNotFoundException e) {
+			throw e;
 		} catch (final Throwable th) {
-			LOG.log(Level.FINER, "Failed to obtain MBeanInfo (name = " + name + ")", th);
-			return NULL_CACHED_MBEAN_INFO;
+			if (LOG.isLoggable(Level.FINE))
+				LOG.log(Level.FINE, String.format("MBeanServer#getMBeanInfo(%s) #=> %s. This indicates a bug in the MBean. The MBean will be banned for 1 minutes.", _name, th.getClass().getSimpleName()), th);
+			return MBEAN_INFO_NEGATIVE_CACHE;
+		}
+		if (info == null) {
+			if (LOG.isLoggable(Level.FINE))
+				LOG.log(Level.FINE, String.format("MBeanServer#getMBeanInfo(%s) #=> null. This indicates a bug in the MBean. The MBean will be banned for 1 minutes.", _name));
+			return MBEAN_INFO_NEGATIVE_CACHE;
 		}
 
 		final Set<String> bannedAttributes = bannedMBeanAttributes.getIfPresent(_name);
@@ -286,7 +296,9 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				requests.put(attribute.getName(), new AttributeRule(attribute, ruleMatch));
 				attributes.add(attribute.getName());
 			} catch (final Throwable th) {
-				LOG.log(Level.WARNING, "Failed to process MBean attribute (name = " + name + ", attribute = " + attribute.getName() + ").", th);
+				if (LOG.isLoggable(Level.WARNING))
+					LOG.log(Level.WARNING, String.format("Got an unexpected exception while enumerating the MBean attribute \"%s:%s\". This is likely a bug in scriptable-jmx-exporter. Please report an issue on GitHub.", name, attribute.getName()), th);
+				continue;
 			}
 		}
 
@@ -299,56 +311,128 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		try {
 			names = server.queryNames(null, null);
 		} catch (final Throwable th) {
-			LOG.log(Level.WARNING, "Failed to enumerate MBean names.", th);
+			if (LOG.isLoggable(Level.SEVERE))
+				LOG.log(Level.SEVERE, String.format("MBeanServer#queryNames(null, null) #=> %s. This is bad. We can't do anything but to return an empty response.", th.getClass().getSimpleName()), th);
+			return;
+		}
+		if (names == null) {
+			LOG.log(Level.SEVERE, "MBeanServer#queryNames(null, null) #=> null. This is bad. We can't do anything but to return an empty response.");
 			return;
 		}
 
 		MoreCollections.forEachSlowlyOverDuration(names, duration, unit, (_name) -> {
-			final CachedMBeanInfo info = mbeanInfoCache.getUnchecked(_name);
-			if (info == NULL_CACHED_MBEAN_INFO)
-				return;
-
-			final long timestamp;
-			final AttributeList obtainedAttributes;
 			try {
-				timestamp = System.currentTimeMillis();
-				// NOTE: We assume the results are not always in the same order as the arguments as the javadoc
-				// doesn't say anything about it.
-				obtainedAttributes = server.getAttributes(_name, info.attributeNamesToGet);
-			} catch (final Throwable e) {
-				LOG.log(Level.WARNING, "Failed to process MBean (name = " + _name + ")", e);
-				return;
-			}
-
-			if (obtainedAttributes.size() == info.attributeNamesToGet.length) { // all retrieved
-				for (final Attribute attribute : obtainedAttributes.asList()) {
-					final AttributeRule request = info.requests.get(attribute.getName());
-					output.emit(new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
-				}
-			} else { // some of the attributes could not be retrieved; we need to check which attributes are missing
-				final Map<String, AttributeRule> requests = new HashMap<>(info.requests);
-				final String[] successfulAttributeNames = new String[obtainedAttributes.size()];
-				int i = 0;
-				for (final Attribute attribute : obtainedAttributes.asList()) {
-					final AttributeRule request = requests.remove(attribute.getName());
-					output.emit(new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue()));
-					successfulAttributeNames[i++] = attribute.getName();
-				}
-				requests.forEach((attributeName, request) -> {
-					try {
-						server.getAttribute(_name, attributeName);
-					} catch (final Throwable th) {
-						if (th.getCause() instanceof UnsupportedOperationException) {
-							// Disable attribute for 10 minutes, iff unsupported.
-							banAttribute(_name, attributeName);
-						}
-						LOG.log(Level.FINER, "Failed to obtain MBean attribute (name = " + _name + ", attribute = " + attributeName + ").", th);
-					}
-				});
-				// Anyway, exclude failed attribute for 1 minutes.
-				mbeanInfoCache.put(_name, new CachedMBeanInfo(info.name, info.info, info.requests, successfulAttributeNames));
+				scrape(output, _name);
+			} catch (final InstanceNotFoundException e) {
+				if (LOG.isLoggable(Level.FINE))
+					LOG.log(Level.FINE, String.format("MBeanServer#getMBeanInfo(%s) #=> %s. This can happen when the MBean is unregistered after queryNames() and is just a temporary thing.", _name, e.getClass().getSimpleName()), e);
+			} catch (final Throwable th) {
+				if (LOG.isLoggable(Level.WARNING))
+					LOG.log(Level.WARNING, String.format("Got an unexpected exception while processing the MBean \"%s\". This is likely a bug in scriptable-jmx-exporter. Please report an issue on GitHub.", _name), th);
 			}
 		});
+	}
+
+	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final ObjectName _name) throws InstanceNotFoundException {
+		final CachedMBeanInfo info;
+		try {
+			info = mbeanInfoCache.get(_name);
+		} catch (final Throwable th) {
+			if (th.getCause() instanceof InstanceNotFoundException)
+				throw (InstanceNotFoundException) th.getCause();
+			if (LOG.isLoggable(Level.WARNING))
+				LOG.log(Level.WARNING, String.format("Got an unexpected exception while collecting MBean information of \"%s\". This may be a bug in scriptable-jmx-exporter. Please report an issue on GitHub.", _name), th);
+			return;
+		}
+		if (info == MBEAN_INFO_NEGATIVE_CACHE)
+			return;
+
+		final long timestamp = System.currentTimeMillis();
+		final AttributeList obtainedAttributes;
+		try {
+			// NOTE: We assume the results are not always in the same order as the arguments as the javadoc
+			// doesn't say anything about it.
+			obtainedAttributes = server.getAttributes(_name, info.attributeNamesToGet);
+		} catch (final Throwable th) {
+			if (LOG.isLoggable(Level.FINE))
+				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) #=> %s. The MBean is banned for 1 minutes.", _name, Arrays.toString(info.attributeNamesToGet), th.getClass().getSimpleName()), th);
+			mbeanInfoCache.put(_name, MBEAN_INFO_NEGATIVE_CACHE);
+			return;
+		}
+		if (obtainedAttributes == null) {
+			if (LOG.isLoggable(Level.FINE))
+				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) #=> null. The MBean is banned for 1 minutes.", _name, Arrays.toString(info.attributeNamesToGet)));
+			mbeanInfoCache.put(_name, MBEAN_INFO_NEGATIVE_CACHE);
+			return;
+		}
+
+		int successfulAttributes = 0; // # of successfully obtained attributes
+		final List<Attribute> obtainedAttributeList = obtainedAttributes.asList();
+		for (final Attribute attribute : obtainedAttributeList) {
+			final AttributeRule request = info.requests.get(attribute.getName());
+			if (request == null) {
+				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an attribute named \"%s\" which we didn't request. This indicates a bug in the MBean. Ignored.", _name, info.attributeNamesToGet, attribute.getName()));
+				continue;
+			}
+			++successfulAttributes;
+			final Sample<ScrapeRuleType> sample = new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue());
+			safeEmit(output, sample);
+		}
+
+		if (successfulAttributes != info.attributeNamesToGet.length) {
+			// Some of the attributes could not be retrieved. We need to check which attributes are missing.
+			int i = 0;
+			final Map<String, AttributeRule> requests = new HashMap<>(info.requests);
+			final String[] successfulAttributeNames = new String[successfulAttributes];
+			for (final Attribute attribute : obtainedAttributeList) {
+				final AttributeRule request = requests.remove(attribute.getName());
+				if (request == null)
+					continue;
+				successfulAttributeNames[i++] = attribute.getName();
+			}
+
+			// If `requests` still has elements at this point, they are the attributes that we couldn't obtain the value of.
+			requests.forEach((attributeName, request) -> {
+				// Let's probe why the attribute could not be obtained.
+				try {
+					final Object value = server.getAttribute(_name, attributeName);
+					if (LOG.isLoggable(Level.FINE))
+						LOG.log(Level.FINE, String.format("MBeanServer#getAttribute(%s, %s) #=> %s, while expecting an exception. This is weird. Anyway, the attribute will be banned for 1 minutes.", _name, attributeName, value));
+				} catch (final Throwable th) {
+					if (th.getCause() instanceof UnsupportedOperationException) {
+						// Disable attribute for 10 minutes, iff unsupported.
+						banAttribute(_name, attributeName);
+						if (LOG.isLoggable(Level.FINE))
+							LOG.log(Level.FINE, String.format("MBeanServer#getAttribute(%s, %s) #=> %s. The attribute will be banned for 10 minutes.", _name, attributeName, th.getClass().getSimpleName()), th);
+					} else {
+						if (LOG.isLoggable(Level.FINE))
+							LOG.log(Level.FINE, String.format("MBeanServer#getAttribute(%s, %s) #=> %s. The attribute will be banned for 1 minutes.", _name, attributeName, th.getClass().getSimpleName()), th);
+					}
+				}
+			});
+
+			// Anyway, exclude failed attribute for 1 minutes.
+			mbeanInfoCache.put(_name, new CachedMBeanInfo(info.name, info.info, info.requests, successfulAttributeNames));
+		}
+	}
+
+	private String safeFormatValue(final Object value) {
+		if (value == null)
+			return null;
+		try {
+			return value.toString();
+		} catch (final Throwable th) {
+			return "<failed to format value>";
+		}
+	}
+
+	private void safeEmit(final ScrapeOutput<ScrapeRuleType> output, final Sample<ScrapeRuleType> sample) {
+		try {
+			output.emit(sample);
+		} catch (final Throwable th) {
+			if (LOG.isLoggable(Level.WARNING))
+				LOG.log(Level.WARNING, String.format("The callback raised an exception, while processing an MBean attribute: name = %s, attribute = %s, type = %s, value = %s. This indicates a bug in the transform script.", sample.name, sample.attribute.getName(), sample.attribute.getType(), safeFormatValue(sample.value)), th);
+		}
 	}
 
 	/**
