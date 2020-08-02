@@ -54,7 +54,7 @@ public class JaninoScriptEngineTest {
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:OperatingSystem:ProcessCpuLoad");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_OperatingSystem_ProcessCpuLoad");
 		assertThat(metrics.get(0).labels).isEmpty();
 	}
 
@@ -67,7 +67,7 @@ public class JaninoScriptEngineTest {
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:ProcessCpuLoad");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_ProcessCpuLoad");
 		assertThat(metrics.get(0).labels).containsExactlyInAnyOrderEntriesOf(Collections.singletonMap("type", "OperatingSystem"));
 	}
 
@@ -81,7 +81,7 @@ public class JaninoScriptEngineTest {
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
 		for (int i = 0; i < metrics.size(); ++i) {
-			assertThat(metrics.get(i).name).isEqualTo("java.lang:Threading:AllThreadIds");
+			assertThat(metrics.get(i).name).isEqualTo("java.lang_Threading_AllThreadIds");
 			assertThat(metrics.get(i).value).isEqualTo(((Number) Array.get(sample.value, i)).doubleValue());
 			assertThat(metrics.get(i).labels.size()).isEqualTo(1);
 			assertThat(metrics.get(i).labels.get("index")).isEqualTo(String.valueOf(i));
@@ -97,11 +97,11 @@ public class JaninoScriptEngineTest {
 
 		assertThat(metrics.size()).isEqualTo(4);
 
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:Memory:HeapMemoryUsage_committed");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_committed");
 		assertThat(metrics.get(0).value).isEqualTo(((Number) ((CompositeData) sample.value).get("committed")).doubleValue());
 		assertThat(metrics.get(0).labels).isEmpty();
 
-		assertThat(metrics.get(3).name).isEqualTo("java.lang:Memory:HeapMemoryUsage_used");
+		assertThat(metrics.get(3).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_used");
 		assertThat(metrics.get(3).value).isEqualTo(((Number) ((CompositeData) sample.value).get("used")).doubleValue());
 		assertThat(metrics.get(3).labels).isEmpty();
 	}

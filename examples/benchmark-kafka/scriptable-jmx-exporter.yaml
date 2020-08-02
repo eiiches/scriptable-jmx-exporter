@@ -16,7 +16,7 @@ rules:
 - pattern: 'kafka.*::Value'
   transform: |
     !java
-    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "type", "name")
       .type("gauge")
       .timestamp(in.timestamp)
@@ -26,7 +26,7 @@ rules:
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
   transform: |
     !java
-    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .type("counter")
       .suffix("total")
@@ -37,7 +37,7 @@ rules:
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
-    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .suffix("count")
       .type("summary")
@@ -48,7 +48,7 @@ rules:
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
-    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .addLabel("quantile", "0." + match.get("p"))
       .type("summary")

@@ -177,7 +177,7 @@ public class V1 {
 		};
 	}
 
-	private final static char DEFAULT_SEPARATOR = ':';
+	private final static char DEFAULT_SEPARATOR = '_';
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final MetricValueModifier... modifiers) {
 		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers);
@@ -378,6 +378,6 @@ public class V1 {
 	}
 
 	public static Builder name(final String... names) {
-		return name(':', names);
+		return name('_', names);
 	}
 }

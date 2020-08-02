@@ -413,7 +413,7 @@ one of the metric label, `memoryUsageAfterGc_key` is changed to just `key` in `V
 ```yaml
 - transform: |
     !java
-    V1.transform(in, out, "foo", "bar");
+    V1.transform(in, out, ':', "foo", "bar");
 ```
 
 Detailed explanation for jq scripting is removed. Please refer to [older README.md](https://github.com/eiiches/scriptable-jmx-exporter/tree/java-prometheus-metrics-agent-0.0.5).
