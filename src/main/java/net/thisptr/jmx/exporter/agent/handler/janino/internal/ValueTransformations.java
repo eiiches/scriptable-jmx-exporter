@@ -179,6 +179,15 @@ public class ValueTransformations {
 	 * @param output
 	 */
 	public static void unfold(final MetricNamer namer, final Labels labels, final Object value, final String type, final MetricValueOutput output) {
+		if (type == null) {
+			// Normally, this doesn't happen, but I came across this when I was using Tomcat. The type of
+			// "Users:type=UserDatabase,database=UserDatabase:writeable" attribute was null. While this is something
+			// that should be fixed in Tomcat, we could handle it here by inspecting the value itself.
+			if (value == null)
+				return;
+			unfoldByDynamicType(namer, labels, value, type, output);
+			return;
+		}
 		switch (type) {
 		case "double": /* fall through */
 		case "float": /* fall through */
