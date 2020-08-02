@@ -27,7 +27,7 @@ public abstract class PollingConfigWatcher extends Thread implements ConfigWatch
 
 	public PollingConfigWatcher(final ConfigWatcher.ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		this.listener = listener;
-		this.setName("Prometheus Metrics Agent " + PollingConfigWatcher.class.getSimpleName());
+		this.setName("Scriptable JMX Exporter " + PollingConfigWatcher.class.getSimpleName());
 		this.setDaemon(true);
 	}
 
@@ -43,7 +43,7 @@ public abstract class PollingConfigWatcher extends Thread implements ConfigWatch
 			try {
 				Thread.sleep(1000);
 			} catch (final InterruptedException ie) {
-				LOG.log(Level.INFO, "Interrupted. Stopping Prometheus Metrics Agent " + PollingConfigWatcher.class.getSimpleName() + "...");
+				LOG.log(Level.INFO, "Interrupted. Stopping Scriptable JMX Exporter " + PollingConfigWatcher.class.getSimpleName() + "...");
 				break;
 			}
 

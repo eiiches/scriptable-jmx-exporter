@@ -94,22 +94,22 @@ public class Agent {
 	}
 
 	public static void premain(final String args) throws Throwable {
-		LOG.log(Level.INFO, "Starting Prometheus Metrics Agent...");
+		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter...");
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
-				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Prometheus Metrics Agent...");
+				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
 				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.labels, newConfig.options);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
 					} catch (final Throwable th) {
-						LOG.log(Level.WARNING, "Failed to stop Prometheus Metrics Agent server for reconfiguration.", th);
+						LOG.log(Level.WARNING, "Failed to stop Scriptable JMX Exporter server for reconfiguration.", th);
 					}
 					SERVER = newServer(newConfig.server.bindAddress);
 					safeStart(SERVER);
 				}
 				HANDLER = handler;
-				LOG.log(Level.INFO, "Successfully reconfigured Prometheus Metrics Agent.");
+				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter.");
 			});
 
 			final Config initialConfig = watcher.config();
@@ -118,7 +118,7 @@ public class Agent {
 			safeStart(SERVER);
 			watcher.start();
 		} catch (final Throwable th) {
-			LOG.log(Level.SEVERE, "Failed to start Prometheus Metrics Agent.", th);
+			LOG.log(Level.SEVERE, "Failed to start Scriptable JMX Exporter.", th);
 			System.exit(1);
 		}
 	}
