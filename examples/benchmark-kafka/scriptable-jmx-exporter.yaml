@@ -23,7 +23,7 @@ rules:
       .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
-  condition: mbean.getClassName().endsWith("JmxReporter$Meter")
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
   transform: |
     !java
     V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
@@ -34,7 +34,7 @@ rules:
       .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::Count'
-  condition: mbean.getClassName().endsWith("JmxReporter$Histogram") || mbean.getClassName().endsWith("JmxReporter$Timer")
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
     V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
@@ -45,7 +45,7 @@ rules:
       .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
-  condition: mbean.getClassName().endsWith("JmxReporter$Histogram") || mbean.getClassName().endsWith("JmxReporter$Timer")
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     !java
     V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))

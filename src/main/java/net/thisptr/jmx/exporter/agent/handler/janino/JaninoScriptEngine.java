@@ -111,7 +111,7 @@ public class JaninoScriptEngine implements ScriptEngine {
 	public ConditionScript compileConditionScript(final String script) throws ScriptCompileException {
 		final ExpressionEvaluator ee = new ExpressionEvaluator();
 		try {
-			final ConditionExpression expr = ee.createFastEvaluator(script, ConditionExpression.class, "mbean", "attribute");
+			final ConditionExpression expr = ee.createFastEvaluator(script, ConditionExpression.class, "mbeanInfo", "attributeInfo");
 			return new ConditionScriptImpl(expr);
 		} catch (final Exception e) {
 			throw new ScriptCompileException(e);
