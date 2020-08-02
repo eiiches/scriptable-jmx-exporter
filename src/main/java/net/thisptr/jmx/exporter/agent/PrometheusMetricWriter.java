@@ -317,9 +317,12 @@ public class PrometheusMetricWriter implements Closeable {
 		return index;
 	}
 
-	private void writeAnnotation(final String metricName, final StringWriter writer, final byte[] annotationType, final String value) throws IOException {
-		final int size = 5 + annotationType.length + (writer != null ? writer.expectedSize(metricName) : Math.max(1, metricName.length())) + value.length() * 3;
+	private void writeAnnotation(final String metricName, final StringWriter writer, final String nameSuffix, final byte[] annotationType, final String value) throws IOException {
+		final int size = 5 + annotationType.length + (writer != null ? writer.expectedSize(metricName) : Math.max(1, metricName.length()))
+				+ (nameSuffix != null && !nameSuffix.isEmpty() ? 1 + nameSuffix.length() : 0)
+				+ value.length() * 3;
 		ensureAtLeast(size);
+
 		int index = this.position;
 		bytes[index++] = '#';
 		bytes[index++] = ' ';
@@ -331,18 +334,24 @@ public class PrometheusMetricWriter implements Closeable {
 		} else {
 			index = sanitizeMetricName(bytes, index, metricName);
 		}
+
+		if (nameSuffix != null && !nameSuffix.isEmpty()) {
+			bytes[index++] = '_';
+			index = sanitizeMetricName(bytes, index, nameSuffix);
+		}
+
 		bytes[index++] = ' ';
 		index = writeTextUtf8Escaped(bytes, index, value, false);
 		bytes[index++] = '\n';
 		this.position = index;
 	}
 
-	public void writeHelp(final String name, final StringWriter writer, final String helpText) throws IOException {
-		writeAnnotation(name, writer, HELP, helpText);
+	public void writeHelp(final String name, final StringWriter writer, final String nameSuffix, String helpText) throws IOException {
+		writeAnnotation(name, writer, nameSuffix, HELP, helpText);
 	}
 
-	public void writeType(final String name, final StringWriter writer, final String typeText) throws IOException {
-		writeAnnotation(name, writer, TYPE, typeText);
+	public void writeType(final String name, final StringWriter writer, final String nameSuffix, final String typeText) throws IOException {
+		writeAnnotation(name, writer, nameSuffix, TYPE, typeText);
 	}
 
 	private static int writeUnicode(final byte[] bytes, int index, final int codePoint) {

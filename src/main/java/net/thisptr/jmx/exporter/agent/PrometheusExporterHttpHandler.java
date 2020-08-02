@@ -166,18 +166,19 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 					try {
 						if (metrics.isEmpty())
 							return;
+						final PrometheusMetric m = metrics.get(0);
 						if (options.includeHelp) {
-							final PrometheusMetric m = metrics.get(0);
 							final String help = m.help;
 							if (help != null) {
-								pwriter.writeHelp(name, m.nameWriter, help);
+								final boolean totalOfCounter = "total".equals(m.suffix) && "counter".equals(m.type);
+								pwriter.writeHelp(name, m.nameWriter, totalOfCounter ? m.suffix : null, help);
 							}
 						}
 						if (options.includeType) {
-							final PrometheusMetric m = metrics.get(0);
 							final String type = m.type;
 							if (type != null) {
-								pwriter.writeType(name, m.nameWriter, type);
+								final boolean totalOfCounter = "total".equals(m.suffix) && "counter".equals(m.type);
+								pwriter.writeType(name, m.nameWriter, totalOfCounter ? m.suffix : null, type);
 							}
 						}
 						metrics.forEach((metric) -> {

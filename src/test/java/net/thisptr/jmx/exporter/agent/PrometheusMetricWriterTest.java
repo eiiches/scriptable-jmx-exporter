@@ -163,7 +163,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(20)
 	void testType(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeType("test", null, "counter");
+			w.writeType("test", null, null, "counter");
 		});
 		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}
@@ -171,7 +171,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(30)
 	void testHelp(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeHelp("test", null, "🎼あЛa\n\" \\ ");
+			w.writeHelp("test", null, null, "🎼あЛa\n\" \\ ");
 		});
 		assertThat(actual).isEqualTo("# HELP test 🎼あЛa\\n\" \\\\ \n");
 	}
@@ -189,7 +189,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(20)
 	void testHelpWithCustomNameWriter(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeHelp("TEST", new LowerCaseStringWriter(), "value");
+			w.writeHelp("TEST", new LowerCaseStringWriter(), null, "value");
 		});
 		assertThat(actual).isEqualTo("# HELP test value\n");
 	}
@@ -197,7 +197,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(20)
 	void testTypeWithCustomNameWriter(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeType("TEST", new LowerCaseStringWriter(), "counter");
+			w.writeType("TEST", new LowerCaseStringWriter(), null, "counter");
 		});
 		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}

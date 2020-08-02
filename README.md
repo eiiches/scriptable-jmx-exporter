@@ -352,6 +352,39 @@ java_lang_operating_system_available_file_descriptor_count 1048546.0 15951644265
 java_lang_operating_system_open_file_descriptor_count 30.0 1595164426599
 ```
 
+#### Getting ready for upcoming OpenMetrics support
+
+While this agent does not support OpenMetrics yet, you can prepare for the upcoming OpenMetrics support.
+The most notable difference between the Prometheus format and the OpenMetrics format is that OpenMetrics requires (not only recommends) `_total` suffix for counter metrics.
+To ensure conformance to both formats in future, set `total` suffix to `counter` metrics. E.g.
+
+```java
+MetricValue m = new MetricValue();
+m.name = "<NAME>"
+m.suffix = "total";
+m.type = "counter";
+m.value = 1.0;
+out.emit(m);
+```
+
+This will produce the following responses in respective formats:
+
+* Prometheus (Special-cased to append `_total` to metric name in annotations, when `counter` has `total` suffix)
+
+  ```
+  # TYPE <NAME>_total counter
+  <NAME>_total 1.0
+  ```
+
+* OpenMetrics
+
+  ```
+  # TYPE <NAME> counter
+  <NAME>_total 1.0
+  ```
+
+All that said, if you prefer to leave the metrics `untyped` to keep configurations simple, that should be also fine.
+
 #### Tips
 
 * Prefer rule patterns, instead of using `if` inside transform scripts, to dispatch based on MBean attributes. It's usually faster.

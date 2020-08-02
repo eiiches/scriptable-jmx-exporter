@@ -26,9 +26,10 @@ rules:
   condition: mbean.getClassName().endsWith("JmxReporter$Meter")
   transform: |
     !java
-    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"), "total")
+    V1.name('_', in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .type("counter")
+      .suffix("total")
       .timestamp(in.timestamp)
       .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
