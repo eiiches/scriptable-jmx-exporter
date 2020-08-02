@@ -177,36 +177,66 @@ public class V1 {
 		};
 	}
 
+	private final static char DEFAULT_SEPARATOR = ':';
+
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, key1);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, key1);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final String key2, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, key1, key2);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, key1, key2);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final String key2, final String key3, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, key1, key2, key3);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, key1, key2, key3);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final String key2, final String key3, final String key4, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, key1, key2, key3, key4);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, key1, key2, key3, key4);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String key1, final String key2, final String key3, final String key4, final String key5, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, key1, key2, key3, key4, key5);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, key1, key2, key3, key4, key5);
 	}
 
 	public static void transform(final AttributeValue in, final MetricValueOutput out, final String[] keys, final MetricValueModifier... modifiers) {
-		transformInternal(in, out, modifiers, keys);
+		transformInternal(in, out, DEFAULT_SEPARATOR, modifiers, keys);
 	}
 
-	private static void transformInternal(final AttributeValue in, final MetricValueOutput out, final MetricValueModifier[] modifiers, final String... nameKeys) {
-		final Builder builder = V1.name(':', in.domain);
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String key1, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, key1);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String key1, final String key2, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, key1, key2);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String key1, final String key2, final String key3, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, key1, key2, key3);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String key1, final String key2, final String key3, final String key4, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, key1, key2, key3, key4);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String key1, final String key2, final String key3, final String key4, final String key5, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, key1, key2, key3, key4, key5);
+	}
+
+	public static void transform(final AttributeValue in, final MetricValueOutput out, final char sep, final String[] keys, final MetricValueModifier... modifiers) {
+		transformInternal(in, out, sep, modifiers, keys);
+	}
+
+	private static void transformInternal(final AttributeValue in, final MetricValueOutput out, final char sep, final MetricValueModifier[] modifiers, final String... nameKeys) {
+		final Builder builder = V1.name(sep, in.domain);
 		for (final String nameKey : nameKeys) {
 			final String value = in.keyProperties.get(nameKey);
 			if (value == null)
