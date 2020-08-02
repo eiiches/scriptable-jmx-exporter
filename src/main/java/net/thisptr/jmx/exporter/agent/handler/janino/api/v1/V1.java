@@ -35,34 +35,30 @@ public class V1 {
 		public int write(final String name, final byte[] bytes, int index) {
 			final int savedIndex = index;
 			int length = name.length();
-			boolean underscore = false;
+			boolean suppressUnderscore = true;
 			for (int i = 0; i < length; ++i) {
 				final char ch = name.charAt(i);
 				if ('a' <= ch && ch <= 'z') {
 					bytes[index++] = (byte) ch;
-					underscore = false;
+					suppressUnderscore = false;
 				} else if ('A' <= ch && ch <= 'Z') {
-					if (!underscore && savedIndex != index)
+					if (!suppressUnderscore)
 						bytes[index++] = '_';
 					bytes[index++] = (byte) (ch + ('a' - 'A'));
-					underscore = false;
+					suppressUnderscore = false;
 				} else if (ch == ':' || ch == '_') {
-					if (!underscore) {
-						bytes[index++] = '_';
-						underscore = true;
-					}
+					bytes[index++] = (byte) ch;
+					suppressUnderscore = true;
 				} else if ('0' <= ch && ch <= '9') {
 					if (savedIndex == index)
 						bytes[index++] = '_'; // first char cannot be a number; prepend _;
 					bytes[index++] = (byte) ch;
-					underscore = false;
+					suppressUnderscore = false;
 				} else {
 					if (Character.isHighSurrogate(ch))
 						++i;
-					if (!underscore) {
-						bytes[index++] = '_';
-						underscore = true;
-					}
+					bytes[index++] = '_';
+					suppressUnderscore = true;
 				}
 			}
 			if (savedIndex == index) { // empty metric name is not allowed
@@ -88,32 +84,22 @@ public class V1 {
 		public int write(final String name, final byte[] bytes, int index) {
 			final int savedIndex = index;
 			int length = name.length();
-			boolean underscore = false;
 			for (int i = 0; i < length; ++i) {
 				final char ch = name.charAt(i);
 				if ('a' <= ch && ch <= 'z') {
 					bytes[index++] = (byte) ch;
-					underscore = false;
 				} else if ('A' <= ch && ch <= 'Z') {
 					bytes[index++] = (byte) (ch + ('a' - 'A'));
-					underscore = false;
 				} else if (ch == '_' || ch == ':') {
-					if (!underscore) {
-						bytes[index++] = (byte) ch;
-						underscore = true;
-					}
+					bytes[index++] = (byte) ch;
 				} else if ('0' <= ch && ch <= '9') {
 					if (savedIndex == index)
 						bytes[index++] = '_'; // first char cannot be a number; prepend _;
 					bytes[index++] = (byte) ch;
-					underscore = false;
 				} else {
 					if (Character.isHighSurrogate(ch))
 						++i;
-					if (!underscore) {
-						bytes[index++] = '_';
-						underscore = true;
-					}
+					bytes[index++] = '_';
 				}
 			}
 			if (savedIndex == index) { // empty metric name is not allowed
