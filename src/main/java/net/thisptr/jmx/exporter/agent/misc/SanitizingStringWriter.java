@@ -1,24 +1,5 @@
 package net.thisptr.jmx.exporter.agent.misc;
 
-/**
- * Writes out a metric name into byte[] at the specified index. Invalid characters are
- * silently replaced by '_' (underscore). If the metric name is empty,
- * this method just writes a single '_' (underscore). If the name starts with a number, '_' is prepended.
- *
- * <p>
- * A metric name must match [a-zA-Z_:][a-zA-Z0-9_:]*.
- * </p>
- *
- * <p>
- * It's caller's responsibility to ensure the byte[] has enough space. This method requires at most <tt>name.length() + 1</tt> bytes.
- * </p>
- *
- * @param name
- * @return the next index after the metric name is written.
- * @throws IOException
- * @see https://prometheus.io/docs/concepts/data_model/
- * @see {@link #sanitizeLabelName(String)}
- */
 public class SanitizingStringWriter implements StringWriter {
 	private static final SanitizingStringWriter INSTANCE = new SanitizingStringWriter();
 
@@ -31,6 +12,24 @@ public class SanitizingStringWriter implements StringWriter {
 		return name.length() + 1;
 	}
 
+	/**
+	 * Writes out a metric name into byte[] at the specified index. Invalid characters are
+	 * silently replaced by '_' (underscore). If the metric name is empty,
+	 * this method just writes a single '_' (underscore). If the name starts with a number, '_' is prepended.
+	 *
+	 * <p>
+	 * A metric name must match [a-zA-Z_:][a-zA-Z0-9_:]*.
+	 * </p>
+	 *
+	 * <p>
+	 * It's caller's responsibility to ensure the byte[] has enough space. This method requires at most `name.length() + 1` bytes.
+	 * </p>
+	 *
+	 * @param name
+	 * @return the next index after the metric name is written.
+	 *
+	 * @see <a href="https://prometheus.io/docs/concepts/data_model/">https://prometheus.io/docs/concepts/data_model/</a>
+	 */
 	@Override
 	public int write(final String name, final byte[] bytes, int index) {
 		final int savedIndex = index;
