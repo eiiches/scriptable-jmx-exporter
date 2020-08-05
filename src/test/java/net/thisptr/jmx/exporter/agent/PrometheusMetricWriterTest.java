@@ -81,7 +81,7 @@ public class PrometheusMetricWriterTest {
 		m.name = "00123456789a#";
 		m.value = 1.0;
 		m.labels = new HashMap<>();
-		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_0123456789a_ 1\n");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_00123456789a_ 1\n");
 	}
 
 	@RepeatedTest(20)
