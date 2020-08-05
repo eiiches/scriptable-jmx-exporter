@@ -58,11 +58,6 @@
 			<version>2.11.1</version>
 		</dependency>
 		<dependency>
-			<groupId>net.thisptr</groupId>
-			<artifactId>jackson-jq-extra</artifactId>
-			<version>1.0.0-preview.20191208</version>
-		</dependency>
-		<dependency>
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>janino</artifactId>
 			<version>3.1.2</version>
@@ -164,10 +159,6 @@
 								<relocation>
 									<pattern>org.joni</pattern>
 									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.joni</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>net.thisptr.jackson.jq</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.net.thisptr.jackson.jq</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.yaml.snakeyaml</pattern>

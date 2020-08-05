@@ -13,13 +13,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.net.HostAndPort;
 
-import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.AttributeNamePatternDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.ConditionScriptDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.HostAndPortDeserializer;
-import net.thisptr.jmx.exporter.agent.jackson.serdes.LabelsDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.TransformScriptDeserializer;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeRule;
@@ -98,8 +96,4 @@ public class Config {
 			return condition;
 		}
 	}
-
-	@JsonProperty("labels")
-	@JsonDeserialize(using = LabelsDeserializer.class)
-	public JsonQuery labels;
 }

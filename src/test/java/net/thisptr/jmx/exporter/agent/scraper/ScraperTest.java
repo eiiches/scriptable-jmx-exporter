@@ -13,10 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
+import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
-import net.thisptr.jmx.exporter.agent.handler.jq.SampleToJsonInputConverter;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 
 public class ScraperTest {
@@ -55,9 +53,9 @@ public class ScraperTest {
 		final List<Rule> rules = Arrays.asList(new Rule(AttributeNamePattern.compile("java.lang:type=OperatingSystem:SystemCpuLoad"), false), new Rule(null, true));
 		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, null);
 
-		final Set<JsonNode> actual = new HashSet<>();
+		final Set<Sample<Rule>> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
-			actual.add(SampleToJsonInputConverter.getInstance().convert(sample));
+			actual.add(sample);
 		});
 
 		assertEquals(1, actual.size());
@@ -69,9 +67,9 @@ public class ScraperTest {
 
 		final long start = System.currentTimeMillis();
 
-		final Set<JsonNode> actual = new HashSet<>();
+		final Set<Sample<Rule>> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
-			actual.add(SampleToJsonInputConverter.getInstance().convert(sample));
+			actual.add(sample);
 		}, 3, TimeUnit.SECONDS);
 
 		assertTrue(3000L <= System.currentTimeMillis() - start);

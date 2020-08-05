@@ -16,7 +16,7 @@ import net.thisptr.jmx.exporter.agent.misc.ScriptText;
 public class TransformScriptDeserializer extends StdDeserializer<TransformScript> {
 	private static final long serialVersionUID = -2699557268566596799L;
 
-	private static final String DEFAULT_ENGINE = "jq";
+	private static final String DEFAULT_ENGINE = "java";
 
 	public TransformScriptDeserializer() {
 		super(TransformScript.class);

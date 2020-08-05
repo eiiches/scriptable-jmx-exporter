@@ -26,7 +26,6 @@ import net.thisptr.jmx.exporter.agent.config.FilePollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.StaticConfigWatcher;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine;
-import net.thisptr.jmx.exporter.agent.handler.jq.JsonQueryScriptEngine;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class Agent {
@@ -40,7 +39,6 @@ public class Agent {
 
 	static {
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
-		registry.add("jq", new JsonQueryScriptEngine());
 		registry.add("java", new JaninoScriptEngine());
 	}
 
@@ -98,7 +96,7 @@ public class Agent {
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.labels, newConfig.options);
+				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.options);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -113,7 +111,7 @@ public class Agent {
 			});
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new PrometheusExporterHttpHandler(initialConfig.rules, initialConfig.labels, initialConfig.options);
+			HANDLER = new PrometheusExporterHttpHandler(initialConfig.rules, initialConfig.options);
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();
