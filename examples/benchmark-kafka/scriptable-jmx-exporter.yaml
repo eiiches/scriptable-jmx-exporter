@@ -15,7 +15,6 @@ rules:
   skip: true
 - pattern: 'kafka.*::Value'
   transform: |
-    !java
     V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "type", "name")
       .type("gauge")
@@ -25,7 +24,6 @@ rules:
 - pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
   transform: |
-    !java
     V1.name(in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .type("counter")
@@ -36,7 +34,6 @@ rules:
 - pattern: 'kafka.*::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
-    !java
     V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .suffix("count")
@@ -47,7 +44,6 @@ rules:
 - pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
-    !java
     V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
       .addLabelsExcluding(in.keyProperties, "name", "type")
       .addLabel("quantile", "0." + match.get("p"))
@@ -57,9 +53,7 @@ rules:
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*'
   transform: |
-    !java
     log("unhandled attribute: %s", in);
     V1.transform(in, out, "type", "name", V1.lowerCase());
 - transform: |
-    !java
     V1.transform(in, out, "type", V1.snakeCase());

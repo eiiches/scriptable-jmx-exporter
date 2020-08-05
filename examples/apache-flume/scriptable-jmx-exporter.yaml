@@ -8,8 +8,6 @@ rules:
   skip: true
 - pattern: 'org\\.apache\\.flume\\..*'
   transform: |
-    !java
     V1.transform(in, out, V1.snakeCase());
 - transform: |
-    !java
     V1.transform(in, out, "type", V1.snakeCase());

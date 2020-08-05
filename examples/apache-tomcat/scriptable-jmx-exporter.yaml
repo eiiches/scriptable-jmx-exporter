@@ -8,8 +8,6 @@ rules:
   skip: true
 - pattern: 'Catalina|Users'
   transform: |
-    !java
     V1.transform(in, out, "type");
 - transform: |
-    !java
     V1.transform(in, out, "type", V1.snakeCase());
