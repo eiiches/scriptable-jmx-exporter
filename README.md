@@ -264,7 +264,7 @@ java_nio_buffer_pool_count{name="direct",} 14.0 1595172454721
     !java
     import java.util.HashMap;
     MetricValue m = new MetricValue();
-    m.name = in.domain + ":" + in.keyProperties.get("type") + ":" + in.attributeName + "_info";
+    m.name = in.domain + "_" + in.keyProperties.get("type") + "_" + in.attributeName + "_info";
     m.labels = new HashMap<>();
     m.labels.put("version", (String) in.value);
     m.value = 1.0;
