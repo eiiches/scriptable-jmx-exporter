@@ -70,7 +70,7 @@ java -javaagent:scriptable-jmx-exporter-0.0.7.jar=@scriptable-jmx-exporter.yaml 
 Now, open [http://localhost:9639/metrics](http://localhost:9639/metrics) in your browser to see the exposed metrics.
 
 The next step is to replace the Pause program with your favorite application that you want to monitor.
-Continue reading or alternatively you can check out real-world [examples](examples) to learn how to customize the agent.
+Continue reading or alternatively you can check out real-world [examples](examples) to learn how to customize the exporter.
 
 
 Usage
@@ -79,7 +79,7 @@ Usage
 Add `-javaagent` option to JVM arguments.
 
 ```sh
-# This starts an agent without an explicit configuration file.
+# This starts an exporter without an explicit configuration file.
 # The default configuration from src/main/resources/scriptable-jmx-exporter.yaml is used.
 java -javaagent:<PATH_TO_AGENT_JAR> ...
 ```
@@ -115,8 +115,8 @@ Configurations are automatically reloaded whenever the file (`<PATH_TO_CONFIG_YA
 
 So, whenever you need to write a new configuration, it's easier to start with a simple configuration (e.g. [scriptable-jmx-exporter.yaml](https://github.com/eiiches/scriptable-jmx-exporter/blob/develop/src/main/resources/scriptable-jmx-exporter.yaml) which is the default configuration picked when no configuration is provided on command line) and incrementally edit the configuration file while actually running your software.
 
-If the agent fails to load a new configuration, most likely due to configuration error, the agent will continue to use the previous configuration. On the contrary, application startup will fail if the configuration has any errors.
-It's generally considered safe (in a sense that it will not interrupt running workloads) to reconfigure agents on a production cluster while they are running. 
+If the exporter fails to load a new configuration, most likely due to configuration error, the exporter will continue to use the previous configuration. On the contrary, application startup will fail if the configuration has any errors.
+It's generally considered safe (in a sense that it will not interrupt running workloads) to reconfigure the exporter on a production cluster while they are running.
 
 ### Example
 
@@ -375,7 +375,7 @@ java_lang_OperatingSystem_AvailableFileDescriptorCount 1048547 1596880934872
 
 #### Getting ready for upcoming OpenMetrics support
 
-While this agent does not support OpenMetrics yet, you can prepare for the upcoming OpenMetrics support.
+While this exporter does not support OpenMetrics yet, you can prepare for the upcoming OpenMetrics support.
 The most notable difference between the Prometheus format and the OpenMetrics format is that OpenMetrics requires (not only recommends) `_total` suffix for counter metrics.
 To ensure conformance to both formats in future, set `total` suffix to `counter` metrics. E.g.
 
@@ -424,7 +424,7 @@ Sometimes it's hard to debug complex `transform` scripts. Here are some tips and
 
 #### Changing a log level to FINEST
 
-This agent uses JUL framework for logging. Errors caused by user configurations are logged at &gt;= INFO level. Other errors are
+This exporter uses JUL framework for logging. Errors caused by user configurations are logged at &gt;= INFO level. Other errors are
 logged at &lt; INFO level. If you are encountering issues, consider setting log levels to FINEST to see detailed logs.
 
 To change a log level, create `logging.properties` and set `java.util.logging.config.file` system property to point to the file.
