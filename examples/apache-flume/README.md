@@ -11,13 +11,13 @@ $ docker-compose up
 
 ```console
 $ curl -s localhost:9639/metrics | awk '!/^#/ && /apache_flume/'
-org_apache_flume_channel_channel_capacity{type="c1",} 1000
-org_apache_flume_channel_channel_fill_percentage{type="c1",} 0
-org_apache_flume_channel_channel_size{type="c1",} 0
-org_apache_flume_channel_event_put_attempt_count{type="c1",} 2
-org_apache_flume_channel_event_put_success_count{type="c1",} 2
-org_apache_flume_channel_event_take_attempt_count{type="c1",} 11
-org_apache_flume_channel_event_take_success_count{type="c1",} 2
-org_apache_flume_channel_start_time{type="c1",} 1596383067434
-org_apache_flume_channel_stop_time{type="c1",} 0
+org_apache_flume_channel_ChannelCapacity{type="c1",} 1000
+org_apache_flume_channel_ChannelFillPercentage{type="c1",} 0
+org_apache_flume_channel_ChannelSize{type="c1",} 0
+org_apache_flume_channel_EventPutAttemptCount{type="c1",} 0
+org_apache_flume_channel_EventPutSuccessCount{type="c1",} 0
+org_apache_flume_channel_EventTakeAttemptCount{type="c1",} 12
+org_apache_flume_channel_EventTakeSuccessCount{type="c1",} 0
+org_apache_flume_channel_StartTime{type="c1",} 1596876865812
+org_apache_flume_channel_StopTime{type="c1",} 0
 ```
