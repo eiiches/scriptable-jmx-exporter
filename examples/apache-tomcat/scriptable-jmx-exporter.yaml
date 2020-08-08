@@ -10,4 +10,4 @@ rules:
   transform: |
     V1.transform(in, out, "type");
 - transform: |
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
