@@ -143,11 +143,11 @@ rules:
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads|net\\.thisptr\\.jmx\\.exporter\\.agent.*'
   transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 # Default rule to cover the rest.
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/jmx/exporter/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
@@ -220,7 +220,7 @@ Java scripting is powered by [Janino](https://janino-compiler.github.io/janino/)
 ```yaml
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValueOutput.java)) is provided.
@@ -235,6 +235,24 @@ In most cases, doing one of the following is sufficient to achieve the desired o
  * Modify `in` before calling `V1.transform(...)`
  * Wrap `out` by anonymous inner class to modify `V1.transform(...)` output
 
+##### Case-style Conversion
+
+*
+NOTE: We DO NOT recommend any case-style conversions.
+While [Cc]amelCase with `_` in-between looks somewhat unpleasant, it conveys more information from the original ObjectName,
+probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.
+*
+
+You can covert case-styles of metric name by using `V1.snakeCase()` or `V1.lowerCase()`.
+
+###### Example: `java.lang:type=ClassLoading:LoadedClassCount`
+
+| Transform Script | Prometheus Metric Example |
+|-|-|
+| `V1.transform(in, out, "type")` | `java_lang_ClassLoading_LoadedClassCount` |
+| `V1.transform(in, out, "type", V1.snakeCase())` | `java_lang_class_loading_loaded_class_count` |
+| `V1.transform(in, out, "type", V1.lowerCase())` | `java_lang_classloading_loadedclasscount` |
+
 #### Examples
 
 ##### Example: Exposing all attributes of all MBaens
@@ -244,13 +262,13 @@ For most of the applications, this rule covers most of the MBean attributes.
 ```yaml
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 ```
-java_lang_garbage_collector_last_gc_info_memory_usage_after_gc_value_committed{name="G1 Young Generation",key="CodeHeap 'profiled nmethods'",} 7995392.0 1595172454731
-java_lang_memory_heap_memory_usage_committed 1.073741824E9 1595172454742
-java_nio_buffer_pool_count{name="direct",} 14.0 1595172454721
+java_nio_BufferPool_Count{name="direct",} 8 1596881052752
+java_lang_GarbageCollector_LastGcInfo_memoryUsageAfterGc_value_committed{name="G1 Young Generation",key="CodeHeap 'profiled nmethods'",} 2752512 1596881052753
+java_lang_Memory_HeapMemoryUsage_committed 1061158912 1596881052757
 ...
 ```
 
@@ -269,13 +287,12 @@ java_nio_buffer_pool_count{name="direct",} 14.0 1595172454721
     m.labels.put("version", (String) in.value);
     m.value = 1.0;
     m.timestamp = in.timestamp;
-    V1.snakeCase().apply(m);
     out.emit(m);
 ```
 
 ```
-java_lang_runtime_vm_version_info{version="14.0.1+7",} 1.0 1595167009825
-java_lang_operating_system_version_info{version="5.7.4-arch1-1",} 1.0 1595167009828
+java_lang_Runtime_VmVersion_info{version="14.0.1+7",} 1.0 1595167009825
+java_lang_OperatingSystem_Version_info{version="5.7.4-arch1-1",} 1.0 1595167009828
 ```
 
 Reference: [Exposing the software version to Prometheus](https://www.robustperception.io/exposing-the-software-version-to-prometheus)
@@ -337,23 +354,23 @@ This is just for demonstration purpose and highly discouraged in practice unless
     import java.lang.management.ManagementFactory; // imports must come first
     import javax.management.ObjectName;
 
-    V1.transform(in, out, "type", V1.snakeCase(), V1.gauge()); // emit raw metric
+    V1.transform(in, out, "type", V1.gauge()); // emit raw metric
 
     // modify name and values and emit computed metric
     long max = (Long) ManagementFactory.getPlatformMBeanServer().getAttribute(new ObjectName("java.lang:type=OperatingSystem"), "MaxFileDescriptorCount");
     in.value = max - (Long) in.value;
     in.attributeName = "AvailableFileDescriptorCount";
     in.attributeDescription = "The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.";
-    V1.transform(in, out, "type", V1.snakeCase(), V1.gauge());
+    V1.transform(in, out, "type", V1.gauge());
 ```
 
 ```
-# HELP java_lang_operating_system_available_file_descriptor_count The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.
-# TYPE java_lang_operating_system_available_file_descriptor_count gauge
-java_lang_operating_system_available_file_descriptor_count 1048546.0 1595164426599
-# HELP java_lang_operating_system_open_file_descriptor_count OpenFileDescriptorCount
-# TYPE java_lang_operating_system_open_file_descriptor_count gauge
-java_lang_operating_system_open_file_descriptor_count 30.0 1595164426599
+# HELP java_lang_OperatingSystem_OpenFileDescriptorCount OpenFileDescriptorCount
+# TYPE java_lang_OperatingSystem_OpenFileDescriptorCount gauge
+java_lang_OperatingSystem_OpenFileDescriptorCount 29 1596880934872
+# HELP java_lang_OperatingSystem_AvailableFileDescriptorCount The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.
+# TYPE java_lang_OperatingSystem_AvailableFileDescriptorCount gauge
+java_lang_OperatingSystem_AvailableFileDescriptorCount 1048547 1596880934872
 ```
 
 #### Getting ready for upcoming OpenMetrics support
@@ -438,7 +455,7 @@ If you are writing transform scripts in Java, you can use `log(fmt, ...)` or `lo
     log(in);
     log("hi");
     log("test: %s", in.value); # printf style; see javadoc for String.format()
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 Alternatively, you can also use `System.out.printf(...)` or `System.err.printf(...)` as in any other programs.
