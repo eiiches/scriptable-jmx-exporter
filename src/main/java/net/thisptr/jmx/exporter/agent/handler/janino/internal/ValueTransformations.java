@@ -105,6 +105,16 @@ public class ValueTransformations {
 		}
 	}
 
+	private static void unfoldListType(final MetricNamer namer, final Labels labels, final List<Object> list, final MetricValueOutput output) {
+		int length = list.size();
+		for (int i = 0; i < length; ++i) {
+			final Object element = list.get(i);
+			labels.push("index", String.valueOf(i));
+			unfoldByDynamicType(namer, labels, element, output);
+			labels.pop("index");
+		}
+	}
+
 	private static void unfoldCompositeData(final MetricNamer namer, final Labels labels, final CompositeData compositeData, final MetricValueOutput output) {
 		final CompositeType compositeType = compositeData.getCompositeType();
 		for (final String key : compositeType.keySet()) {
@@ -154,7 +164,17 @@ public class ValueTransformations {
 		}
 	}
 
-	private static void unfoldByDynamicType(final MetricNamer namer, final Labels labels, final Object value, final String type, final MetricValueOutput output) {
+	private static void unfoldMapType(final MetricNamer namer, final Labels labels, final Map<Object, Object> map, final MetricValueOutput output) {
+		map.forEach((k, v) -> {
+			labels.push("key", k.toString());
+			unfoldByDynamicType(namer, labels, v, output);
+			labels.pop("key");
+		});
+	}
+
+	private static void unfoldByDynamicType(final MetricNamer namer, final Labels labels, final Object value, final MetricValueOutput output) {
+		if (value == null)
+			return;
 		if (value instanceof Number) {
 			emit(namer, labels, output, ((Number) value).doubleValue());
 		} else if (value instanceof Boolean) {
@@ -166,7 +186,7 @@ public class ValueTransformations {
 		} else {
 			final NameAndLabels current = NameAndLabels.from(namer, labels);
 			if (SUPPRESSED_TYPES.add(current))
-				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s. Further warnings are suppressed for the this metric.", type, current));
+				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s. Further warnings are suppressed for the this metric.", value.getClass().getName(), current));
 		}
 		// TODO: handle arrays, characters, strings and ObjectName
 	}
@@ -185,7 +205,7 @@ public class ValueTransformations {
 			// that should be fixed in Tomcat, we could handle it here by inspecting the value itself.
 			if (value == null)
 				return;
-			unfoldByDynamicType(namer, labels, value, type, output);
+			unfoldByDynamicType(namer, labels, value, output);
 			return;
 		}
 		switch (type) {
@@ -235,7 +255,21 @@ public class ValueTransformations {
 			// If the reported type is java.lang.Object, let's try to guess from the actual value.
 			if (value == null)
 				break;
-			unfoldByDynamicType(namer, labels, value, type, output);
+			unfoldByDynamicType(namer, labels, value, output);
+			break;
+		case "java.util.Map":
+			if (value == null)
+				break;
+			@SuppressWarnings("unchecked")
+			final Map<Object, Object> mapValue = (Map<Object, Object>) value;
+			unfoldMapType(namer, labels, mapValue, output);
+			break;
+		case "java.util.List":
+			if (value == null)
+				break;
+			@SuppressWarnings("unchecked")
+			final List<Object> listValue = (List<Object>) value;
+			unfoldListType(namer, labels, listValue, output);
 			break;
 		default:
 			if (type.startsWith("[")) { // array type
