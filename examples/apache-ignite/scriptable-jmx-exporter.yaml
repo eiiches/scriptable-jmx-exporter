@@ -1,0 +1,29 @@
+options:
+  include_timestamp: false
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+- pattern: 'org.apache:group=views' # The getAttributes() returns list of Objects, not list of Attribute. We don't currently support that.
+  skip: true
+- pattern: 'org.apache' # it would've been better if ignite uses org.apache.ignite or something
+  transform: |
+    import java.util.Map;
+    import java.util.HashMap;
+    import java.util.regex.Pattern;
+
+    class Utils {
+      private static final Pattern SUFFIX = Pattern.compile("^.*[.$]([a-zA-Z0-9]+?)((Metrics)?(MxBean|MXBean|MBean).*)?$");
+      public static String simpleBeanClassNameOf(String name) {
+        return SUFFIX.matcher(name).replaceAll("$1");
+      }
+    }
+
+    in.domain = "org.apache.ignite";
+    in.keyProperties = new HashMap<>(in.keyProperties);
+    in.keyProperties.put("mbean_type", Utils.simpleBeanClassNameOf(in.beanClass));
+    V1.transform(in, out, "mbean_type");
+- transform: |
+    V1.transform(in, out, "type");
