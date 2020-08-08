@@ -7,6 +7,17 @@ Example: Apache Tomcat
 $ docker-compose up
 ```
 
+### Spring Boot
+
+Spring Boot (>=2.2) does not expose MBeans by default. You need to set the following property to enable Tomcat MBeans.
+
+```
+server.tomcat.mbeanregistry.enabled=true
+```
+
+Also, as the domain part of the MBean name is changed to `Tomcat` in the embedded Tomcat (not `Catalina` as in standalone Tomcat),
+you need to modify the exporter configuration as well.
+
 ### Response Example
 
 ```console
