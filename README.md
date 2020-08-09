@@ -128,6 +128,10 @@ options:
   include_timestamp: true # Include scraping timestamp for each metrics (default).
   include_type: true # Enable TYPE comments (default).
   include_help: true # Enable HELP comments (default).
+declarations: |
+  public static void foo() {
+    log("foo");
+  }
 rules:
 - pattern:
   # Drop less useful attributes JVM exposes.
@@ -142,11 +146,9 @@ rules:
 # Rule for known MBeans.
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads|net\\.thisptr\\.jmx\\.exporter\\.agent.*'
   transform: |
-    !java
     V1.transform(in, out, "type");
 # Default rule to cover the rest.
 - transform: |
-    !java
     V1.transform(in, out, "type");
 ```
 
@@ -170,6 +172,24 @@ See [examples](examples) directory for real-world examples.
 | `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
 
 These options can be overridden by URL parameters. E.g. `/metrics?minimum_response_time=1000`.
+
+### Declarations
+
+You can define static classes and methods for use in transform scripts, condition expressions, etc. They will be automatically imported and available so you don't have to manually write `import` statements.
+Make sure to add `public static` in the declarations; otherwise, the classes and methods won't be accessible.
+
+```yaml
+declarations: |
+  import java.util.Map;
+
+  public static void foo() {
+    log("foo");
+  }
+
+  public static class Foo {
+    // ...
+  }
+```
 
 ### Rule Configuration
 
