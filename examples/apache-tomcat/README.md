@@ -21,7 +21,7 @@ you need to modify the exporter configuration as well.
 ### Response Example
 
 ```console
-$ curl -s localhost:9639/metrics | awk '!/^#/ && /^Catalina/ || /^Users/'
+$ curl -s "localhost:9639/metrics?include_timestamp=false&include_help=false" | awk '/^Catalina/ || /^Users/'
 Catalina_Connector_acceptCount{port="8080",} 100
 Catalina_Connector_allowTrace{port="8080",} 0
 Catalina_Connector_connectionLinger{port="8080",} -1

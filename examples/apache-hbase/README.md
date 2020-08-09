@@ -15,7 +15,7 @@ $ docker-compose up
 ### Response Example
 
 ```console
-$ curl -s http://localhost:9639/metrics | grep HBase | grep -v HELP
+$ curl -s "localhost:9639/metrics?include_timestamp=false&include_help=false" | grep HBase
 Hadoop_HBase_JvmMetrics_GcCount 24
 Hadoop_HBase_JvmMetrics_GcCountG1_Old_Generation 0
 Hadoop_HBase_JvmMetrics_GcCountG1_Young_Generation 24

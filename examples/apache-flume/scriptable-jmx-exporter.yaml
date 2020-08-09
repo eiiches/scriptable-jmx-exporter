@@ -1,5 +1,3 @@
-options:
-  include_timestamp: false
 rules:
 - pattern:
   - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions

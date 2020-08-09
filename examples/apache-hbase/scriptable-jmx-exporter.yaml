@@ -1,5 +1,3 @@
-options:
-  include_timestamp: false
 declarations: |
   import java.util.Map;
   public static void hbase(AttributeValue in, MetricValueOutput out, Map<String, String> match) {
