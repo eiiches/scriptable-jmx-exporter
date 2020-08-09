@@ -6,6 +6,7 @@ services:
     - '9639:9639'
     - '7091:7091'
     - '1099:1099'
+    - '6379:6379'
     volumes:
     - type: bind
       source: ../../target/scriptable-jmx-exporter-0.0.8-SNAPSHOT.jar
@@ -13,7 +14,11 @@ services:
     - type: bind
       source: ./scriptable-jmx-exporter.yaml
       target: /etc/scriptable-jmx-exporter.yaml
+    - type: bind
+      source: ./ignite-config.xml
+      target: /etc/ignite.xml
     environment:
+    - CONFIG_URI=/etc/ignite.xml
     - IGNITE_JMX_PORT=7091
     - JVM_OPTS=
       -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
@@ -21,4 +26,3 @@ services:
       -Dcom.sun.management.jmxremote.authenticate=false
       -Dcom.sun.management.jmxremote.port=7091
       -Dcom.sun.management.jmxremote.rmi.port=1099
-      -Djava.rmi.server.hostname=localhost
