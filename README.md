@@ -44,8 +44,6 @@ You can quickly try out this exporter by copy-and-pasting the following snippet 
 This will download the agent jar and a default configuration file, and then start the exporter using `-javaagent` option.
 
 ```sh
-cd /tmp # Run this in /tmp, to avoid cluttering a random directory.
-
 # Download the agent jar and a default configuration file.
 curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar
 curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v0.0.7/src/main/resources/scriptable-jmx-exporter.yaml
