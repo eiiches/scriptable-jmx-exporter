@@ -333,6 +333,28 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		});
 	}
 
+	private void fallbackAndHandleNonAttributeList(final ScrapeOutput<ScrapeRuleType> output, final CachedMBeanInfo info, final AttributeList obtainedAttributes, final long timestamp) {
+		if (obtainedAttributes.size() != info.attributeNamesToGet.length) {
+			if (LOG.isLoggable(Level.FINE))
+				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an AttributeList containing non-Attribute elemenets and the number of elements does not match.", info.name.objectName(), Arrays.toString(info.attributeNamesToGet)));
+			return;
+		}
+		for (int i = 0; i < info.attributeNamesToGet.length; ++i) {
+			final AttributeRule request = info.requests.get(info.attributeNamesToGet[i]);
+			if (request == null) {
+				if (LOG.isLoggable(Level.WARNING))
+					LOG.log(Level.WARNING, String.format("This is not expected happen. The attribute \"{}\" could not be found in requests.", info.attributeNamesToGet[i]));
+				continue;
+			}
+			Object value = obtainedAttributes.get(i);
+			if (value instanceof Attribute) {
+				value = ((Attribute) value).getValue();
+			}
+			final Sample<ScrapeRuleType> sample = new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, value);
+			safeEmit(output, sample);
+		}
+	}
+
 	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final ObjectName _name) throws InstanceNotFoundException {
 		final CachedMBeanInfo info;
 		try {
@@ -366,12 +388,21 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			return;
 		}
 
+		final List<Attribute> obtainedAttributeList;
+		try {
+			obtainedAttributeList = obtainedAttributes.asList();
+		} catch (final IllegalArgumentException e) {
+			// The AttributeList contains non-Attribute elements.
+			fallbackAndHandleNonAttributeList(output, info, obtainedAttributes, timestamp);
+			return;
+		}
+
 		int successfulAttributes = 0; // # of successfully obtained attributes
-		final List<Attribute> obtainedAttributeList = obtainedAttributes.asList();
 		for (final Attribute attribute : obtainedAttributeList) {
 			final AttributeRule request = info.requests.get(attribute.getName());
 			if (request == null) {
-				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an attribute named \"%s\" which we didn't request. This indicates a bug in the MBean. Ignored.", _name, info.attributeNamesToGet, attribute.getName()));
+				if (LOG.isLoggable(Level.FINE))
+					LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an attribute named \"%s\" which we didn't request. This indicates a bug in the MBean. Ignored.", _name, info.attributeNamesToGet, attribute.getName()));
 				continue;
 			}
 			++successfulAttributes;
