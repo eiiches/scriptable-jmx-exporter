@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  prometheus:
+    image: prom/prometheus:v2.19.2
+    volumes:
+    - type: bind
+      source: ./prometheus.yaml
+      target: /etc/prometheus/prometheus.yml
+    ports:
+    - '9090:9090'
+    tmpfs:
+    - /prometheus:uid=65534,gid=65534
+    user: '65534:65534'
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    - --web.console.libraries=/usr/share/prometheus/console_libraries
+    - --web.console.templates=/usr/share/prometheus/consoles
+    - --storage.tsdb.retention.size=64MB
+    - --storage.tsdb.wal-compression
+    - --storage.tsdb.min-block-duration=10m
+    - --storage.tsdb.max-block-duration=10m
+  grafana:
+    image: grafana/grafana:7.0.6
+    ports:
+    - '3000:3000'
+    volumes:
+    - type: bind
+      source: ./grafana-datasources.yaml
+      target: /etc/grafana/provisioning/datasources/datasources.yaml
+  openjdk:
+    image: openjdk:14.0.1
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-0.0.8-SNAPSHOT.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    ports:
+    - '9639:9639'
+    command:
+    - java
+    - -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+    - -cp
+    - /
+    - net.thisptr.jmx.exporter.tools.Pause
