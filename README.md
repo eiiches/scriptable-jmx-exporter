@@ -40,8 +40,8 @@ Quick Start
 
 *If you don't want to run the agent now, download [scriptable-jmx-exporter-0.0.7.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar) and skip to [Usage](#usage).*
 
-You can quickly try this exporter by copy-and-pasting the following snippet to your shell (or by manually running one by one). It will download the agent jar and a default configuration file,
-prepare a simple Pause program, and finally run JVM with necessary arguments.
+You can quickly try out this exporter by copy-and-pasting the following snippet to your shell (or by manually running one by one).
+This will download the agent jar and a default configuration file, and then start the exporter using `-javaagent` option.
 
 ```sh
 cd /tmp # Run this in /tmp, to avoid cluttering a random directory.
@@ -50,21 +50,8 @@ cd /tmp # Run this in /tmp, to avoid cluttering a random directory.
 curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar
 curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v0.0.7/src/main/resources/scriptable-jmx-exporter.yaml
 
-# Prepare a simple Pause program, which just keeps sleeping until CTRL-C is pressed.
-cat > Pause.java <<-EOF
-public class Pause {
-    public static void main(final String[] args) throws Exception {
-        System.out.println("Press CTRL-C to quit.");
-        while (true) {
-            Thread.sleep(10000L);
-        }
-    }
-}
-EOF
-javac Pause.java
-
 # Finally, run JVM with the exporter enabled.
-java -javaagent:scriptable-jmx-exporter-0.0.7.jar=@scriptable-jmx-exporter.yaml Pause
+java -javaagent:scriptable-jmx-exporter-0.0.7.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
 ```
 
 Now, open [http://localhost:9639/metrics](http://localhost:9639/metrics) in your browser to see the exposed metrics.
