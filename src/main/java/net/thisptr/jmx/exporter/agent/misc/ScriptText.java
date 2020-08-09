@@ -10,6 +10,8 @@ public class ScriptText {
 	}
 
 	public static ScriptText valueOf(String text) {
+		if (text == null)
+			return null;
 		text = text.trim();
 		if (text.startsWith("!")) {
 			int i = 1;

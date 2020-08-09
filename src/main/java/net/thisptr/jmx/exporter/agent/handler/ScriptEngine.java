@@ -1,5 +1,7 @@
 package net.thisptr.jmx.exporter.agent.handler;
 
+import java.util.List;
+
 public interface ScriptEngine {
 
 	public static class ScriptCompileException extends Exception {
@@ -14,7 +16,9 @@ public interface ScriptEngine {
 		}
 	}
 
-	TransformScript compileTransformScript(String script) throws ScriptCompileException;
+	TransformScript compileTransformScript(List<Declarations> declarations, String script) throws ScriptCompileException;
 
-	ConditionScript compileConditionScript(String script) throws ScriptCompileException;
+	ConditionScript compileConditionScript(List<Declarations> declarations, String script) throws ScriptCompileException;
+
+	Declarations compileDeclarations(String text, int ordinal) throws ScriptCompileException;
 }
