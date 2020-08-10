@@ -11,11 +11,27 @@ import java.util.HashMap;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
+
 public class PrometheusMetricWriterTest {
 	private static String toString(final PrometheusMetric m, final int bufSize, final boolean includeTimestamp) throws IOException {
 		return toString(bufSize, includeTimestamp, (writer) -> {
 			writer.write(m);
 		});
+	}
+
+	private static final class LowerCaseStringWriter implements StringWriter {
+		@Override
+		public int write(final String name, final byte[] bytes, final int index) {
+			final byte[] src = name.toLowerCase().getBytes(StandardCharsets.UTF_8);
+			System.arraycopy(src, 0, bytes, index, src.length);
+			return index + src.length;
+		}
+
+		@Override
+		public int expectedSize(final String name) {
+			return name.length();
+		}
 	}
 
 	private interface PrometheusMetricWriterTask {
@@ -65,7 +81,7 @@ public class PrometheusMetricWriterTest {
 		m.name = "00123456789a#";
 		m.value = 1.0;
 		m.labels = new HashMap<>();
-		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_0123456789a_ 1\n");
+		assertThat(toString(m, info.getCurrentRepetition(), false)).isEqualTo("_00123456789a_ 1\n");
 	}
 
 	@RepeatedTest(20)
@@ -118,6 +134,24 @@ public class PrometheusMetricWriterTest {
 	}
 
 	@RepeatedTest(20)
+	void testEmptySuffix(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.suffix = "";
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testSuffix(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "test";
+		m.value = 1.0;
+		m.suffix = "sum";
+		assertThat(toString(m, info.getCurrentRepetition(), true)).isEqualTo("test_sum 1\n");
+	}
+
+	@RepeatedTest(20)
 	void testWriteWithEmptyLabels(final RepetitionInfo info) throws Exception {
 		final PrometheusMetric metric = new PrometheusMetric();
 		metric.name = "metricName_a:@";
@@ -129,7 +163,7 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(20)
 	void testType(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeType("test", null, "counter");
+			w.writeType("test", null, null, "counter");
 		});
 		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}
@@ -137,8 +171,34 @@ public class PrometheusMetricWriterTest {
 	@RepeatedTest(30)
 	void testHelp(final RepetitionInfo info) throws Exception {
 		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
-			w.writeHelp("test", null, "🎼あЛa\n\" \\ ");
+			w.writeHelp("test", null, null, "🎼あЛa\n\" \\ ");
 		});
 		assertThat(actual).isEqualTo("# HELP test 🎼あЛa\\n\" \\\\ \n");
+	}
+
+	@RepeatedTest(20)
+	void testCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final PrometheusMetric metric = new PrometheusMetric();
+		metric.name = "TEST";
+		metric.nameWriter = new LowerCaseStringWriter();
+		metric.value = 1.0;
+		metric.labels = new HashMap<>();
+		assertThat(toString(metric, info.getCurrentRepetition(), false)).isEqualTo("test 1\n");
+	}
+
+	@RepeatedTest(20)
+	void testHelpWithCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeHelp("TEST", new LowerCaseStringWriter(), null, "value");
+		});
+		assertThat(actual).isEqualTo("# HELP test value\n");
+	}
+
+	@RepeatedTest(20)
+	void testTypeWithCustomNameWriter(final RepetitionInfo info) throws Exception {
+		final String actual = toString(info.getCurrentRepetition(), true, (w) -> {
+			w.writeType("TEST", new LowerCaseStringWriter(), null, "counter");
+		});
+		assertThat(actual).isEqualTo("# TYPE test counter\n");
 	}
 }

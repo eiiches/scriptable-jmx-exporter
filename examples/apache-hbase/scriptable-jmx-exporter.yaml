@@ -1,0 +1,31 @@
+declarations: |
+  import java.util.Map;
+  public static void hbase(AttributeValue in, MetricValueOutput out, Map<String, String> match) {
+    V1.name(in.domain, (String) in.keyProperties.get("service"), (String) in.keyProperties.get("name"), (String) in.keyProperties.get("sub"))
+      .appendName((String) match.get("attribute"))
+      .addLabelsExcluding(in.keyProperties, "service", "sub", "name")
+      .addLabelsExcluding(match, "attribute")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out).dispose();
+  }
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+- pattern: 'Hadoop:service=HBase,sub=Tables|TableLatencies,name=RegionServer:Namespace_(?<namespace>.*)_table_(?<table>.*)_metric_(?<attribute>.*)'
+  transform: |
+    hbase(in, out, match);
+- pattern: 'Hadoop:service=HBase,sub=Regions,name=RegionServer:Namespace_(?<namespace>.*)_table_(?<table>.*)_region_(?<region>.*)_metric_(?<attribute>.*)'
+  transform: |
+    hbase(in, out, match);
+- pattern: 'Hadoop:service=HBase,sub=Users,name=RegionServer:User_(?<user>.*)_metric_(?<attribute>.*)'
+  transform: |
+    hbase(in, out, match);
+- pattern: 'Hadoop'
+  transform: |
+    V1.transform(in, out, "service", "name", "sub");
+- transform: |
+    V1.transform(in, out, "type");

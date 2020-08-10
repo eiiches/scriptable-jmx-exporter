@@ -1,0 +1,16 @@
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+- pattern: 'Catalina|Users'
+  transform: |
+    static String capitalize(final String name) {
+      return name.substring(0, 1).toUpperCase() + name.substring(1);
+    }
+    // Capitalize the first letter of an attribute name because we want to convert sSLEnabled to ssl_enabled, not s_sl_enabled.
+    in.attributeName = capitalize(in.attributeName);
+    V1.transform(in, out, "type", V1.snakeCase());
+- transform: |
+    V1.transform(in, out, "type", V1.snakeCase());

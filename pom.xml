@@ -9,7 +9,7 @@
 	<artifactId>scriptable-jmx-exporter</artifactId>
 	<name>Scriptable JMX Exporter</name>
 	<packaging>jar</packaging>
-	<version>0.0.7</version>
+	<version>1.0.0-alpha1</version>
 	<description>Java agent for collecting and exposing metrics to Prometheus</description>
 	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
 
@@ -32,7 +32,7 @@
 		<connection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</connection>
 		<developerConnection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</developerConnection>
 		<url>git@github.com:eiiches/scriptable-jmx-exporter.git</url>
-		<tag>v0.0.7</tag>
+		<tag>v1.0.0-alpha1</tag>
 	</scm>
 
 	<distributionManagement>
@@ -56,11 +56,6 @@
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
 			<version>2.11.1</version>
-		</dependency>
-		<dependency>
-			<groupId>net.thisptr</groupId>
-			<artifactId>jackson-jq-extra</artifactId>
-			<version>1.0.0-preview.20191208</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.janino</groupId>
@@ -164,10 +159,6 @@
 								<relocation>
 									<pattern>org.joni</pattern>
 									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.joni</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>net.thisptr.jackson.jq</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.net.thisptr.jackson.jq</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.yaml.snakeyaml</pattern>
@@ -279,6 +270,7 @@
 				</executions>
 				<configuration>
 					<excludePackageNames>net.thisptr.jmx.exporter.agent.javacc</excludePackageNames>
+					<source>8</source>
 				</configuration>
 			</plugin>
 			<plugin>

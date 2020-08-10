@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+- job_name: test-jvm
+  static_configs:
+  - targets:
+    - 'openjdk:9639'

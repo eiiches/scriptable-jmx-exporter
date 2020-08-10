@@ -1,5 +1,7 @@
 package net.thisptr.jmx.exporter.agent;
 
+import java.util.Map;
+
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 
@@ -14,9 +16,11 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 	public final Object value;
 	public final FastObjectName name;
 	public final MBeanInfo info;
+	public final Map<String, String> captures;
 
-	public Sample(final ScrapeRuleType rule, final long timestamp, final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final Object value) {
+	public Sample(final ScrapeRuleType rule, final Map<String, String> captures, final long timestamp, final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final Object value) {
 		this.rule = rule;
+		this.captures = captures;
 		this.timestamp = timestamp;
 		this.name = name;
 		this.info = info;

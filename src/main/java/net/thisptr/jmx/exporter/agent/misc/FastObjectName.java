@@ -2,11 +2,10 @@ package net.thisptr.jmx.exporter.agent.misc;
 
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.management.ObjectName;
-
-import com.google.common.collect.Maps;
 
 /**
  * ObjectName copies a lot of objects when calling its methods. This class is a wrapper that pre-computes frequently used values.
@@ -19,7 +18,8 @@ public class FastObjectName {
 	public FastObjectName(final ObjectName objectName) {
 		this.domain = objectName.getDomain();
 		final Hashtable<String, String> originalKeyProperties = objectName.getKeyPropertyList();
-		final Map<String, String> keyProperties = Maps.newHashMapWithExpectedSize(originalKeyProperties.size());
+		// LinkedHashMap is faster to iterate, while insertion is slower. As we iterate this map so many times, LinkedHashMap should be used.
+		final Map<String, String> keyProperties = new LinkedHashMap<>(originalKeyProperties.size());
 		originalKeyProperties.forEach((k, v) -> {
 			if (v.startsWith("\""))
 				v = ObjectName.unquote(v);

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
-import net.thisptr.jmx.exporter.agent.handler.Script;
+import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 
 public class JaninoScriptEngineTest {
@@ -42,7 +42,7 @@ public class JaninoScriptEngineTest {
 		final long timestamp = System.currentTimeMillis();
 		final MBeanInfo mbeanInfo = server.getMBeanInfo(objectName);
 		final MBeanAttributeInfo attributeInfo = Arrays.stream(mbeanInfo.getAttributes()).filter(a -> attributeName.equals(a.getName())).findFirst().get();
-		return new Sample<PrometheusScrapeRule>(null, timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
+		return new Sample<PrometheusScrapeRule>(null, Collections.emptyMap(), timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
 	}
 
 	@Test
@@ -50,11 +50,11 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:OperatingSystem:ProcessCpuLoad");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_OperatingSystem_ProcessCpuLoad");
 		assertThat(metrics.get(0).labels).isEmpty();
 	}
 
@@ -63,11 +63,11 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("V1.transform(in, out, \"non_existent_key\")").execute(sample, metrics::add);
+		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"non_existent_key\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:ProcessCpuLoad");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_ProcessCpuLoad");
 		assertThat(metrics.get(0).labels).containsExactlyInAnyOrderEntriesOf(Collections.singletonMap("type", "OperatingSystem"));
 	}
 
@@ -76,12 +76,12 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
 		for (int i = 0; i < metrics.size(); ++i) {
-			assertThat(metrics.get(i).name).isEqualTo("java.lang:Threading:AllThreadIds");
+			assertThat(metrics.get(i).name).isEqualTo("java.lang_Threading_AllThreadIds");
 			assertThat(metrics.get(i).value).isEqualTo(((Number) Array.get(sample.value, i)).doubleValue());
 			assertThat(metrics.get(i).labels.size()).isEqualTo(1);
 			assertThat(metrics.get(i).labels.get("index")).isEqualTo(String.valueOf(i));
@@ -93,15 +93,15 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(4);
 
-		assertThat(metrics.get(0).name).isEqualTo("java.lang:Memory:HeapMemoryUsage_committed");
+		assertThat(metrics.get(0).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_committed");
 		assertThat(metrics.get(0).value).isEqualTo(((Number) ((CompositeData) sample.value).get("committed")).doubleValue());
 		assertThat(metrics.get(0).labels).isEmpty();
 
-		assertThat(metrics.get(3).name).isEqualTo("java.lang:Memory:HeapMemoryUsage_used");
+		assertThat(metrics.get(3).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_used");
 		assertThat(metrics.get(3).value).isEqualTo(((Number) ((CompositeData) sample.value).get("used")).doubleValue());
 		assertThat(metrics.get(3).labels).isEmpty();
 	}
@@ -139,7 +139,7 @@ public class JaninoScriptEngineTest {
 		final Sample<PrometheusScrapeRule> sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compile("V1.transform(in, out, \"type\")").execute(sample, metrics::add);
+		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")").execute(sample, metrics::add);
 
 		System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(metrics));
 
@@ -166,7 +166,7 @@ public class JaninoScriptEngineTest {
 
 		final JaninoScriptEngine sut1 = new JaninoScriptEngine();
 		// final JsonQueryScriptEngine sut2 = new JsonQueryScriptEngine();
-		final Script<?> script1 = sut1.compile("V1.transform(in, out, \"type\")");
+		final TransformScript script1 = sut1.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")");
 		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 
 		final long start = System.currentTimeMillis();

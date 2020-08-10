@@ -5,7 +5,6 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -17,19 +16,12 @@ import java.util.logging.Logger;
 
 import org.xnio.channels.StreamSinkChannel;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
-
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
-import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jmx.exporter.agent.PrometheusMetricWriter.WritableByteChannelController;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
@@ -43,14 +35,13 @@ import net.thisptr.jmx.exporter.agent.scraper.Scraper;
  */
 public class PrometheusExporterHttpHandler implements HttpHandler {
 	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
-	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private static final PrometheusScrapeRule DEFAULT_RULE;
 
 	static {
 		try {
 			DEFAULT_RULE = new PrometheusScrapeRule();
-			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compile("V1.transform(in, out, \"type\", V1.snakeCase());");
+			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\");");
 			DEFAULT_RULE.patterns = Collections.emptyList();
 		} catch (final ScriptCompileException e) {
 			throw new RuntimeException(e);
@@ -58,28 +49,11 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	}
 
 	private final Scraper<PrometheusScrapeRule> scraper;
-	private final JsonQuery labels;
 	private final OptionsConfig options;
 
-	public PrometheusExporterHttpHandler(final List<PrometheusScrapeRule> rules, final JsonQuery labels, final OptionsConfig options) {
-		this.labels = labels;
+	public PrometheusExporterHttpHandler(final List<PrometheusScrapeRule> rules, final OptionsConfig options) {
 		this.options = options;
 		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, DEFAULT_RULE);
-	}
-
-	private Map<String, JsonNode> makeLabels() throws IOException {
-		if (labels == null)
-			return Collections.emptyMap();
-		final List<JsonNode> nodes = new ArrayList<>();
-		labels.apply(RootScope.getInstance(), NullNode.getInstance(), nodes::add);
-		if (nodes.isEmpty())
-			return Collections.emptyMap();
-		final JsonNode in = nodes.get(nodes.size() - 1);
-		try (JsonParser jp = MAPPER.treeAsTokens(in)) {
-			return MAPPER.readValue(jp, new TypeReference<Map<String, JsonNode>>() {});
-		} catch (final Exception e) {
-			throw new RuntimeException("Cannot deserialize labels from input: " + in, e);
-		}
 	}
 
 	private static void parseBooleanQueryParamAndThen(final HttpServerExchange exchange, final String name, final Consumer<Boolean> fn) {
@@ -140,16 +114,10 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	}
 
 	public void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
-		final Map<String, JsonNode> labels = makeLabels();
 		final OptionsConfig options = getOptions(exchange);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
 		scraper.scrape(new PrometheusScrapeOutput((metric) -> {
-			if (metric.labels == null)
-				metric.labels = new HashMap<>();
-			labels.forEach((label, value) -> {
-				metric.labels.put(label, value == null ? null : (value.isTextual() ? value.asText() : value.toString()));
-			});
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
@@ -166,18 +134,19 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 					try {
 						if (metrics.isEmpty())
 							return;
+						final PrometheusMetric m = metrics.get(0);
 						if (options.includeHelp) {
-							final PrometheusMetric m = metrics.get(0);
 							final String help = m.help;
 							if (help != null) {
-								pwriter.writeHelp(name, m.nameWriter, help);
+								final boolean totalOfCounter = "total".equals(m.suffix) && "counter".equals(m.type);
+								pwriter.writeHelp(name, m.nameWriter, totalOfCounter ? m.suffix : null, help);
 							}
 						}
 						if (options.includeType) {
-							final PrometheusMetric m = metrics.get(0);
 							final String type = m.type;
 							if (type != null) {
-								pwriter.writeType(name, m.nameWriter, type);
+								final boolean totalOfCounter = "total".equals(m.suffix) && "counter".equals(m.type);
+								pwriter.writeType(name, m.nameWriter, totalOfCounter ? m.suffix : null, type);
 							}
 						}
 						metrics.forEach((metric) -> {

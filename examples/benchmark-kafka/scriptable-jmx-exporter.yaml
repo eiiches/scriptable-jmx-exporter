@@ -1,22 +1,59 @@
+options:
+  include_timestamp: false
 rules:
 - pattern:
   - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
   - java.lang:type=Threading:AllThreadIds
   - jdk.management.jfr
-  skip: true
-- pattern:
-  - 'kafka.*::MeanRate|.*MinuteRate' # can be calculated using rate()
-  - 'kafka.*::RateUnit|LatencyUnit' # unsupported type
-  - 'kafka.server:type=app-info:commit-id|version' # reports wrong type
+  - kafka.*::MeanRate|.*MinuteRate # can be calculated using rate()
+  - kafka.*::RateUnit|LatencyUnit|EventType # unsupported type
+  - kafka:type=kafka.Log4jController
+  - kafka.server:type=app-info:commit-id|version # reports wrong type
+  # NOTE: The two patterns below is added to more closely match with the bahavior (whether it's intentional or not) of jmx_exporter's kafka-2_0_0.yml. Comment out these in production.
+  - kafka.*::StdDev|Mean|Min|Max # kafka-2_0_0.yml does not expose these metrics
+  - kafka.server:type=socket-server-metrics|controller-channel-metrics|group-coordinator-metrics|txn-marker-channel-metrics|transaction-coordinator-metrics|Fetch|Produce|Request|app-info|kafka-metrics-count
   skip: true
 - pattern: 'kafka.*::Value'
   transform: |
-    !java
-    V1.transform(in, out, "type", "name", V1.gauge(), V1.snakeCase());
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "type", "name")
+      .type("gauge")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+- pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
+  transform: |
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .type("counter")
+      .suffix("total")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+- pattern: 'kafka.*::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
+  transform: |
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .suffix("count")
+      .type("summary")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+- pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
+  condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
+  transform: |
+    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "type")
+      .addLabel("quantile", "0." + match.get("p"))
+      .type("summary")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription)
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*'
   transform: |
-    !java
-    V1.transform(in, out, "type", "name", V1.snakeCase());
+    log("unhandled attribute: %s", in);
+    V1.transform(in, out, "type", "name", V1.lowerCase());
 - transform: |
-    !java
     V1.transform(in, out, "type", V1.snakeCase());

@@ -1,0 +1,11 @@
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+- pattern: 'org\\.apache\\.flume\\..*'
+  transform: |
+    V1.transform(in, out);
+- transform: |
+    V1.transform(in, out, "type");

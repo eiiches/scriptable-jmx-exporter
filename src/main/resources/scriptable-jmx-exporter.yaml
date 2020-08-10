@@ -10,7 +10,7 @@ rules:
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads|net\\.thisptr\\.jmx\\.exporter\\.agent.*'
   transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");

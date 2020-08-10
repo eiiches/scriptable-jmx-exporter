@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
+import net.thisptr.jmx.exporter.agent.misc.SanitizingStringWriter;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
 
@@ -72,49 +73,6 @@ public class PrometheusMetricWriter implements Closeable {
 	}
 
 	/**
-	 * Writes out a metric name into byte[] at the specified index. Invalid characters are
-	 * silently replaced by '_' (underscore). If the metric name is empty,
-	 * this method just writes a single '_' (underscore).
-	 * 
-	 * <p>
-	 * A metric name must match [a-zA-Z_:][a-zA-Z0-9_:]*.
-	 * </p>
-	 * 
-	 * <p>
-	 * It's caller's responsibility to ensure the byte[] has enough space. This method requires at most <tt>Math.max(1, name.length())</tt> bytes.
-	 * </p>
-	 *
-	 * @param name
-	 * @return the next index after the metric name is written.
-	 * @throws IOException
-	 * @see https://prometheus.io/docs/concepts/data_model/
-	 * @see {@link #sanitizeLabelName(String)}
-	 */
-	static int sanitizeMetricName(final byte[] bytes, int index, final String name) {
-		final int length = name.length();
-		if (length == 0) {// An empty name is not allowed.
-			bytes[index++] = '_';
-			return index;
-		}
-		for (int i = 0; i < length; ++i) {
-			final char ch = name.charAt(i);
-			final boolean valid = ('a' <= ch && ch <= 'z')
-					|| (ch == '_')
-					|| (ch == ':')
-					|| ('A' <= ch && ch <= 'Z')
-					|| ('0' <= ch && ch <= '9' && i != 0);
-			if (valid) {
-				bytes[index++] = (byte) ch;
-			} else {
-				if (Character.isHighSurrogate(ch))
-					++i;
-				bytes[index++] = '_';
-			}
-		}
-		return index;
-	}
-
-	/**
 	 * A label name must match [a-zA-Z_][a-zA-Z0-9_]*.
 	 *
 	 * We've implemented this method using simple {@link java.util.regex.Pattern#compile(String)}
@@ -155,13 +113,38 @@ public class PrometheusMetricWriter implements Closeable {
 		return index;
 	}
 
+	private static int sanitizeSuffix(final byte[] bytes, int index, final String name) {
+		final int length = name.length();
+		for (int i = 0; i < length; ++i) {
+			final char ch = name.charAt(i);
+			if (('a' <= ch && ch <= 'z')
+					|| (ch == '_')
+					|| (ch == ':')
+					|| ('A' <= ch && ch <= 'Z')
+					|| ('0' <= ch && ch <= '9')) {
+				bytes[index++] = (byte) ch;
+			} else {
+				if (Character.isHighSurrogate(ch))
+					++i;
+				bytes[index++] = '_';
+			}
+		}
+		return index;
+	}
+
 	public void write(final PrometheusMetric metric) throws IOException {
 		if (metric.nameWriter != null) {
 			ensureAtLeast(metric.nameWriter.expectedSize(metric.name) + 1 /* { */);
 			this.position = metric.nameWriter.write(metric.name, bytes, this.position);
 		} else {
-			ensureAtLeast(Math.max(1, metric.name.length()) + 1 /* { */);
-			this.position = sanitizeMetricName(bytes, this.position, metric.name);
+			ensureAtLeast(SanitizingStringWriter.getInstance().expectedSize(metric.name) + 1 /* { */);
+			this.position = SanitizingStringWriter.getInstance().write(metric.name, bytes, this.position);
+		}
+
+		if (metric.suffix != null && !metric.suffix.isEmpty()) {
+			ensureAtLeast(1 /* _ */ + metric.suffix.length() + 1 /* { */);
+			bytes[this.position++] = '_';
+			this.position = sanitizeSuffix(bytes, this.position, metric.suffix);
 		}
 
 		if (metric.labels != null && !metric.labels.isEmpty()) {
@@ -311,9 +294,12 @@ public class PrometheusMetricWriter implements Closeable {
 		return index;
 	}
 
-	private void writeAnnotation(final String metricName, final StringWriter writer, final byte[] annotationType, final String value) throws IOException {
-		final int size = 5 + annotationType.length + (writer != null ? writer.expectedSize(metricName) : Math.max(1, metricName.length())) + value.length() * 3;
+	private void writeAnnotation(final String metricName, final StringWriter writer, final String nameSuffix, final byte[] annotationType, final String value) throws IOException {
+		final int size = 5 + annotationType.length + (writer != null ? writer.expectedSize(metricName) : SanitizingStringWriter.getInstance().expectedSize(metricName))
+				+ (nameSuffix != null && !nameSuffix.isEmpty() ? 1 + nameSuffix.length() : 0)
+				+ value.length() * 3;
 		ensureAtLeast(size);
+
 		int index = this.position;
 		bytes[index++] = '#';
 		bytes[index++] = ' ';
@@ -323,20 +309,26 @@ public class PrometheusMetricWriter implements Closeable {
 		if (writer != null) {
 			index = writer.write(metricName, bytes, index);
 		} else {
-			index = sanitizeMetricName(bytes, index, metricName);
+			index = SanitizingStringWriter.getInstance().write(metricName, bytes, index);
 		}
+
+		if (nameSuffix != null && !nameSuffix.isEmpty()) {
+			bytes[index++] = '_';
+			index = sanitizeSuffix(bytes, index, nameSuffix);
+		}
+
 		bytes[index++] = ' ';
 		index = writeTextUtf8Escaped(bytes, index, value, false);
 		bytes[index++] = '\n';
 		this.position = index;
 	}
 
-	public void writeHelp(final String name, final StringWriter writer, final String helpText) throws IOException {
-		writeAnnotation(name, writer, HELP, helpText);
+	public void writeHelp(final String name, final StringWriter writer, final String nameSuffix, String helpText) throws IOException {
+		writeAnnotation(name, writer, nameSuffix, HELP, helpText);
 	}
 
-	public void writeType(final String name, final StringWriter writer, final String typeText) throws IOException {
-		writeAnnotation(name, writer, TYPE, typeText);
+	public void writeType(final String name, final StringWriter writer, final String nameSuffix, final String typeText) throws IOException {
+		writeAnnotation(name, writer, nameSuffix, TYPE, typeText);
 	}
 
 	private static int writeUnicode(final byte[] bytes, int index, final int codePoint) {

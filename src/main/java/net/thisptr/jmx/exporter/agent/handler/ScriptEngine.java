@@ -1,10 +1,8 @@
 package net.thisptr.jmx.exporter.agent.handler;
 
-import net.thisptr.jmx.exporter.agent.PrometheusMetricOutput;
-import net.thisptr.jmx.exporter.agent.Sample;
-import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
+import java.util.List;
 
-public interface ScriptEngine<T> {
+public interface ScriptEngine {
 
 	public static class ScriptCompileException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -18,7 +16,9 @@ public interface ScriptEngine<T> {
 		}
 	}
 
-	Script<T> compile(String script) throws ScriptCompileException;
+	TransformScript compileTransformScript(List<Declarations> declarations, String script) throws ScriptCompileException;
 
-	void handle(Sample<PrometheusScrapeRule> sample, T script, PrometheusMetricOutput output);
+	ConditionScript compileConditionScript(List<Declarations> declarations, String script) throws ScriptCompileException;
+
+	Declarations compileDeclarations(String text, int ordinal) throws ScriptCompileException;
 }

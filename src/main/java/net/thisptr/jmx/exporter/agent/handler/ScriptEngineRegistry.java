@@ -4,8 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ScriptEngineRegistry {
-	private final Map<String, ScriptEngine<?>> engines = new ConcurrentHashMap<>();
-	private ScriptEngine<?> defaultEngine;
+	private final Map<String, ScriptEngine> engines = new ConcurrentHashMap<>();
 
 	private static final ScriptEngineRegistry INSTANCE = new ScriptEngineRegistry();
 
@@ -13,22 +12,14 @@ public class ScriptEngineRegistry {
 		return INSTANCE;
 	}
 
-	public void add(final String name, final ScriptEngine<?> engine) {
+	public void add(final String name, final ScriptEngine engine) {
 		engines.put(name, engine);
 	}
 
-	public ScriptEngine<?> get(final String name) {
-		return engines.get(name);
-	}
-
-	public void setDefault(final String name) {
-		final ScriptEngine<?> defaultEngine = engines.get(name);
-		if (defaultEngine == null)
-			throw new IllegalArgumentException("\" + name + \" is not registered");
-		this.defaultEngine = defaultEngine;
-	}
-
-	public ScriptEngine<?> get() {
-		return defaultEngine;
+	public ScriptEngine get(final String name) {
+		final ScriptEngine engine = engines.get(name);
+		if (engine == null)
+			throw new IllegalArgumentException(String.format("\"%s\" is not registered", name));
+		return engine;
 	}
 }

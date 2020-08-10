@@ -1,0 +1,51 @@
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - jdk.management.jfr
+  skip: true
+
+- pattern:
+  - java.lang:type=Runtime:VmVersion
+  - java.lang:type=OperatingSystem:Version
+  transform: |
+    import java.util.HashMap;
+    MetricValue m = new MetricValue();
+    m.name = in.domain + "_" + in.keyProperties.get("type") + "_" + in.attributeName + "_info";
+    m.labels = new HashMap<>();
+    m.labels.put("version", (String) in.value);
+    m.value = 1.0;
+    m.timestamp = in.timestamp;
+    out.emit(m);
+
+- pattern: java.lang:type=Threading:AllThreadIds
+  transform: |
+    import java.lang.management.ManagementFactory;
+    import java.lang.management.ThreadInfo;
+    import java.lang.management.ThreadMXBean;
+    import java.util.HashMap;
+
+    Thread.State[] states = Thread.State.values();
+    int[] counts = new int[states.length];
+
+    long timestamp = System.currentTimeMillis();
+    ThreadInfo[] threads = ManagementFactory.getThreadMXBean().getThreadInfo((long[]) in.value, 0);
+    for (ThreadInfo thread : threads) {
+      if (thread == null)
+        continue;
+      ++counts[thread.getThreadState().ordinal()];
+    }
+
+    for (int i = 0; i < states.length; ++i) {
+      MetricValue m = new MetricValue();
+      m.name = "java_lang_Threading_ThreadStateCount";
+      m.labels = new HashMap<>();
+      m.labels.put("state", states[i].name());
+      m.value = counts[i];
+      m.timestamp = timestamp;
+      m.type = "gauge";
+      m.help = "The number of threads in the state. This value is calculated from ThreadMXBean#getThreadInfo(java.lang:type=Threading:AllThreadIds).";
+      out.emit(m);
+    }
+
+- transform: |
+    V1.transform(in, out, "type");

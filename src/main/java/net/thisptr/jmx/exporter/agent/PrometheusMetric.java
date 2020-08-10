@@ -12,6 +12,9 @@ public class PrometheusMetric {
 	@JsonProperty("name")
 	public String name;
 
+	@JsonProperty("suffix")
+	public String suffix;
+
 	@JsonProperty("labels")
 	public Map<String, String> labels;
 

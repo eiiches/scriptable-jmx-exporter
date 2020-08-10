@@ -21,70 +21,78 @@ Features
   - Converting a textual attribute to a numeric value (normal metric) or metric label with value 1 (info-style metric).
   - Decomposing complex MBean name into metric labels.
 - Performance. Goal is to enable a large number of metrics (~50k) at shorter intervals (>1s) without impacting workloads.
-  - See [benchmark](#benchmark).
+  - See our [benchmark](#benchmark).
 
-### Why another exporter? There's a bunch of exporters and there's even the official one.
+
+#### Why another exporter? There's a bunch of exporters and there's even the official one.
 
 I needed something that can scrape many MBeans with a small number of rules. Writing a regex for each set of *key properties* (key=value,... part of MBean name) was impossibly hard, especially when
 *key properties* doesn't always have a consistent order depending on how it is constructed (because it's just a hash table).
 
-### Non-Goals
-
-- This exporter is not a drop-in replacement for other exporters. While it might be possible to produce the same /metrics content, it will likely clutter/bloat the configuration file. Compatibility to other exporters is not our goal.
-
-
-Installation
-------------
 
 #### Requirements
 
 * Java 8 or newer
 
-#### Download from the Maven Central (Recommended)
 
-[https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/0.0.7/scriptable-jmx-exporter-0.0.7.jar)
+Quick Start
+------------
 
-#### Building from source
+*If you don't want to run the agent now, download [scriptable-jmx-exporter-1.0.0-alpha1.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha1/scriptable-jmx-exporter-1.0.0-alpha1.jar) and skip to [Usage](#usage).*
+
+You can quickly try out this exporter by copy-and-pasting the following snippet to your shell (or by manually running one by one).
+This will download the agent jar and a default configuration file, and then start the exporter using `-javaagent` option.
 
 ```sh
-git clone https://github.com/eiiches/scriptable-jmx-exporter
-cd scriptable-jmx-exporter
-mvn clean package
+# Download the agent jar and a default configuration file.
+curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha1/scriptable-jmx-exporter-1.0.0-alpha1.jar
+curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v1.0.0-alpha1/src/main/resources/scriptable-jmx-exporter.yaml
+
+# Finally, run JVM with the exporter enabled.
+java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
 ```
 
-An agent jar will be built and available at `target/scriptable-jmx-exporter-{version}.jar`.
+Now, open [http://localhost:9639/metrics](http://localhost:9639/metrics) in your browser to see the exposed metrics.
+
+The next step is to replace the Pause program with your favorite application that you want to monitor.
+Continue reading or alternatively you can check out real-world [examples](examples) to learn how to customize the exporter.
+
 
 Usage
 -----
 
-Add `-javaagent` option to JVM arguments. See Configuration section for details.
+Add `-javaagent` option to JVM arguments.
 
 ```sh
-# Without javaagent arguments, configurations from src/main/resources/scriptable-jmx-exporter.yaml is used.
+# This starts an exporter without an explicit configuration file.
+# The default configuration from src/main/resources/scriptable-jmx-exporter.yaml is used.
 java -javaagent:<PATH_TO_AGENT_JAR> ...
 ```
 
-Configurations can be passed as a javaagent argument.
+Configurations can be passed as a javaagent argument. See Configuration section for details.
 
 ```sh
 # Set configurations in YAML (or JSON) directly on command line
 java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_YAML> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-0.0.6.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
 
 # ---
 # Load configurations from PATH_TO_CONFIG_YAML file
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-0.0.6.jar=@/etc/foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-0.0.6.jar=@foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-0.0.6.jar=@classpath:foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@/etc/foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@classpath:foo.yaml ...
 ```
 
 Configuration
 -------------
+
+*This section requires a basic grasp of data models used in Java Management Extensions (JMX).
+If you are new to this area and don't understand what ObjectName or MBean is, I strongly recommend you to read [Java Management Extensions (JMX) Best Practices](https://www.oracle.com/java/technologies/javase/management-extensions-best-practices.html) first.*
 
 ### Automatic Reloading
 
@@ -92,8 +100,8 @@ Configurations are automatically reloaded whenever the file (`<PATH_TO_CONFIG_YA
 
 So, whenever you need to write a new configuration, it's easier to start with a simple configuration (e.g. [scriptable-jmx-exporter.yaml](https://github.com/eiiches/scriptable-jmx-exporter/blob/develop/src/main/resources/scriptable-jmx-exporter.yaml) which is the default configuration picked when no configuration is provided on command line) and incrementally edit the configuration file while actually running your software.
 
-If the agent fails to load a new configuration, most likely due to configuration error, the agent will continue to use the previous configuration. On the contrary, application startup will fail if the configuration has any errors.
-It's generally considered safe (in a sense that it will not interrupt running workloads) to reconfigure agents on a production cluster while they are running. 
+If the exporter fails to load a new configuration, most likely due to configuration error, the exporter will continue to use the previous configuration. On the contrary, application startup will fail if the configuration has any errors.
+It's generally considered safe (in a sense that it will not interrupt running workloads) to reconfigure the exporter on a production cluster while they are running.
 
 ### Example
 
@@ -105,6 +113,10 @@ options:
   include_timestamp: true # Include scraping timestamp for each metrics (default).
   include_type: true # Enable TYPE comments (default).
   include_help: true # Enable HELP comments (default).
+declarations: |
+  public static void foo() {
+    log("foo");
+  }
 rules:
 - pattern:
   # Drop less useful attributes JVM exposes.
@@ -119,17 +131,15 @@ rules:
 # Rule for known MBeans.
 - pattern: 'java\\.lang|java\\.nio|jboss\\.threads|net\\.thisptr\\.jmx\\.exporter\\.agent.*'
   transform: |
-    !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 # Default rule to cover the rest.
 - transform: |
-    !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/jmx/exporter/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
 
-See [wiki](https://github.com/eiiches/scriptable-jmx-exporter/wiki) for real-world examples.
+See [examples](examples) directory for real-world examples.
 
 ### Server Configuration
 
@@ -146,7 +156,25 @@ See [wiki](https://github.com/eiiches/scriptable-jmx-exporter/wiki) for real-wor
 | `options.include_type` | `true` | Enables TYPE comment. |
 | `options.minimum_response_time` | `0` | A minimum time in milliseconds which every /metrics requests should take. This is used to avoid CPU spikes when there are thousands of metrics. When set, `options.include_timestamp` should not be disabled because the time at which a response completes differs from the time at which the metrics are scraped. |
 
-These options can also be specified as /metrics parameters. E.g. `/metrics?minimum_response_time=1000`.
+These options can be overridden by URL parameters. E.g. `/metrics?minimum_response_time=1000`.
+
+### Declarations
+
+You can define static classes and methods for use in transform scripts, condition expressions, etc. They will be automatically imported and available so you don't have to manually write `import` statements.
+Make sure to add `public static` in the declarations; otherwise, the classes and methods won't be accessible.
+
+```yaml
+declarations: |
+  import java.util.Map;
+
+  public static void foo() {
+    log("foo");
+  }
+
+  public static class Foo {
+    // ...
+  }
+```
 
 ### Rule Configuration
 
@@ -154,35 +182,50 @@ Rules are searched in order and a first match is used for each attribute.
 
 | Key | Default | Description |
 |-|-|-|
-| `rules[].pattern` | `null` | A pattern used to match MBean attributes this rule applies to. A rule with a `null` pattern applies to any attributes. See [Pattern Format](#pattern-format) for syntax details. |
+| `rules[].pattern` | `null` | A pattern used to match MBean attributes this rule applies to. A rule with a `null` pattern applies to any attributes. See [Pattern Matching](#pattern-matching) for syntax details. |
+| `rules[].condition` | `true` | If an expression is set, this rule is used only when the expression evaluates to true. This is useful if you want to match an MBean attribute other than by its name, such as by its class name, etc. See [Condition Expression](#condition-expression) for details. |
 | `rules[].skip` | `false` | If `true`, skip exposition of the attribute to Prometheus. |
-| `rules[].transform` | `default_transform_v1` | A script to convert an MBean attribute to Prometheus metrics. See [Scripting](#scripting) for details. |
+| `rules[].transform` | `V1.transform(in, out, "type")` | A script to convert an MBean attribute to Prometheus metrics. See [Scripting](#scripting) for details. |
 
-### Labels Configuration (Deprecated)
+#### Pattern Matching
 
-| Key | Default | Description |
-|-|-|-|
-| `labels` | `{}` | A static object containing labels or a jq expression (string) to generate labels at runtime. The labels are added to every metrics. |
-
-DEPRECATION: This will be removed in future versions. The purpose of this feature was to add software versions, etc. to all the metrics, but that wasn't a right solution. Use info-style metrics for that.
-
-### Pattern Format
+Pattern matches are done against *unquoted* key properties. For example, `.*:name=foo` matches an ObjectName `domain:name=\"foo\"`.
 
 TBD
+
+
+#### Condition Expression
+
+Condition expression, if set, further narrows down MBean attributes that the rule applies to, in addition to `pattern`.
+If the condition evaluates to `false`, the MBean attribute will be handled by one of the subsequent rules (or the default rule if there's none).
+
+The following variables are accessible from a condition expression.
+
+| Variable Name | Type | Description |
+|-|-|-|
+| `mbeanInfo` | [javax.management.MBeanInfo](https://docs.oracle.com/en/java/javase/14/docs/api/java.management/javax/management/MBeanInfo.html) | MBean information |
+| `attributeInfo` | [javax.management.MBeanAttributeInfo](https://docs.oracle.com/en/java/javase/14/docs/api/java.management/javax/management/MBeanAttributeInfo.html) | MBean attribute information |
+
+##### Examples
+
+* `mbeanInfo.getClassName().endsWith("JmxReporter$Timer")`
 
 Scripting
 ---------
 
-While we support both Java and jq as a scripting language, Java should be the preferred choice as it (i) can detect most of the type errors earlier, (ii) has rich standard libraries, (iii) is faster.
+In this section, we mainly talk about transform scripts for use in `rules[].transform`.
+
+Scripts can explicitly specify which scripting engine to use, by starting a script with `!<NAME>` directive. Currently, `!java` is the default (and only) engine and hence can be omitted.
+There used to be `!jq` engine, but removed.
 
 ### Java
 
-Java scripting is powered by [Janino](https://janino-compiler.github.io/janino/), which is a super-small, super-fast Java compiler. To write scripts in Java, the script must start with `!java` directive. E.g.
+Java scripting is powered by [Janino](https://janino-compiler.github.io/janino/), which is a super-small, super-fast Java compiler.
 
 ```yaml
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValueOutput.java)) is provided.
@@ -197,6 +240,24 @@ In most cases, doing one of the following is sufficient to achieve the desired o
  * Modify `in` before calling `V1.transform(...)`
  * Wrap `out` by anonymous inner class to modify `V1.transform(...)` output
 
+##### Case-style Conversion
+
+*
+NOTE: We DO NOT recommend any case-style conversions.
+While [Cc]amelCase with `_` in-between looks somewhat unpleasant, it conveys more information from the original ObjectName,
+probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.
+*
+
+You can covert case-styles of metric name by using `V1.snakeCase()` or `V1.lowerCase()`.
+
+###### Example: `java.lang:type=ClassLoading:LoadedClassCount`
+
+| Transform Script | Prometheus Metric Example |
+|-|-|
+| `V1.transform(in, out, "type")` | `java_lang_ClassLoading_LoadedClassCount` |
+| `V1.transform(in, out, "type", V1.snakeCase())` | `java_lang_class_loading_loaded_class_count` |
+| `V1.transform(in, out, "type", V1.lowerCase())` | `java_lang_classloading_loadedclasscount` |
+
 #### Examples
 
 ##### Example: Exposing all attributes of all MBaens
@@ -206,17 +267,17 @@ For most of the applications, this rule covers most of the MBean attributes.
 ```yaml
 - transform: |
     !java
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 ```
-java_lang_garbage_collector_last_gc_info_memory_usage_after_gc_value_committed{name="G1 Young Generation",key="CodeHeap 'profiled nmethods'",} 7995392.0 1595172454731
-java_lang_memory_heap_memory_usage_committed 1.073741824E9 1595172454742
-java_nio_buffer_pool_count{name="direct",} 14.0 1595172454721
+java_nio_BufferPool_Count{name="direct",} 8 1596881052752
+java_lang_GarbageCollector_LastGcInfo_memoryUsageAfterGc_value_committed{name="G1 Young Generation",key="CodeHeap 'profiled nmethods'",} 2752512 1596881052753
+java_lang_Memory_HeapMemoryUsage_committed 1061158912 1596881052757
 ...
 ```
 
-##### Example: Exposing versions as info-style metrics
+##### Example: Exposing versions as info-style metrics (Advanced)
 
 ```yaml
 - pattern:
@@ -226,23 +287,22 @@ java_nio_buffer_pool_count{name="direct",} 14.0 1595172454721
     !java
     import java.util.HashMap;
     MetricValue m = new MetricValue();
-    m.name = in.domain + ":" + in.keyProperties.get("type") + ":" + in.attributeName + "_info";
+    m.name = in.domain + "_" + in.keyProperties.get("type") + "_" + in.attributeName + "_info";
     m.labels = new HashMap<>();
     m.labels.put("version", (String) in.value);
     m.value = 1.0;
     m.timestamp = in.timestamp;
-    V1.snakeCase().apply(m);
     out.emit(m);
 ```
 
 ```
-java_lang_runtime_vm_version_info{version="14.0.1+7",} 1.0 1595167009825
-java_lang_operating_system_version_info{version="5.7.4-arch1-1",} 1.0 1595167009828
+java_lang_Runtime_VmVersion_info{version="14.0.1+7",} 1.0 1595167009825
+java_lang_OperatingSystem_Version_info{version="5.7.4-arch1-1",} 1.0 1595167009828
 ```
 
 Reference: [Exposing the software version to Prometheus](https://www.robustperception.io/exposing-the-software-version-to-prometheus)
 
-##### Example: Exposing thread counts by thread state
+##### Example: Exposing thread counts by thread state (Advanced)
 
 ```yaml
 - pattern: java.lang:type=Threading:AllThreadIds
@@ -288,7 +348,7 @@ java_lang_threading_state_count{state="TIMED_WAITING",} 3.0 1595170784228
 java_lang_threading_state_count{state="TERMINATED",} 0.0 1595170784228
 ```
 
-##### Example: Adding computed metrics
+##### Example: Adding computed metrics (Advanced)
 
 This is just for demonstration purpose and highly discouraged in practice unless absolutely necessary because these kind of metrics computation makes it hard to trace a metric back to its source and how the value is generated. In most cases, we don't have to do this at all, because Prometheus can perform complex query including arithmetic.
 
@@ -299,55 +359,77 @@ This is just for demonstration purpose and highly discouraged in practice unless
     import java.lang.management.ManagementFactory; // imports must come first
     import javax.management.ObjectName;
 
-    V1.transform(in, out, "type", V1.snakeCase(), V1.gauge()); // emit raw metric
+    V1.transform(in, out, "type", V1.gauge()); // emit raw metric
 
     // modify name and values and emit computed metric
     long max = (Long) ManagementFactory.getPlatformMBeanServer().getAttribute(new ObjectName("java.lang:type=OperatingSystem"), "MaxFileDescriptorCount");
     in.value = max - (Long) in.value;
     in.attributeName = "AvailableFileDescriptorCount";
     in.attributeDescription = "The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.";
-    V1.transform(in, out, "type", V1.snakeCase(), V1.gauge());
+    V1.transform(in, out, "type", V1.gauge());
 ```
 
 ```
-# HELP java_lang_operating_system_available_file_descriptor_count The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.
-# TYPE java_lang_operating_system_available_file_descriptor_count gauge
-java_lang_operating_system_available_file_descriptor_count 1048546.0 1595164426599
-# HELP java_lang_operating_system_open_file_descriptor_count OpenFileDescriptorCount
-# TYPE java_lang_operating_system_open_file_descriptor_count gauge
-java_lang_operating_system_open_file_descriptor_count 30.0 1595164426599
+# HELP java_lang_OperatingSystem_OpenFileDescriptorCount OpenFileDescriptorCount
+# TYPE java_lang_OperatingSystem_OpenFileDescriptorCount gauge
+java_lang_OperatingSystem_OpenFileDescriptorCount 29 1596880934872
+# HELP java_lang_OperatingSystem_AvailableFileDescriptorCount The number of file descriptors available to be opened in this JVM, which is calculated as java.lang:type=OperatingSystem:MaxFileDescriptorCount - java.lang:type=OperatingSystem:OpenFileDescriptorCount.
+# TYPE java_lang_OperatingSystem_AvailableFileDescriptorCount gauge
+java_lang_OperatingSystem_AvailableFileDescriptorCount 1048547 1596880934872
 ```
 
+#### Getting ready for upcoming OpenMetrics support
 
+While this exporter does not support OpenMetrics yet, you can prepare for the upcoming OpenMetrics support.
+The most notable difference between the Prometheus format and the OpenMetrics format is that OpenMetrics requires (not only recommends) `_total` suffix for counter metrics.
+To ensure conformance to both formats in future, set `total` suffix to `counter` metrics. E.g.
 
-### jq (Deprecated)
-
-DEPRECATION: We are phasing out jq scripting feature. Please migrate to Java.
-
-Roughly speaking, the following two behaves the same, except for TabularData where label naming is changed
-(e.g. For `java.lang:type=GarbageCollector:LastGcInfo.memoryUsageAfterGc` which is a TabularData nested inside CompositeData,
-one of the metric label, `memoryUsageAfterGc_key` is changed to just `key` in `V1.transform()` in Java).
-
-```yaml
-- transform: |
-    default_transform_v1(["foo", "bar"]; true)
+```java
+MetricValue m = new MetricValue();
+m.name = "<NAME>"
+m.suffix = "total";
+m.type = "counter";
+m.value = 1.0;
+out.emit(m);
 ```
 
-```yaml
-- transform: |
-    !java
-    V1.transform(in, out, "foo", "bar");
-```
+This will produce the following responses in respective formats:
 
-Detailed explanation for jq scripting is removed. Please refer to [older README.md](https://github.com/eiiches/scriptable-jmx-exporter/tree/java-prometheus-metrics-agent-0.0.5).
+* Prometheus (Special-cased to append `_total` to metric name in annotations, when `counter` has `total` suffix)
+
+  ```
+  # TYPE <NAME>_total counter
+  <NAME>_total 1.0
+  ```
+
+* OpenMetrics
+
+  ```
+  # TYPE <NAME> counter
+  <NAME>_total 1.0
+  ```
+
+All that said, if you prefer to leave the metrics `untyped` to keep configurations simple, that should be also fine.
+
+#### Tips
+
+* Prefer rule patterns, instead of using `if` inside transform scripts, to dispatch based on MBean attributes. It's usually faster.
+* Use `static` inside method-local inner class to do things that need to be done once, such as to compile a regex. Note that this should *not* be used to share mutable states because transform scripts are executed concurrently.
+  ```yaml
+    transform: |
+      class Holder {
+        public static final Pattern PATTERN = Pattern.compile(".*");
+      }
+      log(Holder.PATTERN.matcher("foo").matches());
+  ```
 
 ### Debugging
 
-Sometimes it's hard to debug complex `transform` scripts. Here's some tips and tricks to debug them.
+Sometimes it's hard to debug complex `transform` scripts. Here are some tips and tricks to debug them.
 
 #### Changing a log level to FINEST
 
-This agent uses JUL framework for logging. Errors caused by user configurations are logged at &gt;= INFO level. Other errors are
+This exporter uses JUL framework for logging. Errors caused by user configurations are logged at &gt;= INFO level. Other errors are
 logged at &lt; INFO level. If you are encountering issues, consider setting log levels to FINEST to see detailed logs.
 
 To change a log level, create `logging.properties` and set `java.util.logging.config.file` system property to point to the file.
@@ -378,7 +460,7 @@ If you are writing transform scripts in Java, you can use `log(fmt, ...)` or `lo
     log(in);
     log("hi");
     log("test: %s", in.value); # printf style; see javadoc for String.format()
-    V1.transform(in, out, "type", V1.snakeCase());
+    V1.transform(in, out, "type");
 ```
 
 Alternatively, you can also use `System.out.printf(...)` or `System.err.printf(...)` as in any other programs.
@@ -390,16 +472,15 @@ Benchmark
 First, it's almost impossible to do a fair comparison. The responses are not the same. Even the number of metrics is not the same.
 Please also keep in mind that performance is highly dependent on the configurations and these numbers are very specific to the configurations we used for this benchmark.
 
-See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. Here's the results:
+See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. Here are the results:
 
-| Exporter | # of metrics | Throughput [req/s] |
-|-|-|-|
-| scriptable-jmx-exporter (*1) | 5254 | 552.03 |
-| jmx_exporter 0.13.0 | 3157 (*2) | 12.14 |
+| Exporter | Config File (# of lines) | # of Metrics (\*1) | Throughput [req/s] | Avg. Latency [ms] <br/> @ 10 [req/s] |
+|-|-|-|-|-|
+| scriptable-jmx-exporter | [scriptable-jmx-exporter.yaml](examples/benchmark-kafka/scriptable-jmx-exporter.yaml) (64) | 3362 | 939.45 | TBD |
+| jmx_exporter 0.13.0 | [kafka-2_0_0.yml](https://github.com/prometheus/jmx_exporter/blob/ce04b7dca8615d724d8f447fa25c44ae1c29238b/example_configs/kafka-2_0_0.yml) (103) | 3157 | 12.14 | TBD |
 
-(\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4.
-(\*1) We didn't add metrics TYPE hints for many metrics, even where jmx_exporter does.
-(\*2) The Kafka example from the official repository seems to be missing some metrics, such as `kafka.server:type=socket-server-metrics:ConnectionCloseTotal`, etc.
+(\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4. (\*1) kafka-2_0_0.yml seems to be missing a number of metrics, such as `kafka.server:type=socket-server-metrics`.
+We excluded such metrics as well. The difference in the number of metrics mostly comes from how we treat JVM metrics.
 
 
 References

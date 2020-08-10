@@ -1,0 +1,71 @@
+declarations: |
+  import java.util.HashMap;
+  import java.util.regex.Pattern;
+  import javax.management.openmbean.TabularType;
+  import javax.management.openmbean.TabularData;
+  import javax.management.openmbean.TabularDataSupport;
+  import javax.management.openmbean.CompositeType;
+  import javax.management.openmbean.CompositeData;
+  import javax.management.openmbean.OpenDataException;
+
+  // Change indexNames of TabularData. Ignite uses "systemViewRowId" which is just a row number and is not suitable for metric labels.
+  public static TabularData reindex(Object obj, String... indexNames) throws OpenDataException {
+    TabularData tabularData = (TabularData) obj;
+    TabularType tabularType = tabularData.getTabularType();
+    CompositeType rowType = tabularType.getRowType();
+    TabularType newTabularType = new TabularType(tabularType.getTypeName(), tabularType.getDescription(), rowType, indexNames);
+    TabularDataSupport newValue = new TabularDataSupport(newTabularType);
+    for (Object row : tabularData.values())
+      newValue.put((CompositeData) row);
+    return newValue;
+  }
+
+  private static final Pattern BEAN_CLASS_NAME_PATTERN = Pattern.compile("^.*[.$]([a-zA-Z0-9]+?)((Metrics)?(MxBean|MXBean|MBean).*)?$");
+
+  public static void ignite(AttributeValue in, MetricValueOutput out, boolean removeName) {
+    in.domain = "org.apache.ignite"; // org.apache is too unspecific... Ignite should use org.apache.ignite or something
+    in.keyProperties = new HashMap<>(in.keyProperties);
+    if (removeName)
+      in.keyProperties.remove("name");
+    in.keyProperties.put("mbean_type", BEAN_CLASS_NAME_PATTERN.matcher(in.beanClass).replaceAll("$1"));
+    V1.transform(in, out, "mbean_type");
+  }
+
+  public static void igniteTab(final AttributeValue in, final MetricValueOutput out, final String... indexNames) throws OpenDataException {
+    in.value = reindex(in.value, indexNames);
+    in.attributeType = "javax.management.openmbean.TabularData"; // Ignite incorrectly reports CompositeData
+    ignite(in, out, true);
+  }
+
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+
+- pattern:
+  - 'org.apache:group=Cache groups:PartitionIds|AffinityPartitionsAssignmentMap|MovingPartitionsAllocationMap|OwningPartitionsAllocationMap'
+  skip: true
+
+- pattern: 'org.apache:group=views,name=cacheGroups'
+  transform: |
+    igniteTab(in, out, "cacheGroupName");
+
+- pattern: 'org.apache:group=views,name=caches'
+  transform: |
+    igniteTab(in, out, "cacheGroupName", "cacheName");
+
+- pattern: 'org.apache:group=views'
+  skip: true # TODO
+
+- pattern: 'org.apache:name=.*(MxBean|MXBean|MBean).*'
+  transform: |
+    ignite(in, out, true);
+
+- pattern: 'org.apache'
+  transform: |
+    ignite(in, out, false);
+
+- transform: |
+    V1.transform(in, out, "type");
