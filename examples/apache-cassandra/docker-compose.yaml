@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  cassandra1:
+    image: cassandra:3.11.7
+    ports:
+    - '9639:9639'
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-1.0.0-alpha1.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter-typed.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    environment:
+    - JVM_OPTS=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099
+
+  cassandra2:
+    image: cassandra:3.11.7
+    ports:
+    - '19639:9639'
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-1.0.0-alpha1.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter-typed.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    environment:
+    - JVM_OPTS=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099
+    - CASSANDRA_SEEDS=cassandra1
+    depends_on:
+    - cassandra1
+    links:
+    - 'cassandra1:cassandra1'
