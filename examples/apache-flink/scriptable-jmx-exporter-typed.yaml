@@ -16,7 +16,7 @@ declarations: |
 
   private static final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-  public static boolean hasCorrespondingCounter(AttributeValue in) throws Exception {
+  public static boolean hasCorrespondingMeter(AttributeValue in) throws Exception {
     // Apache Flink has duplicate metrics such as:
     // domain: org_apache_flink_taskmanager_job_task_numBytesInRemote (JmxCounter)
     // domain: org_apache_flink_taskmanager_job_task_numBytesInRemotePerSecond (JmxMeter)
@@ -59,7 +59,7 @@ rules:
 - pattern: 'org\\.apache\\.flink\\..*::Count'
   condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxCounter")
   transform: |
-    if (hasCorrespondingCounter(in))
+    if (hasCorrespondingMeter(in))
       return;
     flink(in, in.domain) // JmxCounter can decrease; so it's not Prometheus counter
       .transform(in.value, in.attributeType, out).dispose();
