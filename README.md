@@ -242,11 +242,9 @@ In most cases, doing one of the following is sufficient to achieve the desired o
 
 ##### Case-style Conversion
 
-*
-NOTE: We DO NOT recommend any case-style conversions.
+*NOTE: We DO NOT recommend any case-style conversions.
 While [Cc]amelCase with `_` in-between looks somewhat unpleasant, it conveys more information from the original ObjectName,
-probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.
-*
+probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.*
 
 You can covert case-styles of metric name by using `V1.snakeCase()` or `V1.lowerCase()`.
 
