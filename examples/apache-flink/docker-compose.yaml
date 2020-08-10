@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+  jobmanager:
+    image: flink:1.11.1-scala_2.12-java11
+    expose:
+    - '6123'
+    ports:
+    - '9639:9639'
+    - '8081:8081'
+    - '9249:9249'
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-1.0.0-alpha1.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter-typed.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    - type: bind
+      source: ./flink-conf.yaml
+      target: /opt/flink/conf/flink-conf.yaml
+    command:
+    - jobmanager
+    environment:
+    - JOB_MANAGER_RPC_ADDRESS=jobmanager
+    - FLINK_ENV_JAVA_OPTS_JM=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099
+
+  taskmanager:
+    image: flink:1.11.1-scala_2.12-java11
+    expose:
+    - '6121'
+    - '6122'
+    ports:
+    - '19639:9639'
+    - '19249:9249'
+    depends_on:
+    - jobmanager
+    command:
+    - taskmanager
+    links:
+    - 'jobmanager:jobmanager'
+    environment:
+    - JOB_MANAGER_RPC_ADDRESS=jobmanager
+    - FLINK_ENV_JAVA_OPTS_TM=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-1.0.0-alpha1.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter-typed.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    - type: bind
+      source: ./flink-conf.yaml
+      target: /opt/flink/conf/flink-conf.yaml
+
