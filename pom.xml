@@ -9,7 +9,7 @@
 	<artifactId>scriptable-jmx-exporter</artifactId>
 	<name>Scriptable JMX Exporter</name>
 	<packaging>jar</packaging>
-	<version>0.0.8-SNAPSHOT</version>
+	<version>1.0.0-alpha1</version>
 	<description>Java agent for collecting and exposing metrics to Prometheus</description>
 	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
 
@@ -32,7 +32,7 @@
 		<connection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</connection>
 		<developerConnection>scm:git:git@github.com:eiiches/scriptable-jmx-exporter.git</developerConnection>
 		<url>git@github.com:eiiches/scriptable-jmx-exporter.git</url>
-		<tag>HEAD</tag>
+		<tag>v1.0.0-alpha1</tag>
 	</scm>
 
 	<distributionManagement>
