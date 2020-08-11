@@ -144,7 +144,7 @@ public class V1 {
 		builder.timestamp(in.timestamp);
 		builder.help(in.attributeDescription);
 		builder.transform(in.value, in.attributeType, out, '_', modifiers);
-		builder.dispose();
+		builder.done();
 	}
 
 	public static class Builder {
@@ -243,7 +243,7 @@ public class V1 {
 			return this;
 		}
 
-		public void dispose() {
+		public void done() {
 			reset();
 			V1.BUILDER_CACHE.get().builder = this;
 		}

@@ -24,28 +24,28 @@ rules:
   transform: |
     kafka(in, (String) in.keyProperties.get("name"))
       .type("gauge")
-      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).done();
 - pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
   transform: |
     kafka(in, (String) match.get("name"))
       .type("counter")
       .suffix("total")
-      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).done();
 - pattern: 'kafka.*::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     kafka(in, (String) in.keyProperties.get("name"))
       .suffix("count")
       .type("summary")
-      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).done();
 - pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
     kafka(in, (String) in.keyProperties.get("name"))
       .addLabel("quantile", "0." + match.get("p"))
       .type("summary")
-      .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
+      .transform(in.value, in.attributeType, out, V1.lowerCase()).done();
 - pattern: 'kafka.*'
   transform: |
     log("unhandled attribute: %s", in);

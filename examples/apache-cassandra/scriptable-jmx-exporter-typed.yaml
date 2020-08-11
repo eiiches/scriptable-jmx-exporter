@@ -19,7 +19,7 @@ rules:
   transform: |
     cassandra(in)
       .type("gauge")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxMeter")
@@ -27,13 +27,13 @@ rules:
     cassandra(in)
       .type("counter")
       .suffix("total")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxCounter")
   transform: |
     cassandra(in) // JmxCounter can decrease and thus it's not a Prometheus counter
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
@@ -41,25 +41,25 @@ rules:
     cassandra(in)
       .suffix("count")
       .type("summary")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 - pattern: 'org\\.apache\\.cassandra\\.metrics::(?<p>[0-9]+)thPercentile'
   condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
   transform: |
     cassandra(in)
       .addLabel("quantile", "0." + match.get("p"))
       .type("summary")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 - pattern: 'org\\.apache\\.cassandra\\.metrics::(Min|Max|StdDev)'
   condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
   transform: |
     cassandra(in)
       .appendName(in.attributeName.toLowerCase())
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.cassandra\\.metrics'
   transform: |
     log("unhandled attribute: %s", in);
-    cassandra(in).transform(in.value, in.attributeType, out).dispose();
+    cassandra(in).transform(in.value, in.attributeType, out).done();
 
 - transform: |
     V1.transform(in, out, "type");

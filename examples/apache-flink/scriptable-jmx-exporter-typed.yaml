@@ -46,7 +46,7 @@ rules:
   transform: |
     flink(in, in.domain)
       .type("gauge")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: '(?<domain>org\\.apache\\.flink\\..*?)(PerSecond)?::Count'
   condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxMeter")
@@ -54,7 +54,7 @@ rules:
     flink(in, (String) match.get("domain"))
       .type("counter")
       .suffix("total")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.flink\\..*::Count'
   condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxCounter")
@@ -62,13 +62,13 @@ rules:
     if (hasCorrespondingMeter(in))
       return;
     flink(in, in.domain) // JmxCounter can decrease; so it's not Prometheus counter
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'org\\.apache\\.flink\\..*'
   transform: |
     log("unhandled attribute: %s", in.domain);
     flink(in, in.domain)
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - transform: |
     V1.transform(in, out, "type");

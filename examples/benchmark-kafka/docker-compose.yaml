@@ -20,7 +20,7 @@ services:
     volumes:
     - 'kafka_data:/bitnami'
     - type: bind
-      source: ../../target/scriptable-jmx-exporter-1.0.0-alpha1.jar
+      source: ../../target/scriptable-jmx-exporter-1.0.0-SNAPSHOT.jar
       target: /opt/java-agents/scriptable-jmx-exporter.jar
     - type: bind
       source: ./jmx_prometheus_javaagent-0.13.0.jar

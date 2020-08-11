@@ -27,7 +27,7 @@ rules:
   transform: |
     solr(in)
       .type("gauge")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'solr::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxMeter")
@@ -35,13 +35,13 @@ rules:
     solr(in)
       .type("counter")
       .suffix("total")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'solr::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxCounter")
   transform: |
     solr(in)
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'solr::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
@@ -49,31 +49,31 @@ rules:
     solr(in)
       .suffix("count")
       .type("summary")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 - pattern: 'solr::(?<p>[0-9]+)thPercentile'
   condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
   transform: |
     solr(in)
       .addLabel("quantile", "0." + match.get("p"))
       .type("summary")
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 - pattern: 'solr::(Min|Max|StdDev)'
   condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
   transform: |
     solr(in)
       .appendName(in.attributeName.toLowerCase())
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - condition: '"org.apache.solr.metrics.MetricsMap".equals(mbeanInfo.getClassName())'
   transform: |
     solr(in)
       .appendName(in.attributeName)
-      .transform(in.value, in.attributeType, out).dispose();
+      .transform(in.value, in.attributeType, out).done();
 
 - pattern: 'solr'
   transform: |
     log("unhandled attribute: %s", in);
-    solr(in).transform(in.value, in.attributeType, out).dispose();
+    solr(in).transform(in.value, in.attributeType, out).done();
 
 - transform: |
     V1.transform(in, out, "type");
