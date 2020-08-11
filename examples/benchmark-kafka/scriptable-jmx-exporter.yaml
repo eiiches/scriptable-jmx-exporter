@@ -1,5 +1,12 @@
 options:
   include_timestamp: false
+declarations: |
+  public static V1.Builder kafka(AttributeValue in, String name) {
+    return V1.name(in.domain, (String) in.keyProperties.get("type"), name)
+      .addLabelsExcluding(in.keyProperties, "type", "name")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription);
+  }
 rules:
 - pattern:
   - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
@@ -15,41 +22,29 @@ rules:
   skip: true
 - pattern: 'kafka.*::Value'
   transform: |
-    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
-      .addLabelsExcluding(in.keyProperties, "type", "name")
+    kafka(in, (String) in.keyProperties.get("name"))
       .type("gauge")
-      .timestamp(in.timestamp)
-      .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*:name=(?<name>.+?)(PerSec)?:Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Meter")
   transform: |
-    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) match.get("name"))
-      .addLabelsExcluding(in.keyProperties, "name", "type")
+    kafka(in, (String) match.get("name"))
       .type("counter")
       .suffix("total")
-      .timestamp(in.timestamp)
-      .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::Count'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
-    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
-      .addLabelsExcluding(in.keyProperties, "name", "type")
+    kafka(in, (String) in.keyProperties.get("name"))
       .suffix("count")
       .type("summary")
-      .timestamp(in.timestamp)
-      .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*::(?<p>[0-9]+)thPercentile'
   condition: mbeanInfo.getClassName().endsWith("JmxReporter$Histogram") || mbeanInfo.getClassName().endsWith("JmxReporter$Timer")
   transform: |
-    V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
-      .addLabelsExcluding(in.keyProperties, "name", "type")
+    kafka(in, (String) in.keyProperties.get("name"))
       .addLabel("quantile", "0." + match.get("p"))
       .type("summary")
-      .timestamp(in.timestamp)
-      .help(in.attributeDescription)
       .transform(in.value, in.attributeType, out, V1.lowerCase()).dispose();
 - pattern: 'kafka.*'
   transform: |
