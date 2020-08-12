@@ -5,12 +5,12 @@ import java.util.Map;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 
+import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
-import net.thisptr.jmx.exporter.agent.scraper.ScrapeRule;
 
-public class Sample<ScrapeRuleType extends ScrapeRule> {
+public class Sample {
 
-	public final ScrapeRuleType rule;
+	public final ScrapeRule rule;
 	public final long timestamp;
 	public final MBeanAttributeInfo attribute;
 	public final Object value;
@@ -18,7 +18,7 @@ public class Sample<ScrapeRuleType extends ScrapeRule> {
 	public final MBeanInfo info;
 	public final Map<String, String> captures;
 
-	public Sample(final ScrapeRuleType rule, final Map<String, String> captures, final long timestamp, final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final Object value) {
+	public Sample(final ScrapeRule rule, final Map<String, String> captures, final long timestamp, final FastObjectName name, final MBeanInfo info, final MBeanAttributeInfo attribute, final Object value) {
 		this.rule = rule;
 		this.captures = captures;
 		this.timestamp = timestamp;

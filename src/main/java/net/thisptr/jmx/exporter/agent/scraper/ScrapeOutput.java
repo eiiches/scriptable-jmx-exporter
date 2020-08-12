@@ -2,7 +2,7 @@ package net.thisptr.jmx.exporter.agent.scraper;
 
 import net.thisptr.jmx.exporter.agent.Sample;
 
-public interface ScrapeOutput<ScrapeRuleType extends ScrapeRule> {
+public interface ScrapeOutput {
 
-	void emit(Sample<ScrapeRuleType> sample);
+	void emit(Sample sample);
 }

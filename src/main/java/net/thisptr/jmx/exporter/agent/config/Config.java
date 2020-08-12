@@ -24,7 +24,6 @@ import net.thisptr.jmx.exporter.agent.jackson.serdes.HostAndPortDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.ScriptText;
-import net.thisptr.jmx.exporter.agent.scraper.ScrapeRule;
 
 @JsonDeserialize(builder = Config.Builder.class)
 public class Config {
@@ -93,10 +92,10 @@ public class Config {
 				declarations.add(scriptEngine.compileDeclarations(script.scriptBody, i));
 			}
 
-			final List<PrometheusScrapeRule> rules = new ArrayList<>();
+			final List<ScrapeRule> rules = new ArrayList<>();
 			for (int i = 0; i < ruleSources.size(); i++) {
 				final RuleSource ruleSource = ruleSources.get(i);
-				final PrometheusScrapeRule rule = new PrometheusScrapeRule();
+				final ScrapeRule rule = new ScrapeRule();
 				if (ruleSource.condition != null) {
 					final ScriptEngine scriptEngine = registry.get(ruleSource.condition.engineName != null ? ruleSource.condition.engineName : DEFAULT_ENGINE_NAME);
 					rule.condition = scriptEngine.compileConditionScript(declarations, ruleSource.condition.scriptBody, i);
@@ -160,9 +159,9 @@ public class Config {
 
 	@NotNull
 	@JsonProperty("rules")
-	public List<@Valid @NotNull PrometheusScrapeRule> rules = new ArrayList<>();
+	public List<@Valid @NotNull ScrapeRule> rules = new ArrayList<>();
 
-	public static class PrometheusScrapeRule implements ScrapeRule {
+	public static class ScrapeRule {
 
 		@JsonProperty("pattern")
 		@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -177,20 +176,5 @@ public class Config {
 
 		@JsonProperty("transform")
 		public TransformScript transform;
-
-		@Override
-		public boolean skip() {
-			return skip;
-		}
-
-		@Override
-		public List<AttributeNamePattern> patterns() {
-			return patterns;
-		}
-
-		@Override
-		public ConditionScript condition() {
-			return condition;
-		}
 	}
 }

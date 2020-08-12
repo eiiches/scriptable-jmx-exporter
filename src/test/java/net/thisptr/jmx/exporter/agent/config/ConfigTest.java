@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.Sample;
-import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
@@ -79,7 +78,7 @@ public class ConfigTest {
 
 		assertThat(config.rules.get(0).condition.evaluate(null, null)).isTrue();
 		final List<PrometheusMetric> ms = new ArrayList<>();
-		config.rules.get(0).transform.execute(new Sample<PrometheusScrapeRule>(null, Collections.emptyMap(), 0L, new FastObjectName(name), mbeanInfo, attributeInfo, null), ms::add);
+		config.rules.get(0).transform.execute(new Sample(null, Collections.emptyMap(), 0L, new FastObjectName(name), mbeanInfo, attributeInfo, null), ms::add);
 		assertThat(ms).hasSize(1);
 		assertThat(ms.get(0)).isNotNull();
 		assertThat(config.server).isNotNull();

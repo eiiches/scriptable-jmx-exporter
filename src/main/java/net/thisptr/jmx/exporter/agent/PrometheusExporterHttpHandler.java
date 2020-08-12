@@ -24,7 +24,7 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.thisptr.jmx.exporter.agent.PrometheusMetricWriter.WritableByteChannelController;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
-import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
+import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
@@ -36,11 +36,11 @@ import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 public class PrometheusExporterHttpHandler implements HttpHandler {
 	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
 
-	private static final PrometheusScrapeRule DEFAULT_RULE;
+	private static final ScrapeRule DEFAULT_RULE;
 
 	static {
 		try {
-			DEFAULT_RULE = new PrometheusScrapeRule();
+			DEFAULT_RULE = new ScrapeRule();
 			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\");", -1);
 			DEFAULT_RULE.patterns = Collections.emptyList();
 		} catch (final ScriptCompileException e) {
@@ -48,12 +48,12 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		}
 	}
 
-	private final Scraper<PrometheusScrapeRule> scraper;
+	private final Scraper scraper;
 	private final OptionsConfig options;
 
-	public PrometheusExporterHttpHandler(final List<PrometheusScrapeRule> rules, final OptionsConfig options) {
+	public PrometheusExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options) {
 		this.options = options;
-		this.scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, DEFAULT_RULE);
+		this.scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rules, DEFAULT_RULE);
 	}
 
 	private static void parseBooleanQueryParamAndThen(final HttpServerExchange exchange, final String name, final Consumer<Boolean> fn) {
@@ -96,7 +96,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		return options;
 	}
 
-	private static class PrometheusScrapeOutput implements ScrapeOutput<PrometheusScrapeRule> {
+	private static class PrometheusScrapeOutput implements ScrapeOutput {
 		private final PrometheusMetricOutput output;
 
 		public PrometheusScrapeOutput(final PrometheusMetricOutput output) {
@@ -104,7 +104,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		}
 
 		@Override
-		public void emit(final Sample<PrometheusScrapeRule> sample) {
+		public void emit(final Sample sample) {
 			try {
 				sample.rule.transform.execute(sample, output);
 			} catch (Throwable th) {

@@ -15,7 +15,6 @@ import org.codehaus.janino.ScriptEvaluator;
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.Sample;
-import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.Declarations;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
@@ -48,7 +47,7 @@ public class JaninoScriptEngine implements ScriptEngine {
 		}
 
 		@Override
-		public void execute(final Sample<PrometheusScrapeRule> sample, final PrometheusMetricOutput output) {
+		public void execute(final Sample sample, final PrometheusMetricOutput output) {
 			// We copy all the fields to decouple !java scripts and the rest of the code base.
 			final AttributeValue in = new AttributeValue();
 			in.attributeDescription = sample.attribute.getDescription();

@@ -29,25 +29,24 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.Sample;
-import net.thisptr.jmx.exporter.agent.config.Config.PrometheusScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 
 public class JaninoScriptEngineTest {
 	private final JaninoScriptEngine sut = new JaninoScriptEngine();
 
-	private static Sample<PrometheusScrapeRule> sample(final ObjectName objectName, final String attributeName) throws MalformedObjectNameException, InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException, IntrospectionException {
+	private static Sample sample(final ObjectName objectName, final String attributeName) throws MalformedObjectNameException, InstanceNotFoundException, AttributeNotFoundException, ReflectionException, MBeanException, IntrospectionException {
 		final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		final Object value = server.getAttribute(objectName, attributeName);
 		final long timestamp = System.currentTimeMillis();
 		final MBeanInfo mbeanInfo = server.getMBeanInfo(objectName);
 		final MBeanAttributeInfo attributeInfo = Arrays.stream(mbeanInfo.getAttributes()).filter(a -> attributeName.equals(a.getName())).findFirst().get();
-		return new Sample<PrometheusScrapeRule>(null, Collections.emptyMap(), timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
+		return new Sample(null, Collections.emptyMap(), timestamp, new FastObjectName(objectName), mbeanInfo, attributeInfo, value);
 	}
 
 	@Test
 	void testSimple() throws Exception {
-		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
+		final Sample sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
 		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
@@ -60,7 +59,7 @@ public class JaninoScriptEngineTest {
 
 	@Test
 	void testNonExistentKeyProperty() throws Exception {
-		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
+		final Sample sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
 		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"non_existent_key\")", 0).execute(sample, metrics::add);
@@ -73,7 +72,7 @@ public class JaninoScriptEngineTest {
 
 	@Test
 	void testArray() throws Exception {
-		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
+		final Sample sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
 		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
@@ -90,7 +89,7 @@ public class JaninoScriptEngineTest {
 
 	@Test
 	void testCompositeData() throws Exception {
-		final Sample<PrometheusScrapeRule> sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
+		final Sample sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
 		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
@@ -136,7 +135,7 @@ public class JaninoScriptEngineTest {
 	void testTabularData() throws Exception {
 		// FIXME: implement
 
-		final Sample<PrometheusScrapeRule> sample = sample(waitForLastGcInfo(), "LastGcInfo");
+		final Sample sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
 		final List<PrometheusMetric> metrics = new ArrayList<>();
 		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
@@ -151,7 +150,7 @@ public class JaninoScriptEngineTest {
 	void testAll() throws Exception {
 		waitForLastGcInfo();
 
-		final List<Sample<PrometheusScrapeRule>> samples = new ArrayList<>();
+		final List<Sample> samples = new ArrayList<>();
 
 		final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		for (final ObjectName name : server.queryNames(null, null)) {
@@ -171,7 +170,7 @@ public class JaninoScriptEngineTest {
 
 		final long start = System.currentTimeMillis();
 		for (int i = 0; i < 1000000; ++i) {
-			for (final Sample<PrometheusScrapeRule> sample : samples)
+			for (final Sample sample : samples)
 				script1.execute(sample, (a) -> {});
 		}
 		final long took = System.currentTimeMillis() - start;
