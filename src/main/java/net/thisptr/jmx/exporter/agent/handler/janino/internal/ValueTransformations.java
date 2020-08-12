@@ -17,7 +17,6 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.google.common.collect.Maps;
 
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValue;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.MetricValueOutput;
@@ -286,15 +285,10 @@ public class ValueTransformations {
 	}
 
 	private static void emit(final MetricNamer namer, final Labels labels, final MetricValueOutput output, final double value) {
-		final Map<String, String> metricLabels = Maps.newHashMapWithExpectedSize(labels.size());
-		labels.forEach((label, labelValue) -> {
-			metricLabels.put(label, labelValue);
-		});
-
 		final MetricValue m = new MetricValue();
 		m.name = namer.toString();
 		m.value = value;
-		m.labels = metricLabels;
+		m.labels = labels.toMapIfNotEmpty();
 		output.emit(m);
 	}
 }

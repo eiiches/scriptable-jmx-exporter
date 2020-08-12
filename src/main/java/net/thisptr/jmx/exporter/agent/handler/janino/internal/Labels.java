@@ -52,6 +52,16 @@ public class Labels {
 			fn.accept(labels.get(i), values.get(i));
 	}
 
+	public Map<String, String> toMapIfNotEmpty() {
+		final int size = labels.size();
+		if (size == 0)
+			return null;
+		final Map<String, String> map = Maps.newHashMapWithExpectedSize(size);
+		for (int i = 0; i < size; ++i)
+			map.put(labels.get(i), values.get(i));
+		return map;
+	}
+
 	public int size() {
 		return labels.size();
 	}
