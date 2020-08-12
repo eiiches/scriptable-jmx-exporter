@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent.config;
+package net.thisptr.jmx.exporter.agent.config.watcher;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import net.thisptr.jmx.exporter.agent.config.Config;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public abstract class PollingConfigWatcher extends Thread implements ConfigWatcher {

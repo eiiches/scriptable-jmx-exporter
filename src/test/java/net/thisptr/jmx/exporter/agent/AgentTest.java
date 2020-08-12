@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.io.ByteStreams;
 
-import net.thisptr.jmx.exporter.agent.config.ClassPathPollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.Config;
+import net.thisptr.jmx.exporter.agent.config.watcher.ClassPathPollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class AgentTest {

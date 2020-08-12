@@ -1,4 +1,6 @@
-package net.thisptr.jmx.exporter.agent.config;
+package net.thisptr.jmx.exporter.agent.config.watcher;
+
+import net.thisptr.jmx.exporter.agent.config.Config;
 
 public class StaticConfigWatcher implements ConfigWatcher {
 	private final Config config;

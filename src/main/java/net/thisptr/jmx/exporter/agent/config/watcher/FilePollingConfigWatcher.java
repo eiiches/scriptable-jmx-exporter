@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent.config;
+package net.thisptr.jmx.exporter.agent.config.watcher;
 
 import java.io.File;
 import java.io.IOException;
