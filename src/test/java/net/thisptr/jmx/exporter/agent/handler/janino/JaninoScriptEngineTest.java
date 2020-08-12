@@ -55,7 +55,7 @@ public class JaninoScriptEngineTest {
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
 		assertThat(metrics.get(0).name).isEqualTo("java.lang_OperatingSystem_ProcessCpuLoad");
-		assertThat(metrics.get(0).labels).isEmpty();
+		assertThat(metrics.get(0).labels).isNullOrEmpty();
 	}
 
 	@Test
@@ -99,11 +99,11 @@ public class JaninoScriptEngineTest {
 
 		assertThat(metrics.get(0).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_committed");
 		assertThat(metrics.get(0).value).isEqualTo(((Number) ((CompositeData) sample.value).get("committed")).doubleValue());
-		assertThat(metrics.get(0).labels).isEmpty();
+		assertThat(metrics.get(0).labels).isNullOrEmpty();
 
 		assertThat(metrics.get(3).name).isEqualTo("java.lang_Memory_HeapMemoryUsage_used");
 		assertThat(metrics.get(3).value).isEqualTo(((Number) ((CompositeData) sample.value).get("used")).doubleValue());
-		assertThat(metrics.get(3).labels).isEmpty();
+		assertThat(metrics.get(3).labels).isNullOrEmpty();
 	}
 
 	private static ObjectName waitForLastGcInfo() {
