@@ -131,13 +131,14 @@ public class JaninoScriptEngine implements ScriptEngine {
 	}
 
 	@Override
-	public ConditionScript compileConditionScript(final List<Declarations> declarations, final String text) throws ScriptCompileException {
+	public ConditionScript compileConditionScript(final List<Declarations> declarations, final String text, final int ordinal) throws ScriptCompileException {
 		try {
 			final Pair<ClassLoader, StringBuilder> context = setupContext(declarations);
 			final StringBuilder script = context._2;
 			script.append(text);
 			final ExpressionEvaluator ee = new ExpressionEvaluator();
 			ee.setParentClassLoader(context._1);
+			ee.setClassName("sjmxe.Rule" + ordinal + "Condition");
 			final ConditionExpression expr = ee.createFastEvaluator(script.toString(), ConditionExpression.class, "mbeanInfo", "attributeInfo");
 			return new ConditionScriptImpl(expr);
 		} catch (final Exception e) {
@@ -156,9 +157,14 @@ public class JaninoScriptEngine implements ScriptEngine {
 	}
 
 	@Override
-	public TransformScript compileTransformScript(final List<Declarations> declarations, final String text) throws ScriptCompileException {
+	public TransformScript compileTransformScript(final List<Declarations> declarations, final String text, final int ordinal) throws ScriptCompileException {
 		final Pair<ClassLoader, StringBuilder> context = setupContext(declarations);
 		final ScriptEvaluator se = new ScriptEvaluator();
+		if (ordinal < 0) {
+			se.setClassName("sjmxe.DefaultTransform");
+		} else {
+			se.setClassName("sjmxe.Rule" + ordinal + "Transform");
+		}
 		se.setDefaultImports(new String[] {
 				AttributeValue.class.getName(),
 				MetricValue.class.getName(),

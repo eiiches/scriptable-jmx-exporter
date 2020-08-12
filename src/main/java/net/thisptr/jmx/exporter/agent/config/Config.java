@@ -94,15 +94,16 @@ public class Config {
 			}
 
 			final List<PrometheusScrapeRule> rules = new ArrayList<>();
-			for (final RuleSource ruleSource : ruleSources) {
+			for (int i = 0; i < ruleSources.size(); i++) {
+				final RuleSource ruleSource = ruleSources.get(i);
 				final PrometheusScrapeRule rule = new PrometheusScrapeRule();
 				if (ruleSource.condition != null) {
 					final ScriptEngine scriptEngine = registry.get(ruleSource.condition.engineName != null ? ruleSource.condition.engineName : DEFAULT_ENGINE_NAME);
-					rule.condition = scriptEngine.compileConditionScript(declarations, ruleSource.condition.scriptBody);
+					rule.condition = scriptEngine.compileConditionScript(declarations, ruleSource.condition.scriptBody, i);
 				}
 				if (ruleSource.transform != null) {
 					final ScriptEngine scriptEngine = registry.get(ruleSource.transform.engineName != null ? ruleSource.transform.engineName : DEFAULT_ENGINE_NAME);
-					rule.transform = scriptEngine.compileTransformScript(declarations, ruleSource.transform.scriptBody);
+					rule.transform = scriptEngine.compileTransformScript(declarations, ruleSource.transform.scriptBody, i);
 				}
 				rule.skip = ruleSource.skip;
 				rule.patterns = ruleSource.patterns;

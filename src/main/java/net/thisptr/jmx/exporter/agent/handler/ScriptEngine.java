@@ -16,9 +16,9 @@ public interface ScriptEngine {
 		}
 	}
 
-	TransformScript compileTransformScript(List<Declarations> declarations, String script) throws ScriptCompileException;
+	TransformScript compileTransformScript(List<Declarations> declarations, String script, int ordinal) throws ScriptCompileException;
 
-	ConditionScript compileConditionScript(List<Declarations> declarations, String script) throws ScriptCompileException;
+	ConditionScript compileConditionScript(List<Declarations> declarations, String script, int ordinal) throws ScriptCompileException;
 
 	Declarations compileDeclarations(String text, int ordinal) throws ScriptCompileException;
 }
