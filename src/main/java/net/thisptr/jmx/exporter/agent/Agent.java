@@ -86,6 +86,7 @@ public class Agent {
 						.setNext(thisHandler);
 		return Undertow.builder()
 				.setWorkerOption(Options.WORKER_NAME, "scriptable-jmx-exporter")
+				.setWorkerOption(Options.THREAD_DAEMON, true)
 				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
 				.setHandler(encodingHandler)
 				.build();
