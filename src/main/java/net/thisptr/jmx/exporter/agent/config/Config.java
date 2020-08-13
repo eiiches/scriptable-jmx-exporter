@@ -62,9 +62,8 @@ public class Config {
 			public ScriptText transform;
 		}
 
-		@NotNull
 		@JsonProperty("rules")
-		public Builder withRules(final List<@Valid @NotNull RuleSource> rules) {
+		public Builder withRules(final List<RuleSource> rules) {
 			this.ruleSources = rules;
 			return this;
 		}
@@ -156,7 +155,7 @@ public class Config {
 
 	@NotNull
 	@JsonProperty("declarations")
-	public List<Declarations> declarations = new ArrayList<>();
+	public List<@NotNull Declarations> declarations = new ArrayList<>();
 
 	@NotNull
 	@JsonProperty("rules")
@@ -167,7 +166,7 @@ public class Config {
 		@JsonProperty("pattern")
 		@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 		@JsonDeserialize(contentUsing = AttributeNamePatternDeserializer.class)
-		public List<AttributeNamePattern> patterns;
+		public List<@NotNull AttributeNamePattern> patterns;
 
 		@JsonProperty("condition")
 		public ConditionScript condition;

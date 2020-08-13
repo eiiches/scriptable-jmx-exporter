@@ -11,7 +11,7 @@ import javax.validation.Payload;
 import net.thisptr.jmx.exporter.agent.config.validators.ScrapeRuleValidator;
 
 @Constraint(validatedBy = ScrapeRuleValidator.class)
-@Target({ElementType.TYPE, ElementType.TYPE_USE})
+@Target({ ElementType.TYPE, ElementType.TYPE_USE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidScrapeRule {
 	String message() default "ScrapeRule is invalid";
