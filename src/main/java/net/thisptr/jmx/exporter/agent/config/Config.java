@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.net.HostAndPort;
 
+import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.Declarations;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
@@ -159,7 +160,7 @@ public class Config {
 
 	@NotNull
 	@JsonProperty("rules")
-	public List<@Valid @NotNull ScrapeRule> rules = new ArrayList<>();
+	public List<@Valid @ValidScrapeRule @NotNull ScrapeRule> rules = new ArrayList<>();
 
 	public static class ScrapeRule {
 
