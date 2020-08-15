@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.TabularData;
@@ -185,12 +186,26 @@ public class ValueTransformations {
 			unfoldCompositeData(namer, labels, (CompositeData) value, output);
 		} else if (value instanceof TabularData) {
 			unfoldTabularData(namer, labels, (TabularData) value, output);
+		} else if (value instanceof String || value instanceof ObjectName) {
+			// Prometheus doesn't support textual values. Skip.
+			return;
+		} else if (value.getClass().isArray()) {
+			unfoldArray(namer, labels, value, value.getClass().getName(), output);
+		} else if (value instanceof Character) {
+			emit(namer, labels, output, ((Character) value).charValue());
+		} else if (value instanceof Map) {
+			@SuppressWarnings("unchecked")
+			final Map<Object, Object> mapValue = (Map<Object, Object>) value;
+			unfoldMapType(namer, labels, mapValue, output);
+		} else if (value instanceof List) {
+			@SuppressWarnings("unchecked")
+			final List<Object> listValue = (List<Object>) value;
+			unfoldListType(namer, labels, listValue, output);
 		} else {
 			final NameAndLabels current = NameAndLabels.from(namer, labels);
 			if (suppressTypeWarning(current))
 				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s. Further warnings for the this metric will be suppressed for some time.", value.getClass().getName(), current));
 		}
-		// TODO: handle arrays, characters, strings and ObjectName
 	}
 
 	private static boolean suppressTypeWarning(final NameAndLabels nameAndLabels) {
