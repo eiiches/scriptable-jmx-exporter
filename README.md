@@ -88,6 +88,15 @@ java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 # java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@classpath:foo.yaml ...
 ```
 
+If multiple comma-separated configurations are specified, former configurations are overriden by (or merged with) the latter ones.
+
+```sh
+java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML>,<CONFIG_JSON> ...
+
+# e.g.
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@/etc/foo.yaml,'{"server":{"bind_address":":19639"}}' ...
+```
+
 Configuration
 -------------
 
@@ -411,7 +420,7 @@ All that said, if you prefer to leave the metrics `untyped` to keep configuratio
 
 #### Tips
 
-* Prefer rule patterns, instead of using `if` inside transform scripts, to dispatch based on MBean attributes. It's usually faster.
+* Prefer using rule pattern/condition, instead of `if` inside scripts. It's usually faster.
 * Use `static` inside method-local inner class to do things that need to be done once, such as to compile a regex. Note that this should *not* be used to share mutable states because transform scripts are executed concurrently.
   ```yaml
     transform: |
