@@ -3,6 +3,7 @@ package net.thisptr.jmx.exporter.agent.scripting.janino.internal;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,6 +202,8 @@ public class ValueTransformations {
 			@SuppressWarnings("unchecked")
 			final List<Object> listValue = (List<Object>) value;
 			unfoldListType(namer, labels, listValue, output);
+		} else if (value instanceof Date) {
+			emit(namer, labels, output, ((Date) value).getTime() / 1000.0);
 		} else {
 			final NameAndLabels current = NameAndLabels.from(namer, labels);
 			if (suppressTypeWarning(current))
@@ -295,6 +298,11 @@ public class ValueTransformations {
 			@SuppressWarnings("unchecked")
 			final List<Object> listValue = (List<Object>) value;
 			unfoldListType(namer, labels, listValue, output);
+			break;
+		case "java.util.Date":
+			if (value == null)
+				break;
+			emit(namer, labels, output, ((Date) value).getTime() / 1000.0);
 			break;
 		default:
 			if (type.startsWith("[")) { // array type
