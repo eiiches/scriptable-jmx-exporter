@@ -15,8 +15,10 @@ public class ToStringSerializer extends StdSerializer<Object> {
 
 	@Override
 	public void serialize(final Object value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
-		if (value == null)
+		if (value == null) {
 			gen.writeNull();
+			return;
+		}
 		gen.writeString(value.toString());
 	}
 }
