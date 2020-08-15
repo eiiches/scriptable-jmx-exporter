@@ -3,12 +3,11 @@ package net.thisptr.jmx.exporter.agent.scripting.janino.internal;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.management.openmbean.CompositeData;
@@ -17,6 +16,8 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import net.thisptr.jmx.exporter.agent.scripting.janino.api.MetricValue;
 import net.thisptr.jmx.exporter.agent.scripting.janino.api.MetricValueOutput;
@@ -91,7 +92,9 @@ public class ValueTransformations {
 		}
 	}
 
-	private static final Set<NameAndLabels> SUPPRESSED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap<NameAndLabels, Boolean>());
+	private static final Cache<NameAndLabels, Boolean> SUPPRESSED_TYPES = CacheBuilder.newBuilder()
+			.expireAfterAccess(10, TimeUnit.MINUTES)
+			.build();
 
 	private static void unfoldArray(final MetricNamer namer, final Labels labels, final Object arrayValue, final String arrayType, final MetricValueOutput output) {
 		final String elementType = MoreClasses.elementTypeNameOf(arrayType);
@@ -184,10 +187,18 @@ public class ValueTransformations {
 			unfoldTabularData(namer, labels, (TabularData) value, output);
 		} else {
 			final NameAndLabels current = NameAndLabels.from(namer, labels);
-			if (SUPPRESSED_TYPES.add(current))
-				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s. Further warnings are suppressed for the this metric.", value.getClass().getName(), current));
+			if (suppressTypeWarning(current))
+				LOG.warning(String.format("Got unsupported dynamic type \"%s\" while processing %s. Further warnings for the this metric will be suppressed for some time.", value.getClass().getName(), current));
 		}
 		// TODO: handle arrays, characters, strings and ObjectName
+	}
+
+	private static boolean suppressTypeWarning(final NameAndLabels nameAndLabels) {
+		if (SUPPRESSED_TYPES.getIfPresent(nameAndLabels) == null) {
+			SUPPRESSED_TYPES.put(nameAndLabels, true);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -277,8 +288,8 @@ public class ValueTransformations {
 				unfoldArray(namer, labels, value, type, output);
 			} else {
 				final NameAndLabels current = NameAndLabels.from(namer, labels);
-				if (SUPPRESSED_TYPES.add(current))
-					LOG.warning(String.format("Got unsupported type \"%s\" while processing %s. Further warnings are suppressed for the this metric.", type, current));
+				if (suppressTypeWarning(current))
+					LOG.warning(String.format("Got unsupported type \"%s\" while processing %s. Further warnings for the this metric will be suppressed for some time.", type, current));
 				break;
 			}
 		}
