@@ -91,7 +91,7 @@ public class Agent {
 					safeStart(SERVER);
 				}
 				HANDLER = handler;
-				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter.");
+				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter on {0}.", newConfig.server.bindAddress);
 			});
 
 			final Config initialConfig = watcher.config();
@@ -99,6 +99,7 @@ public class Agent {
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();
+			LOG.log(Level.INFO, "Successfully started Scriptable JMX Exporter on {0}.", initialConfig.server.bindAddress);
 		} catch (final Throwable th) {
 			LOG.log(Level.SEVERE, "Failed to start Scriptable JMX Exporter.", th);
 			System.exit(1);
