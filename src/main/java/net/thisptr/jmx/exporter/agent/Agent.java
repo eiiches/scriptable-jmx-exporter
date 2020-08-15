@@ -35,7 +35,7 @@ public class Agent {
 	static final String DEFAULT_CLASSPATH_CONFIG_FILE = "scriptable-jmx-exporter.yaml";
 
 	private static Undertow SERVER;
-	private static volatile PrometheusExporterHttpHandler HANDLER;
+	private static volatile ExporterHttpHandler HANDLER;
 
 	static {
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
@@ -97,7 +97,7 @@ public class Agent {
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.options);
+				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -112,7 +112,7 @@ public class Agent {
 			});
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new PrometheusExporterHttpHandler(initialConfig.rules, initialConfig.options);
+			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options);
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();

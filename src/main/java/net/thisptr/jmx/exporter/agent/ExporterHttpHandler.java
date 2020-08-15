@@ -34,8 +34,8 @@ import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter.WritableByteChannelController;
 
-public class PrometheusExporterHttpHandler implements HttpHandler {
-	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
+public class ExporterHttpHandler implements HttpHandler {
+	private static final Logger LOG = Logger.getLogger(ExporterHttpHandler.class.getName());
 
 	private static final ScrapeRule DEFAULT_RULE;
 
@@ -52,7 +52,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 	private final Scraper scraper;
 	private final OptionsConfig options;
 
-	public PrometheusExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options) {
+	public ExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options) {
 		this.options = options;
 		final List<ScrapeRule> rulesWithDefault = new ArrayList<>(rules);
 		rulesWithDefault.add(DEFAULT_RULE);
