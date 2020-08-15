@@ -176,6 +176,14 @@ public class ValueTransformations {
 		});
 	}
 
+	private static void unfoldSetType(final MetricNamer namer, final Labels labels, final Set<Object> set, final MetricValueOutput output) {
+		set.forEach((k) -> {
+			labels.push("key", k.toString());
+			emit(namer, labels, output, 1.0);
+			labels.pop("key");
+		});
+	}
+
 	private static void unfoldByDynamicType(final MetricNamer namer, final Labels labels, final Object value, final MetricValueOutput output) {
 		if (value == null)
 			return;
@@ -204,6 +212,10 @@ public class ValueTransformations {
 			unfoldListType(namer, labels, listValue, output);
 		} else if (value instanceof Date) {
 			emit(namer, labels, output, ((Date) value).getTime() / 1000.0);
+		} else if (value instanceof Set) {
+			@SuppressWarnings("unchecked")
+			final Set<Object> setValue = (Set<Object>) value;
+			unfoldSetType(namer, labels, setValue, output);
 		} else {
 			final NameAndLabels current = NameAndLabels.from(namer, labels);
 			if (suppressTypeWarning(current))
@@ -303,6 +315,13 @@ public class ValueTransformations {
 			if (value == null)
 				break;
 			emit(namer, labels, output, ((Date) value).getTime() / 1000.0);
+			break;
+		case "java.util.Set":
+			if (value == null)
+				break;
+			@SuppressWarnings("unchecked")
+			final Set<Object> setValue = (Set<Object>) value;
+			unfoldSetType(namer, labels, setValue, output);
 			break;
 		default:
 			if (type.startsWith("[")) { // array type
