@@ -25,7 +25,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;

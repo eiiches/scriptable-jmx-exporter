@@ -26,10 +26,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
-import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
+import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class ConfigTest {

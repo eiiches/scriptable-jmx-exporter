@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 

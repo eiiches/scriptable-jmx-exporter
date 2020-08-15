@@ -27,6 +27,7 @@ import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
+import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 

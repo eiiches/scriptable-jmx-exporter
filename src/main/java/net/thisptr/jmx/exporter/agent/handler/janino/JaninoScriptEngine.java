@@ -14,7 +14,6 @@ import org.codehaus.janino.ScriptEvaluator;
 
 import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.PrometheusMetricOutput;
-import net.thisptr.jmx.exporter.agent.Sample;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.Declarations;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
@@ -26,6 +25,7 @@ import net.thisptr.jmx.exporter.agent.handler.janino.api._InternalUseDoNotImport
 import net.thisptr.jmx.exporter.agent.handler.janino.api.fn.LogFunction;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.v1.V1;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
+import net.thisptr.jmx.exporter.agent.scraper.Sample;
 
 public class JaninoScriptEngine implements ScriptEngine {
 
