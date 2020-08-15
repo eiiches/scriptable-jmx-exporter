@@ -21,6 +21,7 @@ import net.thisptr.jmx.exporter.agent.config.deserializers.AttributeNamePatternD
 import net.thisptr.jmx.exporter.agent.config.deserializers.HostAndPortDeserializer;
 import net.thisptr.jmx.exporter.agent.config.deserializers.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRule;
+import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRuleList;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
@@ -183,6 +184,7 @@ public class Config {
 	public List<@NotNull Declarations> declarations = new ArrayList<>();
 
 	@NotNull
+	@ValidScrapeRuleList
 	@JsonProperty("rules")
 	public List<@Valid @ValidScrapeRule @NotNull ScrapeRule> rules = new ArrayList<>();
 

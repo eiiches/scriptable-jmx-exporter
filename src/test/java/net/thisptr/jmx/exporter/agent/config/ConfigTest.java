@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import net.thisptr.jmx.exporter.agent.Agent;
+import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
@@ -138,5 +139,30 @@ public class ConfigTest {
 				}));
 			});
 		});
+	}
+
+	@Test
+	void testAllRulesAreReachableValidation() throws Exception {
+		final ScrapeRule rule0 = new ScrapeRule();
+		rule0.patterns = null;
+		rule0.condition = null;
+		rule0.skip = true;
+
+		final ScrapeRule rule1 = new ScrapeRule();
+		rule1.patterns = null;
+		rule1.condition = null;
+		rule1.skip = true;
+
+		final ScrapeRule rule2 = new ScrapeRule();
+		rule2.patterns = null;
+		rule2.condition = null;
+		rule2.skip = true;
+
+		final Config sut = Config.createDefault();
+		sut.rules = Arrays.asList(rule0, rule1, rule2);
+
+		assertThatThrownBy(() -> MoreValidators.validate(sut))
+				.isInstanceOf(ValidationException.class)
+				.hasMessageContaining("rule is not reachable");
 	}
 }
