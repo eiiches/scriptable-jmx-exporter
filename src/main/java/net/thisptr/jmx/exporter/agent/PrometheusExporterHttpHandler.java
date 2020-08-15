@@ -22,7 +22,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
-import net.thisptr.jmx.exporter.agent.PrometheusMetricWriter.WritableByteChannelController;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
@@ -30,6 +29,8 @@ import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
+import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
+import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter.WritableByteChannelController;
 
 /**
  * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md

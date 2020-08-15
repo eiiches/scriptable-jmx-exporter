@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent;
+package net.thisptr.jmx.exporter.agent.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,6 +11,8 @@ import java.util.HashMap;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 
+import net.thisptr.jmx.exporter.agent.OutputStreamWritableByteChannel;
+import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 public class PrometheusMetricWriterTest {

@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent;
+package net.thisptr.jmx.exporter.agent.writer;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
+import net.thisptr.jmx.exporter.agent.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.misc.SanitizingStringWriter;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
