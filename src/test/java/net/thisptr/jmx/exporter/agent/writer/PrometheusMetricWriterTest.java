@@ -12,7 +12,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 
 import net.thisptr.jmx.exporter.agent.OutputStreamWritableByteChannel;
-import net.thisptr.jmx.exporter.agent.PrometheusMetric;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 public class PrometheusMetricWriterTest {

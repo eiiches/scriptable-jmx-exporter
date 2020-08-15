@@ -12,10 +12,10 @@ import org.codehaus.janino.ClassBodyEvaluator;
 import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.ScriptEvaluator;
 
-import net.thisptr.jmx.exporter.agent.PrometheusMetric;
-import net.thisptr.jmx.exporter.agent.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
 import net.thisptr.jmx.exporter.agent.handler.Declarations;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
 import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.handler.janino.api.AttributeValue;

@@ -24,6 +24,8 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
 import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
@@ -32,9 +34,6 @@ import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter.WritableByteChannelController;
 
-/**
- * https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md
- */
 public class PrometheusExporterHttpHandler implements HttpHandler {
 	private static final Logger LOG = Logger.getLogger(PrometheusExporterHttpHandler.class.getName());
 
@@ -117,7 +116,7 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 		}
 	}
 
-	public void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
+	private void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
 		final OptionsConfig options = getOptions(exchange);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();

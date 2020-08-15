@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import net.thisptr.jmx.exporter.agent.PrometheusMetric;
+import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;

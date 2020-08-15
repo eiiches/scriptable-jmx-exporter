@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent;
+package net.thisptr.jmx.exporter.agent.handler;
 
 import java.util.Map;
 
