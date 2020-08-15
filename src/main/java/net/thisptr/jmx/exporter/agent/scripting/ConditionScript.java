@@ -5,4 +5,10 @@ import javax.management.MBeanInfo;
 
 public interface ConditionScript {
 	boolean evaluate(final MBeanInfo bean, final MBeanAttributeInfo attribute);
+
+	@Override
+	boolean equals(Object obj);
+
+	@Override
+	int hashCode();
 }

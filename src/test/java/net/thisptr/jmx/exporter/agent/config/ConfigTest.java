@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import net.thisptr.jmx.exporter.agent.Agent;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
@@ -33,23 +35,30 @@ import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class ConfigTest {
+	static {
+		try {
+			Class.forName(Agent.class.getName());
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Test
 	void testDefaultIsValid() throws Exception {
-		final Config sut = new Config();
+		final Config sut = Config.createDefault();
 		MoreValidators.validate(sut);
 	}
 
 	@Test
 	void testNullsInRules() throws Exception {
-		final Config sut = new Config();
+		final Config sut = Config.createDefault();
 		sut.rules.add(null);
 		assertThrows(ValidationException.class, () -> MoreValidators.validate(sut));
 	}
 
 	@Test
 	void testNullBindAddress() throws Exception {
-		final Config sut = new Config();
+		final Config sut = Config.createDefault();
 		sut.server.bindAddress = null;
 		assertThrows(ValidationException.class, () -> MoreValidators.validate(sut));
 	}
@@ -81,7 +90,7 @@ public class ConfigTest {
 
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
 		registry.add("java", new JaninoScriptEngine());
-		final Config config = MAPPER.readValue(json, Config.class);
+		final Config config = Config.merge(Arrays.asList(MAPPER.readValue(json, Config.class)));
 
 		assertThat(config.rules.get(0).condition.evaluate(null, null)).isTrue();
 		final List<PrometheusMetric> ms = new ArrayList<>();
@@ -97,12 +106,12 @@ public class ConfigTest {
 		// https://github.com/eiiches/scriptable-jmx-exporter/issues/10#issuecomment-672887503
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
 		registry.add("java", new JaninoScriptEngine());
-		final Config config = YAML_MAPPER.readValue(""
+		final Config config = Config.merge(Arrays.asList(YAML_MAPPER.readValue(""
 				+ "rules:\n"
 				+ "- pattern: 'foo'\n"
 				+ "  skip: true\n"
 				+ "  transform: ''\n"
-				+ "", Config.class);
+				+ "", Config.class)));
 		assertThatThrownBy(() -> MoreValidators.validate(config))
 				.isInstanceOf(ValidationException.class)
 				.hasMessageContaining("transform script must not be specified");
@@ -122,7 +131,7 @@ public class ConfigTest {
 						+ transform
 						+ "";
 				return Stream.of(dynamicTest(yaml, () -> {
-					final Config config = YAML_MAPPER.readValue(yaml, Config.class);
+					final Config config = Config.merge(Arrays.asList(YAML_MAPPER.readValue(yaml, Config.class)));
 					assertThatThrownBy(() -> MoreValidators.validate(config))
 							.isInstanceOf(ValidationException.class)
 							.hasMessageContaining("transform script must be provided");

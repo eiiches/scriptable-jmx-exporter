@@ -1,6 +1,5 @@
 package net.thisptr.jmx.exporter.agent;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -9,8 +8,6 @@ import org.xnio.Options;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.net.HostAndPort;
 
 import io.undertow.Undertow;
@@ -19,18 +16,14 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import net.thisptr.jmx.exporter.agent.config.Config;
-import net.thisptr.jmx.exporter.agent.config.watcher.ClassPathPollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher.ConfigListener;
-import net.thisptr.jmx.exporter.agent.config.watcher.FilePollingConfigWatcher;
-import net.thisptr.jmx.exporter.agent.config.watcher.StaticConfigWatcher;
+import net.thisptr.jmx.exporter.agent.config.watcher.PollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
-import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class Agent {
 	private static final Logger LOG = Logger.getLogger(Agent.class.getName());
-	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
 	static final String DEFAULT_CLASSPATH_CONFIG_FILE = "scriptable-jmx-exporter.yaml";
 
@@ -45,17 +38,7 @@ public class Agent {
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		if (args == null)
 			args = "@classpath:" + DEFAULT_CLASSPATH_CONFIG_FILE;
-		if (args.isEmpty()) {
-			return new StaticConfigWatcher(new Config());
-		} else if (args.startsWith("@classpath:")) {
-			return new ClassPathPollingConfigWatcher(args.substring("@classpath:".length()), listener);
-		} else if (args.startsWith("@")) {
-			return new FilePollingConfigWatcher(new File(args.substring(1)), listener);
-		} else {
-			final Config config = MAPPER.readValue(args, Config.class);
-			MoreValidators.validate(config);
-			return new StaticConfigWatcher(config);
-		}
+		return new PollingConfigWatcher(args, listener);
 	}
 
 	/**

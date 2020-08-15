@@ -36,4 +36,17 @@ public class PatternAndCapturesTest {
 		assertThat(sut.matches("test 123", captures)).isTrue();
 		assertThat(captures).isEqualTo(Collections.singletonMap("nums", "123"));
 	}
+
+	@Test
+	void testEqualsAndHashCode() throws Exception {
+		final PatternAndCaptures sut = PatternAndCaptures.compile("test (?<name>[a-z]+)");
+
+		final PatternAndCaptures eq = PatternAndCaptures.compile("test (?<name>[a-z]+)");
+		assertThat(sut).isEqualTo(eq);
+		assertThat(sut.hashCode()).isEqualTo(eq.hashCode());
+
+		final PatternAndCaptures neq = PatternAndCaptures.compile("test2 (?<name>[a-z]+)");
+		assertThat(sut).isNotEqualTo(neq);
+		assertThat(sut.hashCode()).isNotEqualTo(neq.hashCode());
+	}
 }

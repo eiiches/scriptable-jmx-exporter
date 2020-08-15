@@ -1,6 +1,7 @@
 package net.thisptr.jmx.exporter.agent.misc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -12,7 +13,7 @@ public class PatternAndCaptures {
 	private final Pattern pattern;
 	private final String[] capturesNames;
 
-	public PatternAndCaptures(final Pattern pattern, final String[] captureNames) {
+	private PatternAndCaptures(final Pattern pattern, final String[] captureNames) {
 		this.pattern = pattern;
 		this.capturesNames = captureNames;
 	}
@@ -43,5 +44,33 @@ public class PatternAndCaptures {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(capturesNames);
+		result = prime * result + ((pattern == null) ? 0 : pattern.toString().hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		final PatternAndCaptures other = (PatternAndCaptures) obj;
+		if (!Arrays.equals(capturesNames, other.capturesNames))
+			return false;
+		if (pattern == null) {
+			if (other.pattern != null)
+				return false;
+		} else if (!pattern.toString().equals(other.pattern.toString()))
+			return false;
+		return true;
 	}
 }

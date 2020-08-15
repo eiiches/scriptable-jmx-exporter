@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
+import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.scripting.TransformScript;
 
@@ -175,5 +176,18 @@ public class JaninoScriptEngineTest {
 		}
 		final long took = System.currentTimeMillis() - start;
 		System.out.printf("total %d millsi\n", took);
+	}
+
+	@Test
+	void testConditionScriptEqualsAndHashCode() throws Exception {
+		final ConditionScript c = sut.compileConditionScript(Collections.emptyList(), "true", 0);
+
+		final ConditionScript eq = sut.compileConditionScript(Collections.emptyList(), "true", 0);
+		assertThat(c).isEqualTo(eq);
+		assertThat(c.hashCode()).isEqualTo(eq.hashCode());
+
+		final ConditionScript neq = sut.compileConditionScript(Collections.emptyList(), "1 == 1", 0);
+		assertThat(c).isNotEqualTo(neq);
+		assertThat(c.hashCode()).isNotEqualTo(neq.hashCode());
 	}
 }
