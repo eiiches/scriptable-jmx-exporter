@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent.misc;
+package net.thisptr.jmx.exporter.agent.config;
 
 public class ScriptText {
 	public final String engineName;

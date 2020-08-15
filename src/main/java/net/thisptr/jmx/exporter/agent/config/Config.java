@@ -14,12 +14,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.net.HostAndPort;
 
+import net.thisptr.jmx.exporter.agent.config.deserializers.AttributeNamePatternDeserializer;
+import net.thisptr.jmx.exporter.agent.config.deserializers.HostAndPortDeserializer;
+import net.thisptr.jmx.exporter.agent.config.deserializers.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRule;
-import net.thisptr.jmx.exporter.agent.jackson.serdes.AttributeNamePatternDeserializer;
-import net.thisptr.jmx.exporter.agent.jackson.serdes.HostAndPortDeserializer;
-import net.thisptr.jmx.exporter.agent.jackson.serdes.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
-import net.thisptr.jmx.exporter.agent.misc.ScriptText;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
 import net.thisptr.jmx.exporter.agent.scripting.Declarations;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine;
@@ -166,7 +165,7 @@ public class Config {
 		@JsonProperty("pattern")
 		@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 		@JsonDeserialize(contentUsing = AttributeNamePatternDeserializer.class)
-		public List<@NotNull AttributeNamePattern> patterns;
+		public List<AttributeNamePattern> patterns;
 
 		@JsonProperty("condition")
 		public ConditionScript condition;

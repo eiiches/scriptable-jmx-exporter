@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent.jackson.serdes;
+package net.thisptr.jmx.exporter.agent.misc;
 
 import java.io.IOException;
 

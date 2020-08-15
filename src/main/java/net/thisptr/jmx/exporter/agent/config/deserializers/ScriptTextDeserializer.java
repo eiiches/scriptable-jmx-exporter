@@ -1,4 +1,4 @@
-package net.thisptr.jmx.exporter.agent.jackson.serdes;
+package net.thisptr.jmx.exporter.agent.config.deserializers;
 
 import java.io.IOException;
 
@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-import net.thisptr.jmx.exporter.agent.misc.ScriptText;
+import net.thisptr.jmx.exporter.agent.config.ScriptText;
 
 public class ScriptTextDeserializer extends StdDeserializer<ScriptText> {
 	private static final long serialVersionUID = 745658273987032544L;

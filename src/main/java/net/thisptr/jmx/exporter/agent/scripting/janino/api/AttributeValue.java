@@ -11,7 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import net.thisptr.jmx.exporter.agent.jackson.serdes.ToStringSerializer;
+import net.thisptr.jmx.exporter.agent.misc.ToStringSerializer;
 
 /**
  * This class represents a single MBean attribute value and its metadata.

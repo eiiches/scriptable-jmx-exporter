@@ -1,4 +1,6 @@
-package net.thisptr.jmx.exporter.agent.misc;
+package net.thisptr.jmx.exporter.agent.writer;
+
+import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 
 public class SanitizingStringWriter implements StringWriter {
 	private static final SanitizingStringWriter INSTANCE = new SanitizingStringWriter();

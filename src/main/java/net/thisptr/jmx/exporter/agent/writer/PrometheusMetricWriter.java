@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
-import net.thisptr.jmx.exporter.agent.misc.SanitizingStringWriter;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.utils.MoreLongs;
