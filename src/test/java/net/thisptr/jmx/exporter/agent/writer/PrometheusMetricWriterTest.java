@@ -12,8 +12,8 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 
 import net.thisptr.jmx.exporter.agent.OutputStreamWritableByteChannel;
-import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.misc.StringWriter;
+import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 
 public class PrometheusMetricWriterTest {
 	private static String toString(final PrometheusMetric m, final int bufSize, final boolean includeTimestamp) throws IOException {

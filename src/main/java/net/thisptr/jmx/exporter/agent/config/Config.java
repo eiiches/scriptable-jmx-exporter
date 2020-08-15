@@ -15,16 +15,16 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.net.HostAndPort;
 
 import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRule;
-import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
-import net.thisptr.jmx.exporter.agent.handler.Declarations;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngine;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
-import net.thisptr.jmx.exporter.agent.handler.TransformScript;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.AttributeNamePatternDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.HostAndPortDeserializer;
 import net.thisptr.jmx.exporter.agent.jackson.serdes.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.ScriptText;
+import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
+import net.thisptr.jmx.exporter.agent.scripting.Declarations;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
+import net.thisptr.jmx.exporter.agent.scripting.TransformScript;
 
 @JsonDeserialize(builder = Config.Builder.class)
 public class Config {

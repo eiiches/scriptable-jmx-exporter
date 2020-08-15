@@ -24,8 +24,8 @@ import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher.ConfigListener;
 import net.thisptr.jmx.exporter.agent.config.watcher.FilePollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.watcher.StaticConfigWatcher;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
-import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
+import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
 public class Agent {

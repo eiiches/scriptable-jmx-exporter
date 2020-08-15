@@ -24,13 +24,13 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
-import net.thisptr.jmx.exporter.agent.handler.PrometheusMetric;
-import net.thisptr.jmx.exporter.agent.handler.PrometheusMetricOutput;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngine.ScriptCompileException;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
+import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
+import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetricOutput;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine.ScriptCompileException;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter.WritableByteChannelController;
 
