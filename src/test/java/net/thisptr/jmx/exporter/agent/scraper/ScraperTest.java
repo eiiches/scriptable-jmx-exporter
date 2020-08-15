@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,12 +27,13 @@ public class ScraperTest {
 		return rule;
 	}
 
-	private static final ScrapeRule DEFAULT_INCLUSION_RULE = newScrapeRule(null, false);
+	private static final ScrapeRule SCRAPE_ALL_RULE = newScrapeRule(null, false);
+	private static final ScrapeRule SKIP_ALL_RULE = newScrapeRule(null, true);
 
 	@Test
 	void testName() throws Exception {
-		final List<ScrapeRule> rules = Arrays.asList(newScrapeRule("java.lang:type=OperatingSystem:SystemCpuLoad", false), newScrapeRule(null, true));
-		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rules, null);
+		final List<ScrapeRule> rules = Arrays.asList(newScrapeRule("java.lang:type=OperatingSystem:SystemCpuLoad", false), SKIP_ALL_RULE);
+		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rules);
 
 		final Set<Sample> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
@@ -45,7 +45,7 @@ public class ScraperTest {
 
 	@Test
 	void testSlowScrape() throws Exception {
-		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList(), DEFAULT_INCLUSION_RULE);
+		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), Arrays.asList(SCRAPE_ALL_RULE));
 
 		final long start = System.currentTimeMillis();
 

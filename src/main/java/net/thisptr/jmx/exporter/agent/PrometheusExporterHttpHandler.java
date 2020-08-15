@@ -53,7 +53,9 @@ public class PrometheusExporterHttpHandler implements HttpHandler {
 
 	public PrometheusExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options) {
 		this.options = options;
-		this.scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rules, DEFAULT_RULE);
+		final List<ScrapeRule> rulesWithDefault = new ArrayList<>(rules);
+		rulesWithDefault.add(DEFAULT_RULE);
+		this.scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rulesWithDefault);
 	}
 
 	private static void parseBooleanQueryParamAndThen(final HttpServerExchange exchange, final String name, final Consumer<Boolean> fn) {

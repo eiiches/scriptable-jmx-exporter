@@ -38,7 +38,6 @@ public class Scraper {
 	private final MBeanServer server;
 
 	private final List<ScrapeRule> rules;
-	private final ScrapeRule defaultRule;
 
 	/**
 	 * Caches an MBeanInfo for an MBean.
@@ -96,10 +95,17 @@ public class Scraper {
 				}
 			});
 
-	public Scraper(final MBeanServer server, final List<ScrapeRule> rules, ScrapeRule defaultRule) {
+	// If no rule matches, the default behavior is to skip the attribute.
+	public Scraper(final MBeanServer server, final List<ScrapeRule> rules) {
 		this.server = server;
 		this.rules = rules;
-		this.defaultRule = defaultRule;
+	}
+
+	private static final RuleMatch DEFAULT_RULE;
+	static {
+		final ScrapeRule skipRule = new ScrapeRule();
+		skipRule.skip = true;
+		DEFAULT_RULE = new RuleMatch(skipRule, Collections.emptyMap());
 	}
 
 	private Pair<Boolean, RuleMatch> findRuleEarly(final FastObjectName name) {
@@ -128,7 +134,7 @@ public class Scraper {
 			if (nameMatches)
 				return Pair.of(false, null); // match depends on attribute or condition, abort
 		}
-		return Pair.of(true, new RuleMatch(defaultRule, Collections.emptyMap())); // default rule should be used
+		return Pair.of(true, DEFAULT_RULE); // default rule should be used
 	}
 
 	private static class AttributeRuleCacheKey {
@@ -200,10 +206,10 @@ public class Scraper {
 			if (rule.condition == null || rule.condition.evaluate(key.beanInfo, key.attributeInfo))
 				return new RuleMatch(rule, Collections.unmodifiableMap(captures));
 		}
-		return new RuleMatch(defaultRule, Collections.emptyMap());
+		return DEFAULT_RULE;
 	}
 
-	private class AttributeRule {
+	private static class AttributeRule {
 		public final MBeanAttributeInfo attribute;
 		public final RuleMatch ruleMatch;
 
@@ -220,9 +226,9 @@ public class Scraper {
 	/**
 	 * Null object to use with Guava cache, because Guava cache cannot cache null values.
 	 */
-	public final CachedMBeanInfo MBEAN_INFO_NEGATIVE_CACHE = new CachedMBeanInfo(null, null, null, null);
+	private static final CachedMBeanInfo MBEAN_INFO_NEGATIVE_CACHE = new CachedMBeanInfo(null, null, null, null);
 
-	private class CachedMBeanInfo {
+	private static class CachedMBeanInfo {
 		public final FastObjectName name;
 		public final MBeanInfo info;
 
@@ -237,7 +243,7 @@ public class Scraper {
 		}
 	}
 
-	private class RuleMatch {
+	private static class RuleMatch {
 		public final ScrapeRule rule;
 		public final Map<String, String> captures;
 
@@ -448,7 +454,7 @@ public class Scraper {
 		}
 	}
 
-	private String safeFormatValue(final Object value) {
+	private static String safeFormatValue(final Object value) {
 		if (value == null)
 			return null;
 		try {
