@@ -76,7 +76,8 @@ public class Agent {
 	}
 
 	public static void premain(final String args) throws Throwable {
-		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter...");
+		final BuildInfo buildInfo = BuildInfo.getInstance();
+		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter Version {0} (Commit: {1})", new String[] { buildInfo.buildVersion, buildInfo.commitId.substring(0, Math.min(7, buildInfo.commitId.length())) });
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");

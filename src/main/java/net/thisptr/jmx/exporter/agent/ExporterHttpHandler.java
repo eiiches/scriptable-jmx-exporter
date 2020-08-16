@@ -133,6 +133,11 @@ public class ExporterHttpHandler implements HttpHandler {
 			final StreamSinkChannel channel = exchange.getResponseChannel();
 			final WritableByteChannelController controller = channel::awaitWritable;
 			try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(channel, controller, byteBuffer.getBuffer(), options.includeTimestamp)) {
+
+				// Exporter metrics
+				pwriter.write(BuildInfo.getInstance().toPrometheusBuildInfo());
+
+				// User metrics
 				allMetrics.forEach((name, metrics) -> {
 					try {
 						if (metrics.isEmpty())
