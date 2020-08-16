@@ -58,6 +58,7 @@ public class BuildInfo implements Instrumented {
 		m.labels = new HashMap<>();
 		m.labels.put("version", buildVersion);
 		m.labels.put("commit", commitId.substring(0, Math.min(7, commitId.length())));
+		m.help = "Version information of Scriptable JMX Exporter";
 		fn.accept(m);
 	}
 }

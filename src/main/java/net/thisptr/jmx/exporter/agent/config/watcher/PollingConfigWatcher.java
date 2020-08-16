@@ -196,6 +196,7 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instr
 		m1.name = "scriptable_jmx_exporter_config_success";
 		m1.value = lastSuccess ? 1.0 : 0.0;
 		m1.type = "gauge";
+		m1.help = "1 if the configurations in use and on disk are the same. 0 indicates the configurations on disk could not be reloaded due to some errors.";
 		fn.accept(m1);
 
 		final PrometheusMetric m2 = new PrometheusMetric();
@@ -203,6 +204,7 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instr
 		m2.value = reloadTotal.get();
 		m2.type = "counter";
 		m2.suffix = "total";
+		m2.help = "The total number of times configurations are reloaded successfully.";
 		fn.accept(m2);
 	}
 }
