@@ -1,6 +1,5 @@
 package net.thisptr.jmx.exporter.agent;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -9,8 +8,6 @@ import org.xnio.Options;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.net.HostAndPort;
 
 import io.undertow.Undertow;
@@ -18,24 +15,22 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
-import net.thisptr.jmx.exporter.agent.config.ClassPathPollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.Config;
-import net.thisptr.jmx.exporter.agent.config.ConfigWatcher;
-import net.thisptr.jmx.exporter.agent.config.ConfigWatcher.ConfigListener;
-import net.thisptr.jmx.exporter.agent.config.FilePollingConfigWatcher;
-import net.thisptr.jmx.exporter.agent.config.StaticConfigWatcher;
-import net.thisptr.jmx.exporter.agent.handler.ScriptEngineRegistry;
-import net.thisptr.jmx.exporter.agent.handler.janino.JaninoScriptEngine;
-import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
+import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher;
+import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher.ConfigListener;
+import net.thisptr.jmx.exporter.agent.metrics.Instrumented;
+import net.thisptr.jmx.exporter.agent.metrics.MetricRegistry;
+import net.thisptr.jmx.exporter.agent.config.watcher.PollingConfigWatcher;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
+import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
 
 public class Agent {
 	private static final Logger LOG = Logger.getLogger(Agent.class.getName());
-	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
 	static final String DEFAULT_CLASSPATH_CONFIG_FILE = "scriptable-jmx-exporter.yaml";
 
 	private static Undertow SERVER;
-	private static volatile PrometheusExporterHttpHandler HANDLER;
+	private static volatile ExporterHttpHandler HANDLER;
 
 	static {
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
@@ -45,17 +40,7 @@ public class Agent {
 	private static ConfigWatcher newConfigWatcher(String args, final ConfigListener listener) throws JsonParseException, JsonMappingException, IOException {
 		if (args == null)
 			args = "@classpath:" + DEFAULT_CLASSPATH_CONFIG_FILE;
-		if (args.isEmpty()) {
-			return new StaticConfigWatcher(new Config());
-		} else if (args.startsWith("@classpath:")) {
-			return new ClassPathPollingConfigWatcher(args.substring("@classpath:".length()), listener);
-		} else if (args.startsWith("@")) {
-			return new FilePollingConfigWatcher(new File(args.substring(1)), listener);
-		} else {
-			final Config config = MAPPER.readValue(args, Config.class);
-			MoreValidators.validate(config);
-			return new StaticConfigWatcher(config);
-		}
+		return new PollingConfigWatcher(args, listener);
 	}
 
 	/**
@@ -86,17 +71,21 @@ public class Agent {
 						.setNext(thisHandler);
 		return Undertow.builder()
 				.setWorkerOption(Options.WORKER_NAME, "scriptable-jmx-exporter")
+				.setWorkerOption(Options.THREAD_DAEMON, true)
 				.addHttpListener(hostAndPort.getPort(), hostAndPort.getHost())
 				.setHandler(encodingHandler)
 				.build();
 	}
 
 	public static void premain(final String args) throws Throwable {
-		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter...");
+		final BuildInfo buildInfo = BuildInfo.getInstance();
+		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter Version {0} (Commit: {1})", new String[] { buildInfo.buildVersion, buildInfo.commitId.substring(0, Math.min(7, buildInfo.commitId.length())) });
+
+		MetricRegistry.getInstance().add(buildInfo);
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final PrometheusExporterHttpHandler handler = new PrometheusExporterHttpHandler(newConfig.rules, newConfig.options);
+				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, MetricRegistry.getInstance());
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -107,14 +96,17 @@ public class Agent {
 					safeStart(SERVER);
 				}
 				HANDLER = handler;
-				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter.");
+				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter on {0}.", newConfig.server.bindAddress);
 			});
+			if (watcher instanceof Instrumented)
+				MetricRegistry.getInstance().add((Instrumented) watcher);
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new PrometheusExporterHttpHandler(initialConfig.rules, initialConfig.options);
+			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, MetricRegistry.getInstance());
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();
+			LOG.log(Level.INFO, "Successfully started Scriptable JMX Exporter on {0}.", initialConfig.server.bindAddress);
 		} catch (final Throwable th) {
 			LOG.log(Level.SEVERE, "Failed to start Scriptable JMX Exporter.", th);
 			System.exit(1);

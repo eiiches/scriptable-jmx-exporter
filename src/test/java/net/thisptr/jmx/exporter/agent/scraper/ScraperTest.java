@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,47 +12,29 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import net.thisptr.jmx.exporter.agent.Sample;
-import net.thisptr.jmx.exporter.agent.handler.ConditionScript;
+import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 
 public class ScraperTest {
 
-	private static class Rule implements ScrapeRule {
-		private final boolean skip;
-		private final AttributeNamePattern pattern;
-
-		public Rule(final AttributeNamePattern pattern, final boolean skip) {
-			this.pattern = pattern;
-			this.skip = skip;
+	private static ScrapeRule newScrapeRule(final String pattern, final boolean skip) {
+		final ScrapeRule rule = new ScrapeRule();
+		if (pattern != null) {
+			rule.patterns = Arrays.asList(AttributeNamePattern.compile(pattern));
 		}
-
-		@Override
-		public List<AttributeNamePattern> patterns() {
-			if (pattern == null)
-				return null;
-			return Arrays.asList(pattern);
-		}
-
-		@Override
-		public ConditionScript condition() {
-			return null;
-		}
-
-		@Override
-		public boolean skip() {
-			return skip;
-		}
+		rule.skip = skip;
+		return rule;
 	}
 
-	private static final Rule DEFAULT_INCLUSION_RULE = new Rule(null, false);
+	private static final ScrapeRule SCRAPE_ALL_RULE = newScrapeRule(null, false);
+	private static final ScrapeRule SKIP_ALL_RULE = newScrapeRule(null, true);
 
 	@Test
 	void testName() throws Exception {
-		final List<Rule> rules = Arrays.asList(new Rule(AttributeNamePattern.compile("java.lang:type=OperatingSystem:SystemCpuLoad"), false), new Rule(null, true));
-		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), rules, null);
+		final List<ScrapeRule> rules = Arrays.asList(newScrapeRule("java.lang:type=OperatingSystem:SystemCpuLoad", false), SKIP_ALL_RULE);
+		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rules);
 
-		final Set<Sample<Rule>> actual = new HashSet<>();
+		final Set<Sample> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
 			actual.add(sample);
 		});
@@ -63,11 +44,11 @@ public class ScraperTest {
 
 	@Test
 	void testSlowScrape() throws Exception {
-		final Scraper<Rule> scraper = new Scraper<>(ManagementFactory.getPlatformMBeanServer(), Collections.emptyList(), DEFAULT_INCLUSION_RULE);
+		final Scraper scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), Arrays.asList(SCRAPE_ALL_RULE));
 
 		final long start = System.currentTimeMillis();
 
-		final Set<Sample<Rule>> actual = new HashSet<>();
+		final Set<Sample> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
 			actual.add(sample);
 		}, 3, TimeUnit.SECONDS);

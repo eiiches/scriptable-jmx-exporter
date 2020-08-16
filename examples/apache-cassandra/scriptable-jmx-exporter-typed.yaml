@@ -1,0 +1,65 @@
+declarations: |
+  public static V1.Builder cassandra(AttributeValue in) {
+    return V1.name(in.domain, (String) in.keyProperties.get("type"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "type", "name")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription);
+  }
+
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  - org\\.apache\\.cassandra\\.metrics::(.*MinuteRate|MeanRate|Mean|RateUnit|DurationUnit) # Prometheus can calculate these metrics by itself
+  skip: true
+
+- pattern: 'org\\.apache\\.cassandra\\.metrics::Value'
+  condition: mbeanInfo.getClassName().endsWith("JmxGauge")
+  transform: |
+    cassandra(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxMeter")
+  transform: |
+    cassandra(in)
+      .type("counter")
+      .suffix("total")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxCounter")
+  transform: |
+    cassandra(in) // JmxCounter can decrease and thus it's not a Prometheus counter
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.cassandra\\.metrics::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
+  transform: |
+    cassandra(in)
+      .suffix("count")
+      .type("summary")
+      .transform(in.value, in.attributeType, out).done();
+- pattern: 'org\\.apache\\.cassandra\\.metrics::(?<p>[0-9]+)thPercentile'
+  condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
+  transform: |
+    cassandra(in)
+      .addLabel("quantile", "0." + match.get("p"))
+      .type("summary")
+      .transform(in.value, in.attributeType, out).done();
+- pattern: 'org\\.apache\\.cassandra\\.metrics::(Min|Max|StdDev)'
+  condition: mbeanInfo.getClassName().endsWith("JmxTimer") || mbeanInfo.getClassName().endsWith("JmxHistogram")
+  transform: |
+    cassandra(in)
+      .appendName(in.attributeName.toLowerCase())
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.cassandra\\.metrics'
+  transform: |
+    log("unhandled attribute: %s", in);
+    cassandra(in).transform(in.value, in.attributeType, out).done();
+
+- transform: |
+    V1.transform(in, out, "type");

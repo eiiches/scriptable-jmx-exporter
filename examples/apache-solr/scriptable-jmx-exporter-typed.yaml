@@ -1,0 +1,79 @@
+declarations: |
+  public static V1.Builder solr(AttributeValue in) {
+    return V1.name(in.domain, (String) in.keyProperties.get("dom1"), (String) in.keyProperties.get("category"), (String) in.keyProperties.get("name"))
+      .addLabelsExcluding(in.keyProperties, "name", "dom1", "category")
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription);
+  }
+
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  skip: true
+
+- pattern:
+  - 'solr::(.*MinuteRate|MeanRate|Mean)'
+  - 'solr::_instanceTag'
+  - 'solr::RateUnit|DurationUnit'
+  skip: true
+
+- pattern: 'solr:dom1=jvm' # We can collect the equivalent metrics from java.lang
+  skip: true
+
+- pattern: 'solr::Value'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxGauge")
+  transform: |
+    solr(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'solr::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxMeter")
+  transform: |
+    solr(in)
+      .type("counter")
+      .suffix("total")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'solr::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxCounter")
+  transform: |
+    solr(in)
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'solr::Count'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
+  transform: |
+    solr(in)
+      .suffix("count")
+      .type("summary")
+      .transform(in.value, in.attributeType, out).done();
+- pattern: 'solr::(?<p>[0-9]+)thPercentile'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
+  transform: |
+    solr(in)
+      .addLabel("quantile", "0." + match.get("p"))
+      .type("summary")
+      .transform(in.value, in.attributeType, out).done();
+- pattern: 'solr::(Min|Max|StdDev)'
+  condition: mbeanInfo.getClassName().endsWith("JmxMetricsReporter$JmxTimer")
+  transform: |
+    solr(in)
+      .appendName(in.attributeName.toLowerCase())
+      .transform(in.value, in.attributeType, out).done();
+
+- condition: '"org.apache.solr.metrics.MetricsMap".equals(mbeanInfo.getClassName())'
+  transform: |
+    solr(in)
+      .appendName(in.attributeName)
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'solr'
+  transform: |
+    log("unhandled attribute: %s", in);
+    solr(in).transform(in.value, in.attributeType, out).done();
+
+- transform: |
+    V1.transform(in, out, "type");

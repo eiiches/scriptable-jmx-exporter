@@ -1,0 +1,74 @@
+declarations: |
+  import java.lang.management.ManagementFactory;
+  import javax.management.MBeanServer;
+  import javax.management.ObjectName;
+  import javax.management.InstanceNotFoundException;
+  import java.util.Hashtable;
+  import java.util.Map.Entry;
+  import java.util.Map;
+
+  public static V1.Builder flink(AttributeValue in, String domain) {
+    return V1.name(domain)
+      .addLabelsExcluding(in.keyProperties)
+      .timestamp(in.timestamp)
+      .help(in.attributeDescription);
+  }
+
+  private static final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+  public static boolean hasCorrespondingMeter(AttributeValue in) throws Exception {
+    // Apache Flink has duplicate metrics such as:
+    // domain: org_apache_flink_taskmanager_job_task_numBytesInRemote (JmxCounter)
+    // domain: org_apache_flink_taskmanager_job_task_numBytesInRemotePerSecond (JmxMeter)
+    // So we remove duplicate JmxCounter if the corresponding JmxMeter exists.
+    try {
+      final Hashtable<String, String> keyProperties = new Hashtable<>();
+      for (Entry<String, String> entry : in.keyProperties.entrySet())
+        keyProperties.put(entry.getKey(), entry.getValue()); // FIXME: we might need to quote values
+      server.getObjectInstance(new ObjectName(in.domain + "PerSecond", keyProperties));
+      return true;
+    } catch (InstanceNotFoundException e) {
+      return false;
+    }
+  }
+
+rules:
+- pattern:
+  - com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions
+  - java.lang:type=Threading:AllThreadIds
+  - jdk.management.jfr
+  - org\\.apache\\.flink\\.(task|job)manager\\.Status\\.JVM\\..* # The same metrics can be scraped from java.lang MBeans
+  - org\\.apache\\.flink\\..*::Rate # Prometheus can calculate rates by itself
+  skip: true
+
+- pattern: 'org\\.apache\\.flink\\..*::Value'
+  condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxGauge")
+  transform: |
+    flink(in, in.domain)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: '(?<domain>org\\.apache\\.flink\\..*?)(PerSecond)?::Count'
+  condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxMeter")
+  transform: |
+    flink(in, (String) match.get("domain"))
+      .type("counter")
+      .suffix("total")
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.flink\\..*::Count'
+  condition: mbeanInfo.getClassName().endsWith("JMXReporter$JmxCounter")
+  transform: |
+    if (hasCorrespondingMeter(in))
+      return;
+    flink(in, in.domain) // JmxCounter can decrease; so it's not Prometheus counter
+      .transform(in.value, in.attributeType, out).done();
+
+- pattern: 'org\\.apache\\.flink\\..*'
+  transform: |
+    log("unhandled attribute: %s", in.domain);
+    flink(in, in.domain)
+      .transform(in.value, in.attributeType, out).done();
+
+- transform: |
+    V1.transform(in, out, "type");

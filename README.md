@@ -38,18 +38,18 @@ I needed something that can scrape many MBeans with a small number of rules. Wri
 Quick Start
 ------------
 
-*If you don't want to run the agent now, download [scriptable-jmx-exporter-1.0.0-alpha1.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha1/scriptable-jmx-exporter-1.0.0-alpha1.jar) and skip to [Usage](#usage).*
+*If you don't want to run the agent now, download [scriptable-jmx-exporter-1.0.0-alpha2.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha2/scriptable-jmx-exporter-1.0.0-alpha2.jar) and skip to [Usage](#usage).*
 
 You can quickly try out this exporter by copy-and-pasting the following snippet to your shell (or by manually running one by one).
 This will download the agent jar and a default configuration file, and then start the exporter using `-javaagent` option.
 
 ```sh
 # Download the agent jar and a default configuration file.
-curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha1/scriptable-jmx-exporter-1.0.0-alpha1.jar
-curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v1.0.0-alpha1/src/main/resources/scriptable-jmx-exporter.yaml
+curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha2/scriptable-jmx-exporter-1.0.0-alpha2.jar
+curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v1.0.0-alpha2/src/main/resources/scriptable-jmx-exporter.yaml
 
 # Finally, run JVM with the exporter enabled.
-java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
+java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
 ```
 
 Now, open [http://localhost:9639/metrics](http://localhost:9639/metrics) in your browser to see the exposed metrics.
@@ -72,20 +72,29 @@ java -javaagent:<PATH_TO_AGENT_JAR> ...
 Configurations can be passed as a javaagent argument. See Configuration section for details.
 
 ```sh
-# Set configurations in YAML (or JSON) directly on command line
-java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_YAML> ...
+# Set configurations in JSON directly on command line (YAML is not supported here)
+java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_JSON> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
 
 # ---
 # Load configurations from PATH_TO_CONFIG_YAML file
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@/etc/foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha1.jar=@classpath:foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar=@/etc/foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar=@foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar=@classpath:foo.yaml ...
+```
+
+If multiple comma-separated configurations are specified, former configurations are overriden by (or merged with) the latter ones.
+
+```sh
+java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML>,<CONFIG_JSON> ...
+
+# e.g.
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha2.jar=@/etc/foo.yaml,'{"server":{"bind_address":":19639"}}' ...
 ```
 
 Configuration
@@ -242,11 +251,9 @@ In most cases, doing one of the following is sufficient to achieve the desired o
 
 ##### Case-style Conversion
 
-*
-NOTE: We DO NOT recommend any case-style conversions.
+*NOTE: We DO NOT recommend any case-style conversions.
 While [Cc]amelCase with `_` in-between looks somewhat unpleasant, it conveys more information from the original ObjectName,
-probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.
-*
+probably making it easier to track a Prometheus metric back to the corresponding MBean attribute later when debugging, etc.*
 
 You can covert case-styles of metric name by using `V1.snakeCase()` or `V1.lowerCase()`.
 
@@ -413,7 +420,7 @@ All that said, if you prefer to leave the metrics `untyped` to keep configuratio
 
 #### Tips
 
-* Prefer rule patterns, instead of using `if` inside transform scripts, to dispatch based on MBean attributes. It's usually faster.
+* Prefer using rule pattern/condition, instead of `if` inside scripts. It's usually faster.
 * Use `static` inside method-local inner class to do things that need to be done once, such as to compile a regex. Note that this should *not* be used to share mutable states because transform scripts are executed concurrently.
   ```yaml
     transform: |
@@ -476,7 +483,7 @@ See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. 
 
 | Exporter | Config File (# of lines) | # of Metrics (\*1) | Throughput [req/s] | Avg. Latency [ms] <br/> @ 10 [req/s] |
 |-|-|-|-|-|
-| scriptable-jmx-exporter | [scriptable-jmx-exporter.yaml](examples/benchmark-kafka/scriptable-jmx-exporter.yaml) (64) | 3362 | 939.45 | TBD |
+| scriptable-jmx-exporter | [scriptable-jmx-exporter.yaml](examples/benchmark-kafka/scriptable-jmx-exporter.yaml) (54) | 3362 | 939.45 | TBD |
 | jmx_exporter 0.13.0 | [kafka-2_0_0.yml](https://github.com/prometheus/jmx_exporter/blob/ce04b7dca8615d724d8f447fa25c44ae1c29238b/example_configs/kafka-2_0_0.yml) (103) | 3157 | 12.14 | TBD |
 
 (\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4. (\*1) kafka-2_0_0.yml seems to be missing a number of metrics, such as `kafka.server:type=socket-server-metrics`.

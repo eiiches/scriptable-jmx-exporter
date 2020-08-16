@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  hbase:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - '9639:9639'
+    - '7091:7091'
+    - '1099:1099'
+    - '2181:2181'
+    - '16000:16000'
+    - '16010:16010'
+    - '16020:16020'
+    - '16030:16030'
+    volumes:
+    - type: bind
+      source: ../../target/scriptable-jmx-exporter-1.0.0-SNAPSHOT.jar
+      target: /opt/java-agents/scriptable-jmx-exporter.jar
+    - type: bind
+      source: ./scriptable-jmx-exporter.yaml
+      target: /etc/scriptable-jmx-exporter.yaml
+    environment:
+    - HBASE_DAEMON_OPTS=
+      -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Dcom.sun.management.jmxremote.port=7091
+      -Dcom.sun.management.jmxremote.rmi.port=1099

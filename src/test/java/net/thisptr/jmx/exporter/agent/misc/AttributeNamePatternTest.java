@@ -113,4 +113,17 @@ public class AttributeNamePatternTest {
 		assertFalse(p.matches(new ObjectName("java.lang:type=GarbageCollector2"), "LastGcInfo"));
 		assertFalse(p.matches(new ObjectName("java.lang:type=GarbageCollector"), null));
 	}
+
+	@Test
+	void testEqualsAndHashCode() throws Exception {
+		final AttributeNamePattern sut = AttributeNamePattern.compile("java.lang:type=(?<type>.*)Collector:(?<attr>.*)");
+
+		final AttributeNamePattern eq = AttributeNamePattern.compile("java.lang:type=(?<type>.*)Collector:(?<attr>.*)");
+		assertThat(sut).isEqualTo(eq);
+		assertThat(sut.hashCode()).isEqualTo(eq.hashCode());
+
+		final AttributeNamePattern neq = AttributeNamePattern.compile("java.nio:type=(?<type>.*)Collector:(?<attr>.*)");
+		assertThat(sut).isNotEqualTo(neq);
+		assertThat(sut.hashCode()).isNotEqualTo(neq.hashCode());
+	}
 }

@@ -25,19 +25,18 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import net.thisptr.jmx.exporter.agent.Sample;
+import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
 import net.thisptr.jmx.exporter.agent.utils.MoreCollections;
 
-public class Scraper<ScrapeRuleType extends ScrapeRule> {
+public class Scraper {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
 
 	private final MBeanServer server;
 
-	private final List<ScrapeRuleType> rules;
-	private final ScrapeRuleType defaultRule;
+	private final List<ScrapeRule> rules;
 
 	/**
 	 * Caches an MBeanInfo for an MBean.
@@ -95,10 +94,17 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				}
 			});
 
-	public Scraper(final MBeanServer server, final List<ScrapeRuleType> rules, ScrapeRuleType defaultRule) {
+	// If no rule matches, the default behavior is to skip the attribute.
+	public Scraper(final MBeanServer server, final List<ScrapeRule> rules) {
 		this.server = server;
 		this.rules = rules;
-		this.defaultRule = defaultRule;
+	}
+
+	private static final RuleMatch DEFAULT_RULE;
+	static {
+		final ScrapeRule skipRule = new ScrapeRule();
+		skipRule.skip = true;
+		DEFAULT_RULE = new RuleMatch(skipRule, Collections.emptyMap());
 	}
 
 	private Pair<Boolean, RuleMatch> findRuleEarly(final FastObjectName name) {
@@ -107,19 +113,19 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 
 	private Pair<Boolean, RuleMatch> findRuleEarlyNoCache(final FastObjectName name) {
 		final Map<String, String> captures = new LinkedHashMap<>(); // LinkedHashMap is used for faster iterations.
-		for (final ScrapeRuleType rule : rules) {
-			if (rule.patterns() == null || rule.patterns().isEmpty()) {
-				if (rule.condition() == null) {
+		for (final ScrapeRule rule : rules) {
+			if (rule.patterns == null || rule.patterns.isEmpty()) {
+				if (rule.condition == null) {
 					return Pair.of(true, new RuleMatch(rule, Collections.emptyMap())); // found
 				} else {
 					return Pair.of(false, null); // match depends on condition, abort
 				}
 			}
 			boolean nameMatches = false;
-			for (final AttributeNamePattern pattern : rule.patterns()) {
+			for (final AttributeNamePattern pattern : rule.patterns) {
 				if (pattern.nameMatches(name.domain(), name.keyProperties(), captures)) {
 					nameMatches = true;
-					if (pattern.attribute == null && rule.condition() == null)
+					if (pattern.attribute == null && rule.condition == null)
 						return Pair.of(true, new RuleMatch(rule, Collections.unmodifiableMap(captures))); // found
 				}
 				captures.clear();
@@ -127,7 +133,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			if (nameMatches)
 				return Pair.of(false, null); // match depends on attribute or condition, abort
 		}
-		return Pair.of(true, new RuleMatch(defaultRule, Collections.emptyMap())); // default rule should be used
+		return Pair.of(true, DEFAULT_RULE); // default rule should be used
 	}
 
 	private static class AttributeRuleCacheKey {
@@ -181,12 +187,12 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 
 	private RuleMatch findRuleNoCache(final AttributeRuleCacheKey key) {
 		final Map<String, String> captures = new HashMap<>();
-		for (final ScrapeRuleType rule : rules) {
+		for (final ScrapeRule rule : rules) {
 			boolean patternMatches = false;
-			if (rule.patterns() == null || rule.patterns().isEmpty()) {
+			if (rule.patterns == null || rule.patterns.isEmpty()) {
 				patternMatches = true;
 			} else {
-				for (final AttributeNamePattern pattern : rule.patterns()) {
+				for (final AttributeNamePattern pattern : rule.patterns) {
 					if (pattern.matches(key.name.domain(), key.name.keyProperties(), key.attributeName, captures)) {
 						patternMatches = true;
 						break;
@@ -196,13 +202,13 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			}
 			if (!patternMatches)
 				continue;
-			if (rule.condition() == null || rule.condition().evaluate(key.beanInfo, key.attributeInfo))
+			if (rule.condition == null || rule.condition.evaluate(key.beanInfo, key.attributeInfo))
 				return new RuleMatch(rule, Collections.unmodifiableMap(captures));
 		}
-		return new RuleMatch(defaultRule, Collections.emptyMap());
+		return DEFAULT_RULE;
 	}
 
-	private class AttributeRule {
+	private static class AttributeRule {
 		public final MBeanAttributeInfo attribute;
 		public final RuleMatch ruleMatch;
 
@@ -212,16 +218,16 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
-	public void scrape(final ScrapeOutput<ScrapeRuleType> output) throws InterruptedException {
+	public void scrape(final ScrapeOutput output) throws InterruptedException {
 		scrape(output, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	/**
 	 * Null object to use with Guava cache, because Guava cache cannot cache null values.
 	 */
-	public final CachedMBeanInfo MBEAN_INFO_NEGATIVE_CACHE = new CachedMBeanInfo(null, null, null, null);
+	private static final CachedMBeanInfo MBEAN_INFO_NEGATIVE_CACHE = new CachedMBeanInfo(null, null, null, null);
 
-	private class CachedMBeanInfo {
+	private static class CachedMBeanInfo {
 		public final FastObjectName name;
 		public final MBeanInfo info;
 
@@ -236,11 +242,11 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
-	private class RuleMatch {
-		public final ScrapeRuleType rule;
+	private static class RuleMatch {
+		public final ScrapeRule rule;
 		public final Map<String, String> captures;
 
-		public RuleMatch(final ScrapeRuleType rule, final Map<String, String> captures) {
+		public RuleMatch(final ScrapeRule rule, final Map<String, String> captures) {
 			this.rule = rule;
 			this.captures = captures;
 		}
@@ -252,7 +258,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		// Filter early by ObjectName because server.getMBeanInfo() is really slow.
 		final Pair<Boolean, RuleMatch> ruleByName = findRuleEarly(name);
 		if (ruleByName._1) { // If we were able to determine rule solely by ObjectName
-			if (ruleByName._2.rule.skip()) // and if the rule is to skip MBean
+			if (ruleByName._2.rule.skip) // and if the rule is to skip MBean
 				return MBEAN_INFO_NEGATIVE_CACHE;
 		}
 
@@ -289,7 +295,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 					ruleMatch = ruleByName._2;
 				} else {
 					ruleMatch = findRule(name, attribute.getName(), info, attribute);
-					if (ruleMatch.rule.skip())
+					if (ruleMatch.rule.skip)
 						continue;
 				}
 
@@ -305,7 +311,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		return new CachedMBeanInfo(name, info, requests, attributes.toArray(new String[0]));
 	}
 
-	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final long duration, final TimeUnit unit) throws InterruptedException {
+	public void scrape(final ScrapeOutput output, final long duration, final TimeUnit unit) throws InterruptedException {
 		// We use server.queryNames() here, instead of server.queryMBeans(), to avoid costly server.getMBeanInfo() invoked internally.
 		final Set<ObjectName> names;
 		try {
@@ -333,7 +339,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		});
 	}
 
-	private void fallbackAndHandleNonAttributeList(final ScrapeOutput<ScrapeRuleType> output, final CachedMBeanInfo info, final AttributeList obtainedAttributes, final long timestamp) {
+	private void fallbackAndHandleNonAttributeList(final ScrapeOutput output, final CachedMBeanInfo info, final AttributeList obtainedAttributes, final long timestamp) {
 		if (obtainedAttributes.size() != info.attributeNamesToGet.length) {
 			if (LOG.isLoggable(Level.FINE))
 				LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an AttributeList containing non-Attribute elemenets and the number of elements does not match.", info.name.objectName(), Arrays.toString(info.attributeNamesToGet)));
@@ -350,12 +356,12 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 			if (value instanceof Attribute) {
 				value = ((Attribute) value).getValue();
 			}
-			final Sample<ScrapeRuleType> sample = new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, value);
+			final Sample sample = new Sample(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, value);
 			safeEmit(output, sample);
 		}
 	}
 
-	public void scrape(final ScrapeOutput<ScrapeRuleType> output, final ObjectName _name) throws InstanceNotFoundException {
+	public void scrape(final ScrapeOutput output, final ObjectName _name) throws InstanceNotFoundException {
 		final CachedMBeanInfo info;
 		try {
 			info = mbeanInfoCache.get(_name);
@@ -406,7 +412,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 				continue;
 			}
 			++successfulAttributes;
-			final Sample<ScrapeRuleType> sample = new Sample<>(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue());
+			final Sample sample = new Sample(request.ruleMatch.rule, request.ruleMatch.captures, timestamp, info.name, info.info, request.attribute, attribute.getValue());
 			safeEmit(output, sample);
 		}
 
@@ -447,7 +453,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
-	private String safeFormatValue(final Object value) {
+	private static String safeFormatValue(final Object value) {
 		if (value == null)
 			return null;
 		try {
@@ -457,7 +463,7 @@ public class Scraper<ScrapeRuleType extends ScrapeRule> {
 		}
 	}
 
-	private void safeEmit(final ScrapeOutput<ScrapeRuleType> output, final Sample<ScrapeRuleType> sample) {
+	private void safeEmit(final ScrapeOutput output, final Sample sample) {
 		try {
 			output.emit(sample);
 		} catch (final Throwable th) {
