@@ -24,6 +24,7 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 import net.thisptr.jmx.exporter.agent.config.Config.OptionsConfig;
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
+import net.thisptr.jmx.exporter.agent.metrics.MetricRegistry;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
@@ -51,9 +52,11 @@ public class ExporterHttpHandler implements HttpHandler {
 
 	private final Scraper scraper;
 	private final OptionsConfig options;
+	private final MetricRegistry metricRegistry;
 
-	public ExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options) {
+	public ExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options, final MetricRegistry metricRegistry) {
 		this.options = options;
+		this.metricRegistry = metricRegistry;
 		final List<ScrapeRule> rulesWithDefault = new ArrayList<>(rules);
 		rulesWithDefault.add(DEFAULT_RULE);
 		this.scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rulesWithDefault);
@@ -120,6 +123,13 @@ public class ExporterHttpHandler implements HttpHandler {
 		final OptionsConfig options = getOptions(exchange);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
+		// Exporter metrics
+		metricRegistry.forEach((instrumented) -> {
+			instrumented.toPrometheus((metric) -> {
+				allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
+			});
+		});
+		// User metrics
 		scraper.scrape(new PrometheusScrapeOutput((metric) -> {
 			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
 		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
@@ -133,11 +143,6 @@ public class ExporterHttpHandler implements HttpHandler {
 			final StreamSinkChannel channel = exchange.getResponseChannel();
 			final WritableByteChannelController controller = channel::awaitWritable;
 			try (PrometheusMetricWriter pwriter = new PrometheusMetricWriter(channel, controller, byteBuffer.getBuffer(), options.includeTimestamp)) {
-
-				// Exporter metrics
-				pwriter.write(BuildInfo.getInstance().toPrometheusBuildInfo());
-
-				// User metrics
 				allMetrics.forEach((name, metrics) -> {
 					try {
 						if (metrics.isEmpty())

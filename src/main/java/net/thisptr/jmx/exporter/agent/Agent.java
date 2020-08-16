@@ -18,6 +18,8 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import net.thisptr.jmx.exporter.agent.config.Config;
 import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher;
 import net.thisptr.jmx.exporter.agent.config.watcher.ConfigWatcher.ConfigListener;
+import net.thisptr.jmx.exporter.agent.metrics.Instrumented;
+import net.thisptr.jmx.exporter.agent.metrics.MetricRegistry;
 import net.thisptr.jmx.exporter.agent.config.watcher.PollingConfigWatcher;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
@@ -78,10 +80,12 @@ public class Agent {
 	public static void premain(final String args) throws Throwable {
 		final BuildInfo buildInfo = BuildInfo.getInstance();
 		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter Version {0} (Commit: {1})", new String[] { buildInfo.buildVersion, buildInfo.commitId.substring(0, Math.min(7, buildInfo.commitId.length())) });
+
+		MetricRegistry.getInstance().add(buildInfo);
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options);
+				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, MetricRegistry.getInstance());
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -94,9 +98,11 @@ public class Agent {
 				HANDLER = handler;
 				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter on {0}.", newConfig.server.bindAddress);
 			});
+			if (watcher instanceof Instrumented)
+				MetricRegistry.getInstance().add((Instrumented) watcher);
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options);
+			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, MetricRegistry.getInstance());
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();

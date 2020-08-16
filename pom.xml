@@ -339,7 +339,6 @@
 						<includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
 						<includeOnlyProperty>^git.commit.(time|id)$</includeOnlyProperty>
 					</includeOnlyProperties>
-						<!--- <commitIdGenerationMode>full</commitIdGenerationMode> -->
 					<dateFormat>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</dateFormat>
 					<format>json</format>
 				</configuration>

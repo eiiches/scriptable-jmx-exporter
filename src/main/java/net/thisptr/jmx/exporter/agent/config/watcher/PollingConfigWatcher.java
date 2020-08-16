@@ -20,9 +20,11 @@ import net.thisptr.jmx.exporter.agent.config.Config;
 import net.thisptr.jmx.exporter.agent.config.watcher.loaders.ClassPathConfigLoader;
 import net.thisptr.jmx.exporter.agent.config.watcher.loaders.FileConfigLoader;
 import net.thisptr.jmx.exporter.agent.config.watcher.loaders.StaticConfigLoader;
+import net.thisptr.jmx.exporter.agent.metrics.Instrumented;
+import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.utils.MoreValidators;
 
-public class PollingConfigWatcher extends Thread implements ConfigWatcher {
+public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instrumented {
 	private static final Logger LOG = Logger.getLogger(PollingConfigWatcher.class.getName());
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -49,7 +51,9 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher {
 		instanciateConfigLoaders(args.getBytes(StandardCharsets.UTF_8), loaders::add);
 		try {
 			reload();
+			lastSuccess = true;
 		} catch (Exception e) {
+			lastSuccess = false;
 			throw new RuntimeException(e);
 		}
 	}
@@ -57,6 +61,8 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher {
 	private volatile boolean shutdownRequested = false;
 	private volatile Config config;
 	private List<byte[]> bytes = Collections.emptyList(); // don't need volatile or locking; only accessed by watcher thread
+
+	private volatile boolean lastSuccess = true;
 
 	/**
 	 * @return true if a new config is loaded, false if unchanged
@@ -153,15 +159,19 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher {
 			try {
 				changed = reload();
 			} catch (final Throwable th) {
+				lastSuccess = false;
 				continue; // just continue, we already logged a warning
 			}
 			if (!changed) {
+				lastSuccess = true;
 				continue;
 			}
 
 			try {
 				listener.changed(oldConfig, config);
+				lastSuccess = true;
 			} catch (final Throwable th) {
+				lastSuccess = false;
 				LOG.log(Level.WARNING, "Got unexpected exception while invoking listeners.", th);
 			}
 		}
@@ -175,5 +185,13 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher {
 	@Override
 	public Config config() {
 		return config;
+	}
+
+	@Override
+	public void toPrometheus(final Consumer<PrometheusMetric> fn) {
+		final PrometheusMetric m = new PrometheusMetric();
+		m.name = "scriptable_jmx_exporter_config_success";
+		m.value = lastSuccess ? 1.0 : 0.0;
+		fn.accept(m);
 	}
 }
