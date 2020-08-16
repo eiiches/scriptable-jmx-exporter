@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +64,7 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instr
 	private List<byte[]> bytes = Collections.emptyList(); // don't need volatile or locking; only accessed by watcher thread
 
 	private volatile boolean lastSuccess = true;
+	private final AtomicInteger reloadTotal = new AtomicInteger();
 
 	/**
 	 * @return true if a new config is loaded, false if unchanged
@@ -169,6 +171,7 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instr
 
 			try {
 				listener.changed(oldConfig, config);
+				reloadTotal.incrementAndGet();
 				lastSuccess = true;
 			} catch (final Throwable th) {
 				lastSuccess = false;
@@ -189,9 +192,17 @@ public class PollingConfigWatcher extends Thread implements ConfigWatcher, Instr
 
 	@Override
 	public void toPrometheus(final Consumer<PrometheusMetric> fn) {
-		final PrometheusMetric m = new PrometheusMetric();
-		m.name = "scriptable_jmx_exporter_config_success";
-		m.value = lastSuccess ? 1.0 : 0.0;
-		fn.accept(m);
+		final PrometheusMetric m1 = new PrometheusMetric();
+		m1.name = "scriptable_jmx_exporter_config_success";
+		m1.value = lastSuccess ? 1.0 : 0.0;
+		m1.type = "gauge";
+		fn.accept(m1);
+
+		final PrometheusMetric m2 = new PrometheusMetric();
+		m2.name = "scriptable_jmx_exporter_config_reload_success";
+		m2.value = reloadTotal.get();
+		m2.type = "counter";
+		m2.suffix = "total";
+		fn.accept(m2);
 	}
 }
