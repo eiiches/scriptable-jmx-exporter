@@ -243,7 +243,7 @@ What the script has to do is to, transform `in`, which is a value (and metadata)
 
 #### Helper Functions (V1)
 
-Implementing the transformation from scratch is not easy. So, we provide [V1](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/v1/V1.java), a set of generic helper functions.
+Implementing the transformation from scratch is not easy. So, we provide [V1](src/main/java/net/thisptr/jmx/exporter/agent/scripting/janino/api/v1/V1.java), a set of generic helper functions.
 In most cases, doing one of the following is sufficient to achieve the desired output.
  * Change arguments to `V1.transform(...)`
  * Modify `in` before calling `V1.transform(...)`
