@@ -237,9 +237,9 @@ Java scripting is powered by [Janino](https://janino-compiler.github.io/janino/)
     V1.transform(in, out, "type");
 ```
 
-Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValueOutput.java)) is provided.
+Two variables, `in` (type: [AttributeValue](src/main/java/net/thisptr/jmx/exporter/agent/scripting/janino/api/AttributeValue.java)) and `out` (type: [MetricValueOutput](src/main/java/net/thisptr/jmx/exporter/agent/scripting/janino/api/MetricValueOutput.java)) is provided.
 
-What the script has to do is to, transform `in`, which is a value (and metadata) of MBean attribute, into a [MetricValue](src/main/java/net/thisptr/jmx/exporter/agent/handler/janino/api/MetricValue.java) object and call `out.emit(...)` with the metric object.
+What the script has to do is to, transform `in`, which is a value (and metadata) of MBean attribute, into a [MetricValue](src/main/java/net/thisptr/jmx/exporter/agent/scripting/janino/api/MetricValue.java) object and call `out.emit(...)` with the metric object.
 
 #### Helper Functions (V1)
 
