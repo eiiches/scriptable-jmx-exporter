@@ -143,6 +143,22 @@
 									<pattern>org.codehaus.mojo.animal_sniffer</pattern>
 									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>io.prometheus.client</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.io.prometheus.client</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.micrometer</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.io.micrometer</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.LatencyUtils</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.LatencyUtils</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.HdrHistogram</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.HdrHistogram</shadedPattern>
+								</relocation>
 							</relocations>
 							<minimizeJar>false</minimizeJar>
 							<transformers>

@@ -1,9 +1,7 @@
 package net.thisptr.jmx.exporter.agent.scripting.janino;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -12,10 +10,13 @@ import org.codehaus.janino.ClassBodyEvaluator;
 import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.ScriptEvaluator;
 
-import net.thisptr.jmx.exporter.agent.misc.Pair;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Timer;
+import net.thisptr.jmx.exporter.agent.registry.Registry;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
-import net.thisptr.jmx.exporter.agent.scripting.Declarations;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptContext;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetricOutput;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine;
@@ -122,48 +123,17 @@ public class JaninoScriptEngine implements ScriptEngine {
 		}
 	}
 
-	private static class StaticBytecodeClassLoader extends ClassLoader {
-		private final Map<String, byte[]> bytecodes;
-
-		public StaticBytecodeClassLoader(final ClassLoader parent, final Map<String, byte[]> bytecodes) {
-			super(parent);
-			this.bytecodes = bytecodes;
-		}
-
-		@Override
-		protected Class<?> findClass(final String name) throws ClassNotFoundException {
-			final byte[] bytecode = bytecodes.get(name);
-			if (bytecode == null)
-				throw new ClassNotFoundException(name);
-			return defineClass(name, bytecode, 0, bytecode.length);
-		}
-	}
-
-	private static Pair<ClassLoader, StringBuilder> setupContext(final List<Declarations> declarations) {
-		final List<String> staticImports = new ArrayList<>();
-		final Map<String, byte[]> bytecodes = new HashMap<>();
-		for (final Declarations decl : declarations) {
-			if (decl instanceof JaninoDeclarations) {
-				final JaninoDeclarations janinoDecl = (JaninoDeclarations) decl;
-				bytecodes.putAll(janinoDecl.bytecodes);
-				staticImports.add(janinoDecl.topLevelClassName);
-			}
-		}
-		final ClassLoader classLoader = new StaticBytecodeClassLoader(JaninoScriptEngine.class.getClassLoader(), bytecodes);
-		final StringBuilder script = new StringBuilder();
-		for (String staticImport : staticImports)
-			script.append(String.format("import static %s.*; ", staticImport));
-		return Pair.of(classLoader, script);
-	}
-
 	@Override
-	public ConditionScript compileConditionScript(final List<Declarations> declarations, final String text, final int ordinal) throws ScriptCompileException {
+	public ConditionScript compileConditionScript(final ScriptContext context, final String text, final int ordinal) throws ScriptCompileException {
+		final ExpressionEvaluator ee = new ExpressionEvaluator();
+		ee.setSourceVersion(JAVA_MAJOR_VERSION);
+		ee.setTargetVersion(JAVA_MAJOR_VERSION);
 		try {
-			final Pair<ClassLoader, StringBuilder> context = setupContext(declarations);
-			final StringBuilder script = context._2;
+			final StringBuilder script = new StringBuilder();
+			for (final String className : context.declarationClassNames())
+				script.append(String.format("import static %s.*; ", className));
 			script.append(text);
-			final ExpressionEvaluator ee = new ExpressionEvaluator();
-			ee.setParentClassLoader(context._1);
+			ee.setParentClassLoader(context.declarationClassLoader());
 			ee.setClassName("sjmxe.Rule" + ordinal + "Condition");
 			final ConditionExpression expr = ee.createFastEvaluator(script.toString(), ConditionExpression.class, "mbeanInfo", "attributeInfo");
 			return new ConditionScriptImpl(expr, script.toString());
@@ -172,20 +142,11 @@ public class JaninoScriptEngine implements ScriptEngine {
 		}
 	}
 
-	private class JaninoDeclarations implements Declarations {
-		private final Map<String, byte[]> bytecodes;
-		private final String topLevelClassName;
-
-		public JaninoDeclarations(final String topLevelClassName, final Map<String, byte[]> bytesCodes) {
-			this.topLevelClassName = topLevelClassName;
-			this.bytecodes = bytesCodes;
-		}
-	}
-
 	@Override
-	public TransformScript compileTransformScript(final List<Declarations> declarations, final String text, final int ordinal) throws ScriptCompileException {
-		final Pair<ClassLoader, StringBuilder> context = setupContext(declarations);
+	public TransformScript compileTransformScript(final ScriptContext context, final String text, final int ordinal) throws ScriptCompileException {
 		final ScriptEvaluator se = new ScriptEvaluator();
+		se.setSourceVersion(JAVA_MAJOR_VERSION);
+		se.setTargetVersion(JAVA_MAJOR_VERSION);
 		if (ordinal < 0) {
 			se.setClassName("sjmxe.DefaultTransform");
 		} else {
@@ -197,8 +158,10 @@ public class JaninoScriptEngine implements ScriptEngine {
 				MetricValueOutput.class.getName(),
 				V1.class.getName(),
 		});
-		se.setParentClassLoader(context._1);
-		final StringBuilder script = context._2;
+		se.setParentClassLoader(context.declarationClassLoader());
+		final StringBuilder script = new StringBuilder();
+		for (final String className : context.declarationClassNames())
+			script.append(String.format("import static %s.*; ", className));
 		script.append(SCRIPT_HEADER);
 		script.append(text);
 		script.append(SCRIPT_FOOTER);
@@ -210,11 +173,32 @@ public class JaninoScriptEngine implements ScriptEngine {
 		}
 	}
 
+	private static final int JAVA_MAJOR_VERSION = javaMajorVersion();
+
+	private static final int javaMajorVersion() {
+		String version = System.getProperty("UnitCompiler.defaultTargetVersion");
+		if (version != null) {
+			return Integer.parseInt(version);
+		}
+		version = System.getProperty("java.specification.version");
+		if (version == null || version.isEmpty()) {
+			return -1; // let janino choose
+		}
+		final String[] components = version.split(Pattern.quote("."), -1);
+		if ("1".equals(components[0])) {
+			return Integer.parseInt(components[1]);
+		} else {
+			return Integer.parseInt(components[0]);
+		}
+	}
+
 	@Override
-	public Declarations compileDeclarations(final String text, final int ordinal) throws ScriptCompileException {
+	public void compileDeclarations(final ScriptContext context, final String text, final int ordinal) throws ScriptCompileException {
 		if (text == null)
-			return null;
+			return;
 		final ClassBodyEvaluator evaluator = new ClassBodyEvaluator();
+		evaluator.setSourceVersion(JAVA_MAJOR_VERSION);
+		evaluator.setTargetVersion(JAVA_MAJOR_VERSION);
 		try {
 			final String topLevelClassName = "sjmxe.Declarations" + ordinal;
 			evaluator.setClassName(topLevelClassName);
@@ -223,9 +207,13 @@ public class JaninoScriptEngine implements ScriptEngine {
 					MetricValue.class.getName(),
 					MetricValueOutput.class.getName(),
 					V1.class.getName(),
+					Timer.class.getName(),
+					Counter.class.getName(),
+					DistributionSummary.class.getName(),
+					Registry.class.getName(),
 			});
 			evaluator.cook(text);
-			return new JaninoDeclarations(topLevelClassName, evaluator.getBytecodes());
+			context.addDeclarations(topLevelClassName, evaluator.getBytecodes());
 		} catch (final Exception e) {
 			throw new ScriptCompileException(e);
 		}

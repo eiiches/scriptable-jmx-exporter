@@ -12,9 +12,11 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 
 import net.thisptr.jmx.exporter.agent.config.deserializers.AttributeNamePatternDeserializer;
@@ -26,12 +28,17 @@ import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
 import net.thisptr.jmx.exporter.agent.scripting.Declarations;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptContext;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.scripting.TransformScript;
+import net.thisptr.jmx.exporter.agent.scripting.janino.JaninoScriptEngine;
 
 @JsonDeserialize(builder = Config.Builder.class)
 public class Config {
+
+	@JsonIgnore
+	public List<ScriptContext> contexts;
 
 	@JsonPOJOBuilder
 	public static class Builder {
@@ -88,12 +95,13 @@ public class Config {
 
 		public Config build() throws Exception {
 			final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
+			final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 
 			final List<Declarations> declarations = new ArrayList<>();
 			for (int i = 0; i < this.declarations.size(); i++) {
 				final ScriptText script = this.declarations.get(i);
 				final ScriptEngine scriptEngine = registry.get(script.engineName != null ? script.engineName : DEFAULT_ENGINE_NAME);
-				declarations.add(scriptEngine.compileDeclarations(script.scriptBody, i));
+				scriptEngine.compileDeclarations(context, script.scriptBody, i);
 			}
 
 			final List<ScrapeRule> rules = new ArrayList<>();
@@ -102,11 +110,11 @@ public class Config {
 				final ScrapeRule rule = new ScrapeRule();
 				if (ruleSource.condition != null) {
 					final ScriptEngine scriptEngine = registry.get(ruleSource.condition.engineName != null ? ruleSource.condition.engineName : DEFAULT_ENGINE_NAME);
-					rule.condition = scriptEngine.compileConditionScript(declarations, ruleSource.condition.scriptBody, i);
+					rule.condition = scriptEngine.compileConditionScript(context, ruleSource.condition.scriptBody, i);
 				}
 				if (ruleSource.transform != null) {
 					final ScriptEngine scriptEngine = registry.get(ruleSource.transform.engineName != null ? ruleSource.transform.engineName : DEFAULT_ENGINE_NAME);
-					rule.transform = scriptEngine.compileTransformScript(declarations, ruleSource.transform.scriptBody, i);
+					rule.transform = scriptEngine.compileTransformScript(context, ruleSource.transform.scriptBody, i);
 				}
 				rule.skip = ruleSource.skip;
 				rule.patterns = ruleSource.patterns;
@@ -118,6 +126,7 @@ public class Config {
 			config.options = options;
 			config.declarations = declarations;
 			config.rules = rules;
+			config.contexts = Lists.newArrayList(context);
 			return config;
 		}
 	}
@@ -129,14 +138,16 @@ public class Config {
 		config.options.includeTimestamp = true;
 		config.options.includeType = true;
 		config.options.minimumResponseTime = 0L;
+		final ScriptContext context = new ScriptContext(Config.class.getClassLoader());
 		final ScrapeRule rule = new ScrapeRule();
 		try {
-			rule.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\");", -1);
+			rule.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(context, "V1.transform(in, out, \"type\");", -1);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		rule.patterns = Collections.emptyList();
 		config.rules.add(rule);
+		config.contexts = Lists.newArrayList(context);
 		return config;
 	}
 
@@ -231,6 +242,10 @@ public class Config {
 			// Actually, this is meaningless. Declarations are scoped to a single configuration file.
 			// These merged declarations are never used.
 			this.declarations.addAll(other.declarations);
+		}
+		if (other.contexts != null) {
+			// we need meter registries in contexts later
+			this.contexts.addAll(other.contexts);
 		}
 		if (other.rules != null && !other.rules.isEmpty()) {
 			final Map<Pair<List<AttributeNamePattern>, ConditionScript>, ScrapeRule> mergedRules = new LinkedHashMap<>();

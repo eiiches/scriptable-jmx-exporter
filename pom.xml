@@ -65,7 +65,7 @@
 		<dependency>
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>janino</artifactId>
-			<version>3.1.2</version>
+			<version>0.0.0-a796a97.391bd</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
@@ -86,6 +86,16 @@
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.el</artifactId>
 			<version>3.0.1-b11</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<version>1.7.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

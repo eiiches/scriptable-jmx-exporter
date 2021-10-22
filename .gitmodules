@@ -1,0 +1,3 @@
+[submodule "deps/janino"]
+	path = deps/janino
+	url = https://github.com/janino-compiler/janino

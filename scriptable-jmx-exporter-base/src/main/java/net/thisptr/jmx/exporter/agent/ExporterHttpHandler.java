@@ -2,6 +2,8 @@ package net.thisptr.jmx.exporter.agent;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -13,9 +15,11 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.xnio.channels.StreamSinkChannel;
 
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpHandler;
@@ -30,6 +34,7 @@ import net.thisptr.jmx.exporter.agent.scraper.ScrapeOutput;
 import net.thisptr.jmx.exporter.agent.scraper.Scraper;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetricOutput;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptContext;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine.ScriptCompileException;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
@@ -43,7 +48,7 @@ public class ExporterHttpHandler implements HttpHandler {
 	static {
 		try {
 			DEFAULT_RULE = new ScrapeRule();
-			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\");", -1);
+			DEFAULT_RULE.transform = ScriptEngineRegistry.getInstance().get("java").compileTransformScript(new ScriptContext(ExporterHttpHandler.class.getClassLoader()), "V1.transform(in, out, \"type\");", -1);
 			DEFAULT_RULE.patterns = Collections.emptyList();
 		} catch (final ScriptCompileException e) {
 			throw new RuntimeException(e);
@@ -53,13 +58,17 @@ public class ExporterHttpHandler implements HttpHandler {
 	private final Scraper scraper;
 	private final OptionsConfig options;
 	private final MetricRegistry metricRegistry;
+	private final List<PrometheusMeterRegistry> registries;
 
-	public ExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options, final MetricRegistry metricRegistry) {
+	public ExporterHttpHandler(final List<ScrapeRule> rules, final OptionsConfig options, final MetricRegistry metricRegistry, final List<ScriptContext> contexts) {
 		this.options = options;
 		this.metricRegistry = metricRegistry;
 		final List<ScrapeRule> rulesWithDefault = new ArrayList<>(rules);
 		rulesWithDefault.add(DEFAULT_RULE);
 		this.scraper = new Scraper(ManagementFactory.getPlatformMBeanServer(), rulesWithDefault);
+		this.registries = contexts.stream()
+				.map(c -> c.getRegistry())
+				.collect(Collectors.toList());
 	}
 
 	private static void parseBooleanQueryParamAndThen(final HttpServerExchange exchange, final String name, final Consumer<Boolean> fn) {
@@ -174,6 +183,8 @@ public class ExporterHttpHandler implements HttpHandler {
 					}
 				});
 			}
+			for (final PrometheusMeterRegistry registry : registries)
+				channel.write(ByteBuffer.wrap(registry.scrape().getBytes(StandardCharsets.UTF_8)));
 		} finally {
 			byteBuffer.close();
 		}

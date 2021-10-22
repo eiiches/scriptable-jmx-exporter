@@ -85,7 +85,7 @@ public class Agent {
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, MetricRegistry.getInstance());
+				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, MetricRegistry.getInstance(), newConfig.contexts);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
 						SERVER.stop();
@@ -102,7 +102,7 @@ public class Agent {
 				MetricRegistry.getInstance().add((Instrumented) watcher);
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, MetricRegistry.getInstance());
+			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, MetricRegistry.getInstance(), initialConfig.contexts);
 			SERVER = newServer(initialConfig.server.bindAddress);
 			safeStart(SERVER);
 			watcher.start();

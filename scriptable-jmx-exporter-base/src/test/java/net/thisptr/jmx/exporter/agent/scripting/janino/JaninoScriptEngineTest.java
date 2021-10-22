@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
 import net.thisptr.jmx.exporter.agent.scraper.Sample;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
+import net.thisptr.jmx.exporter.agent.scripting.ScriptContext;
 import net.thisptr.jmx.exporter.agent.scripting.PrometheusMetric;
 import net.thisptr.jmx.exporter.agent.scripting.TransformScript;
 
@@ -49,8 +50,9 @@ public class JaninoScriptEngineTest {
 	void testSimple() throws Exception {
 		final Sample sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
+		sut.compileTransformScript(context, "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
@@ -62,8 +64,9 @@ public class JaninoScriptEngineTest {
 	void testNonExistentKeyProperty() throws Exception {
 		final Sample sample = sample(new ObjectName("java.lang:type=OperatingSystem"), "ProcessCpuLoad");
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"non_existent_key\")", 0).execute(sample, metrics::add);
+		sut.compileTransformScript(context, "V1.transform(in, out, \"non_existent_key\")", 0).execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(1);
 		assertThat(metrics.get(0).value).isEqualTo((Double) sample.value);
@@ -75,8 +78,9 @@ public class JaninoScriptEngineTest {
 	void testArray() throws Exception {
 		final Sample sample = sample(new ObjectName("java.lang:type=Threading"), "AllThreadIds");
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
+		sut.compileTransformScript(context, "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(Array.getLength(sample.value));
 
@@ -92,8 +96,9 @@ public class JaninoScriptEngineTest {
 	void testCompositeData() throws Exception {
 		final Sample sample = sample(new ObjectName("java.lang:type=Memory"), "HeapMemoryUsage");
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
+		sut.compileTransformScript(context, "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
 
 		assertThat(metrics.size()).isEqualTo(4);
 
@@ -138,8 +143,9 @@ public class JaninoScriptEngineTest {
 
 		final Sample sample = sample(waitForLastGcInfo(), "LastGcInfo");
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 		final List<PrometheusMetric> metrics = new ArrayList<>();
-		sut.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
+		sut.compileTransformScript(context, "V1.transform(in, out, \"type\")", 0).execute(sample, metrics::add);
 
 		System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(metrics));
 
@@ -164,9 +170,11 @@ public class JaninoScriptEngineTest {
 			}
 		}
 
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
+
 		final JaninoScriptEngine sut1 = new JaninoScriptEngine();
 		// final JsonQueryScriptEngine sut2 = new JsonQueryScriptEngine();
-		final TransformScript script1 = sut1.compileTransformScript(Collections.emptyList(), "V1.transform(in, out, \"type\")", 0);
+		final TransformScript script1 = sut1.compileTransformScript(context, "V1.transform(in, out, \"type\")", 0);
 		// final Script<?> script2 = sut2.compile("default_transform_v1([\"type\"]; true)");
 
 		final long start = System.currentTimeMillis();
@@ -180,13 +188,15 @@ public class JaninoScriptEngineTest {
 
 	@Test
 	void testConditionScriptEqualsAndHashCode() throws Exception {
-		final ConditionScript c = sut.compileConditionScript(Collections.emptyList(), "true", 0);
+		final ScriptContext context = new ScriptContext(JaninoScriptEngine.class.getClassLoader());
 
-		final ConditionScript eq = sut.compileConditionScript(Collections.emptyList(), "true", 0);
+		final ConditionScript c = sut.compileConditionScript(context, "true", 0);
+
+		final ConditionScript eq = sut.compileConditionScript(context, "true", 0);
 		assertThat(c).isEqualTo(eq);
 		assertThat(c.hashCode()).isEqualTo(eq.hashCode());
 
-		final ConditionScript neq = sut.compileConditionScript(Collections.emptyList(), "1 == 1", 0);
+		final ConditionScript neq = sut.compileConditionScript(context, "1 == 1", 0);
 		assertThat(c).isNotEqualTo(neq);
 		assertThat(c.hashCode()).isNotEqualTo(neq.hashCode());
 	}
