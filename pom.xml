@@ -49,6 +49,8 @@
 	<modules>
 		<module>scriptable-jmx-exporter</module>
 		<module>scriptable-jmx-exporter-base</module>
+		<module>scriptable-jmx-exporter-java14</module>
+		<module>scriptable-jmx-exporter-java16</module>
 	</modules>
 
 	<dependencies>

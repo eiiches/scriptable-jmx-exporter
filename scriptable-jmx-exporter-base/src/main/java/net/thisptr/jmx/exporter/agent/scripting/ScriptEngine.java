@@ -19,4 +19,6 @@ public interface ScriptEngine {
 	ConditionScript compileConditionScript(ScriptContext context, String script, int ordinal) throws ScriptCompileException;
 
 	void compileDeclarations(ScriptContext context, String text, int ordinal) throws ScriptCompileException;
+
+	FlightRecorderEventHandlerScript compileFlightRecorderEventHandlerScript(ScriptContext context, String script, int ordinal) throws ScriptCompileException;
 }

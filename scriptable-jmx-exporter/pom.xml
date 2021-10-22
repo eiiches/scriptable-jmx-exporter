@@ -21,6 +21,16 @@
 			<artifactId>scriptable-jmx-exporter-base</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>net.thisptr</groupId>
+			<artifactId>scriptable-jmx-exporter-java14</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.thisptr</groupId>
+			<artifactId>scriptable-jmx-exporter-java16</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -46,6 +56,22 @@
 									<overWrite>false</overWrite>
 									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
 								</artifactItem>
+								<artifactItem>
+									<groupId>net.thisptr</groupId>
+									<artifactId>scriptable-jmx-exporter-java14</artifactId>
+									<version>1.0.0-SNAPSHOT</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${project.build.outputDirectory}/META-INF/versions/14</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>net.thisptr</groupId>
+									<artifactId>scriptable-jmx-exporter-java16</artifactId>
+									<version>1.0.0-SNAPSHOT</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${project.build.outputDirectory}/META-INF/versions/16</outputDirectory>
+								</artifactItem>
 							</artifactItems>
 						</configuration>
 					</execution>
@@ -63,6 +89,8 @@
 						<configuration>
 							<artifactSet>
 								<excludes>net.thisptr:scriptable-jmx-exporter-base</excludes>
+								<excludes>net.thisptr:scriptable-jmx-exporter-java14</excludes>
+								<excludes>net.thisptr:scriptable-jmx-exporter-java16</excludes>
 							</artifactSet>
 							<filters>
 								<filter>

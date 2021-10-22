@@ -1,10 +1,13 @@
 package net.thisptr.jmx.exporter.agent.config;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
@@ -20,7 +23,9 @@ import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 
 import net.thisptr.jmx.exporter.agent.config.deserializers.AttributeNamePatternDeserializer;
+import net.thisptr.jmx.exporter.agent.config.deserializers.DurationDeserializer;
 import net.thisptr.jmx.exporter.agent.config.deserializers.HostAndPortDeserializer;
+import net.thisptr.jmx.exporter.agent.config.deserializers.PatternDeserializer;
 import net.thisptr.jmx.exporter.agent.config.deserializers.ScriptTextDeserializer;
 import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRule;
 import net.thisptr.jmx.exporter.agent.config.validations.ValidScrapeRuleList;
@@ -28,6 +33,7 @@ import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
 import net.thisptr.jmx.exporter.agent.scripting.ConditionScript;
 import net.thisptr.jmx.exporter.agent.scripting.Declarations;
+import net.thisptr.jmx.exporter.agent.scripting.FlightRecorderEventHandlerScript;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptContext;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine;
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
@@ -46,6 +52,44 @@ public class Config {
 		private List<RuleSource> ruleSources = new ArrayList<>();
 		private OptionsConfig options = new OptionsConfig();
 		private ServerConfig server = new ServerConfig();
+		private List<FlightRecorderEventRuleSource> flightRecorderEventRuleSources = new ArrayList<>();
+
+		@JsonProperty("flight_recorder_events")
+		public Builder withFlightRecorderEvents(final List<FlightRecorderEventRuleSource> ruleSources) {
+			this.flightRecorderEventRuleSources = ruleSources;
+			return this;
+		}
+
+		public static class FlightRecorderEventRuleSource {
+			@JsonProperty("name")
+			@JsonDeserialize(using = PatternDeserializer.class)
+			public Pattern name;
+
+			@JsonProperty("interval")
+			@JsonDeserialize(using = DurationDeserializer.class)
+			public Duration interval = null; // none by default
+
+			@JsonProperty("threshold")
+			@JsonDeserialize(using = DurationDeserializer.class)
+			public Duration threshold = null; // none by default
+
+			@JsonProperty("stacktrace")
+			public Boolean stacktrace = null; // false to disable stacktrace, true to enable stacktrace, null to keep it as default
+
+			@JsonProperty("enable")
+			public boolean enable = true;
+
+			@NotNull
+			@JsonProperty("settings")
+			public Map<String, String> settings = new HashMap<>();
+
+			@JsonProperty("handler")
+			@JsonDeserialize(using = ScriptTextDeserializer.class)
+			public ScriptText handler;
+
+			@JsonProperty("skip")
+			public boolean skip = false;
+		}
 
 		@JsonProperty("declarations")
 		@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -121,11 +165,30 @@ public class Config {
 				rules.add(rule);
 			}
 
+			final List<FlightRecorderEventRule> flightRecorderEventRules = new ArrayList<>();
+			for (int i = 0; i < flightRecorderEventRuleSources.size(); ++i) {
+				final FlightRecorderEventRuleSource ruleSource = flightRecorderEventRuleSources.get(i);
+
+				final FlightRecorderEventRule rule = new FlightRecorderEventRule();
+				rule.name = ruleSource.name;
+				rule.interval = ruleSource.interval;
+				rule.threshold = ruleSource.threshold;
+				rule.stacktrace = ruleSource.stacktrace;
+				rule.skip = ruleSource.skip;
+				rule.enable = ruleSource.enable;
+
+				final ScriptEngine scriptEngine = registry.get(ruleSource.handler.engineName != null ? ruleSource.handler.engineName : DEFAULT_ENGINE_NAME);
+				rule.handler = scriptEngine.compileFlightRecorderEventHandlerScript(context, ruleSource.handler.scriptBody, i);
+
+				flightRecorderEventRules.add(rule);
+			}
+
 			final Config config = new Config();
 			config.server = server;
 			config.options = options;
 			config.declarations = declarations;
 			config.rules = rules;
+			config.flightRecorderEventRules = flightRecorderEventRules;
 			config.contexts = Lists.newArrayList(context);
 			return config;
 		}
@@ -148,6 +211,7 @@ public class Config {
 		rule.patterns = Collections.emptyList();
 		config.rules.add(rule);
 		config.contexts = Lists.newArrayList(context);
+		config.flightRecorderEventRules = new ArrayList<>();
 		return config;
 	}
 
@@ -216,6 +280,41 @@ public class Config {
 		public TransformScript transform;
 	}
 
+	@NotNull
+	@JsonProperty("flight_recorder_events")
+	public List<@Valid @NotNull FlightRecorderEventRule> flightRecorderEventRules = new ArrayList<>();
+
+	public static class FlightRecorderEventRule {
+
+		@JsonProperty("name")
+		@JsonDeserialize(using = PatternDeserializer.class)
+		public Pattern name;
+
+		@JsonProperty("interval")
+		@JsonDeserialize(using = DurationDeserializer.class)
+		public Duration interval = null;
+
+		@JsonProperty("threshold")
+		@JsonDeserialize(using = DurationDeserializer.class)
+		public Duration threshold = null;
+
+		@JsonProperty("stacktrace")
+		public Boolean stacktrace = null;
+
+		@JsonProperty("enable")
+		public boolean enable = true;
+
+		@NotNull
+		@JsonProperty("settings")
+		public Map<String, String> settings = new HashMap<>();
+
+		@JsonProperty("handler")
+		public FlightRecorderEventHandlerScript handler;
+
+		@JsonProperty("skip")
+		public boolean skip = false;
+	}
+
 	public static Config merge(final List<Config> configs) {
 		Config config = Config.createDefault();
 		for (final Config override : configs)
@@ -258,5 +357,7 @@ public class Config {
 			this.rules = new ArrayList<>(mergedRules.values());
 			this.rules.add(defaultRule);
 		}
+
+		this.flightRecorderEventRules.addAll(other.flightRecorderEventRules);
 	}
 }

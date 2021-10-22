@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 
+import net.thisptr.jmx.exporter.agent.scripting.FlightRecorderEventHandlerScript;
+import net.thisptr.jmx.exporter.agent.scripting.janino.internal.jfr.FlightRecorderModule;
+import net.thisptr.jmx.exporter.agent.scripting.janino.internal.jfr.FlightRecorderModuleImpl;
 import org.codehaus.janino.ClassBodyEvaluator;
 import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.ScriptEvaluator;
@@ -214,6 +217,33 @@ public class JaninoScriptEngine implements ScriptEngine {
 			});
 			evaluator.cook(text);
 			context.addDeclarations(topLevelClassName, evaluator.getBytecodes());
+		} catch (final Exception e) {
+			throw new ScriptCompileException(e);
+		}
+	}
+
+	@Override
+	public FlightRecorderEventHandlerScript compileFlightRecorderEventHandlerScript(ScriptContext context, String handlerScript, int ordinal) throws ScriptCompileException {
+		final ScriptEvaluator se = new ScriptEvaluator();
+		se.setSourceVersion(JAVA_MAJOR_VERSION);
+		se.setTargetVersion(JAVA_MAJOR_VERSION);
+		se.setClassName("sjmxe.FlightRecorderEventHandler" + ordinal);
+		se.setDefaultImports(new String[] {
+				Timer.class.getName(),
+				Counter.class.getName(),
+				DistributionSummary.class.getName(),
+				Registry.class.getName(),
+		});
+		se.setParentClassLoader(context.declarationClassLoader());
+		final StringBuilder script = new StringBuilder();
+		for (final String className : context.declarationClassNames())
+			script.append(String.format("import static %s.*; ", className));
+		script.append(SCRIPT_HEADER);
+		script.append(handlerScript);
+		script.append(SCRIPT_FOOTER);
+
+		try {
+			return FlightRecorderModule.getInstance().compile(se, script.toString());
 		} catch (final Exception e) {
 			throw new ScriptCompileException(e);
 		}
