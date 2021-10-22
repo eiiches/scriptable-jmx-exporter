@@ -11,7 +11,7 @@ services:
     - '44444:44444'
     volumes:
     - type: bind
-      source: ../../target/scriptable-jmx-exporter-1.0.0-SNAPSHOT.jar
+      source: ../../scriptable-jmx-exporter/target/scriptable-jmx-exporter-1.0.0-SNAPSHOT.jar
       target: /opt/java-agents/scriptable-jmx-exporter.jar
     - type: bind
       source: ./scriptable-jmx-exporter.yaml
