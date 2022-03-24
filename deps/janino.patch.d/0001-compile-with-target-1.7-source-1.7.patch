@@ -1,0 +1,27 @@
+From 5e8bee8cc526ab149881a036cb950e6d6c3d2de5 Mon Sep 17 00:00:00 2001
+From: Eiichi Sato <sato.eiichi@gmail.com>
+Date: Mon, 18 Oct 2021 02:58:26 +0900
+Subject: [PATCH] compile with -target 1.7 -source 1.7
+
+---
+ janino-parent/pom.xml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/janino-parent/pom.xml b/janino-parent/pom.xml
+index 04b4d50b..5c387b7c 100644
+--- a/janino-parent/pom.xml
++++ b/janino-parent/pom.xml
+@@ -13,8 +13,8 @@
+     <!--
+       JANINO still retains backwards compatibility with JRE 6:
+     -->
+-    <maven.compiler.source>1.6</maven.compiler.source>
+-    <maven.compiler.target>1.6</maven.compiler.target>
++    <maven.compiler.source>1.7</maven.compiler.source>
++    <maven.compiler.target>1.7</maven.compiler.target>
+ 
+     <!--
+       If you want to enforce a particular JAVAC executable to be used, set these two properties:
+-- 
+2.33.1
+

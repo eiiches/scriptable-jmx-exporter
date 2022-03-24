@@ -3,7 +3,7 @@
 Scriptable JMX Exporter
 =======================
 
-Java agent to scrape and expose MBeans to Prometheus. Formerly, java-prometheus-metrics-agent.
+Java agent to scrape and expose MBeans to Prometheus.
 
 [![GitHub Actions](https://github.com/eiiches/scriptable-jmx-exporter/workflows/test/badge.svg)](https://github.com/eiiches/scriptable-jmx-exporter/actions)
 
@@ -22,6 +22,8 @@ Features
   - Decomposing complex MBean name into metric labels.
 - Performance. Goal is to enable a large number of metrics (~50k) at shorter intervals (>1s) without impacting workloads.
   - See our [benchmark](#benchmark).
+- Java Flight Recorder (JFR) Event Streaming (>=Java 14)
+  - You can aggregate JFR events into custom metrics.
 
 
 #### Why another exporter? There's a bunch of exporters and there's even the official one.
@@ -32,8 +34,8 @@ I needed something that can scrape many MBeans with a small number of rules. Wri
 
 #### Requirements
 
-* Java 8 or newer
-
+* Java 8 (Minimum)
+  * JFR Event Streaming support requires Java 14 or newer
 
 Quick Start
 ------------
@@ -126,6 +128,8 @@ declarations: |
   public static void foo() {
     log("foo");
   }
+  public static Counter jvmAllocationRate = Counter.builder("jvm_allocation_rate")
+      .register(Registry.getInstance());
 rules:
 - pattern:
   # Drop less useful attributes JVM exposes.
@@ -144,6 +148,14 @@ rules:
 # Default rule to cover the rest.
 - transform: |
     V1.transform(in, out, "type");
+flight_recorder_events:
+- name: jdk.ObjectAllocationInNewTLAB
+  handler: |
+    jvmAllocationRate.increment(event.getLong("tlabSize"));
+- name: jdk.ObjectAllocationOutsideTLAB
+  handler: |
+    jvmAllocationRate.increment(event.getLong("allocationSize"));
+
 ```
 
 This YAML is mapped to [Config](src/main/java/net/thisptr/jmx/exporter/agent/config/Config.java) class using Jackson data-binding and validated by Hibernate validator.
@@ -169,8 +181,8 @@ These options can be overridden by URL parameters. E.g. `/metrics?minimum_respon
 
 ### Declarations
 
-You can define static classes and methods for use in transform scripts, condition expressions, etc. They will be automatically imported and available so you don't have to manually write `import` statements.
-Make sure to add `public static` in the declarations; otherwise, the classes and methods won't be accessible.
+The classes, methods and variables defined here will be automatically imported and can be referenced from other places (e.g. MBean transform scripts, condition expression, and JFR event handlers).
+You can also define and register custom metrics here.
 
 ```yaml
 declarations: |
@@ -183,9 +195,14 @@ declarations: |
   public static class Foo {
     // ...
   }
+
+  public static Counter jvmAllocationRate = Counter.builder("jvm_allocation_rate")
+        .register(Registry.getInstance());
 ```
 
-### Rule Configuration
+> NOTE: Make sure to use `public static` modifiers.
+
+### MBean Rule Configuration
 
 Rules are searched in order and a first match is used for each attribute.
 
@@ -218,6 +235,33 @@ The following variables are accessible from a condition expression.
 ##### Examples
 
 * `mbeanInfo.getClassName().endsWith("JmxReporter$Timer")`
+
+### Flight Recorder Events
+
+You can subscribe events from Java Flight Recorder (JFR) event stream.
+
+```yaml
+flight_recorder_events:
+- name: .*
+  handler: |
+    Counter.builder("java_flight_recorder_events")
+        .tags("type", event.getEventType().getName())
+        .register(Registry.getInstance())
+        .increment();
+```
+
+| Config Key | Default | Description |
+|-|-|-|
+| `flight_recorder_events[].name` | - | The type of the event to subscribe. E.g. `jdk.ObjectAllocationInNewTLAB` |
+| `flight_recorder_events[].handler` | - | The script to execute when the event is generated. |
+
+The following variables are accessible from the handler script.
+
+| Variable Name | Type | Description |
+|-|-|-|
+| `event` | [jdk.jfr.consumer.RecordedEvent](https://docs.oracle.com/en/java/javase/14/docs/api/jdk.jfr/jdk/jfr/consumer/RecordedEvent.html) | The generated event |
+
+You can use custom JFR events too. Refer to [Creating and Recording Your First Event](https://docs.oracle.com/en/java/javase/14/jfapi/creating-and-recording-your-first-event.html) to learn how to create custom events.
 
 Scripting
 ---------

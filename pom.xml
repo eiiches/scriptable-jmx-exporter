@@ -6,9 +6,9 @@
 	</prerequisites>
 
 	<groupId>net.thisptr</groupId>
-	<artifactId>scriptable-jmx-exporter</artifactId>
-	<name>Scriptable JMX Exporter</name>
-	<packaging>jar</packaging>
+	<artifactId>scriptable-jmx-exporter-parent</artifactId>
+	<name>Scriptable JMX Exporter (Parent POM)</name>
+	<packaging>pom</packaging>
 	<version>1.0.0-SNAPSHOT</version>
 	<description>Java agent for collecting and exposing metrics to Prometheus</description>
 	<url>https://github.com/eiiches/scriptable-jmx-exporter</url>
@@ -46,6 +46,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<modules>
+		<module>scriptable-jmx-exporter</module>
+		<module>scriptable-jmx-exporter-base</module>
+		<module>scriptable-jmx-exporter-java14</module>
+		<module>scriptable-jmx-exporter-java16</module>
+	</modules>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -60,7 +67,7 @@
 		<dependency>
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>janino</artifactId>
-			<version>3.1.2</version>
+			<version>0.0.0-a796a97.391bd</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
@@ -81,6 +88,16 @@
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.el</artifactId>
 			<version>3.0.1-b11</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<version>1.7.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -124,110 +141,12 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.2.1</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<filters>
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>META-INF/*.SF</exclude>
-										<exclude>META-INF/*.DSA</exclude>
-										<exclude>META-INF/*.RSA</exclude>
-									</excludes>
-								</filter>
-							</filters>
-							<relocations>
-								<relocation>
-									<pattern>com.google</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.google</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.hibernate</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.hibernate</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.jcodings</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jcodings</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.joni</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.joni</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.yaml.snakeyaml</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.yaml.snakeyaml</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.fasterxml</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.fasterxml</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>io.undertow</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.io.undertow</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.xnio</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.xnio</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.codehaus</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.wildfly</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.wildfly</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.jboss</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jboss</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>javax.validation</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.validation</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>javax.annotation</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.annotation</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.checkerframework</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.checkerframework</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.sun.el</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.sun.el</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>javax.el</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.el</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>org.codehaus.mojo.animal_sniffer</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.codehaus.mojo.animal_sniffer</shadedPattern>
-								</relocation>
-							</relocations>
-							<minimizeJar>false</minimizeJar>
-							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-							</transformers>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>8</source>
+					<target>8</target>
+					<release>8</release>
 					<compilerArgument>-Xlint:all</compilerArgument>
 					<showWarnings>true</showWarnings>
 					<showDeprecation>true</showDeprecation>
@@ -240,6 +159,7 @@
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<pushChanges>false</pushChanges>
+					<skip>true</skip>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -268,20 +188,11 @@
 						</goals>
 					</execution>
 				</executions>
-				<configuration>
-					<excludePackageNames>net.thisptr.jmx.exporter.agent.javacc</excludePackageNames>
-					<source>8</source>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.1.2</version>
-				<configuration>
-					<archive>
-						<manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
-					</archive>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
@@ -295,55 +206,45 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>javacc-maven-plugin</artifactId>
-				<version>2.6</version>
-				<dependencies>
-					<dependency>
-						<groupId>net.java.dev.javacc</groupId>
-						<artifactId>javacc</artifactId>
-						<version>7.0.9</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<id>javacc</id>
-						<goals>
-							<goal>javacc</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M3</version>
 			</plugin>
-			<plugin>
-				<groupId>pl.project13.maven</groupId>
-				<artifactId>git-commit-id-plugin</artifactId>
-				<version>4.0.2</version>
-				<executions>
-					<execution>
-						<id>get-the-git-infos</id>
-						<goals>
-							<goal>revision</goal>
-						</goals>
-						<phase>initialize</phase>
-					</execution>
-				</executions>
-				<configuration>
-					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-					<generateGitPropertiesFilename>${project.build.outputDirectory}/scriptable-jmx-exporter-git.json</generateGitPropertiesFilename>
-					<includeOnlyProperties>
-						<includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
-						<includeOnlyProperty>^git.commit.(time|id)$</includeOnlyProperty>
-					</includeOnlyProperties>
-					<dateFormat>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</dateFormat>
-					<format>json</format>
-				</configuration>
-			</plugin>
 		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>javacc-maven-plugin</artifactId>
+					<version>2.6</version>
+					<dependencies>
+						<dependency>
+							<groupId>net.java.dev.javacc</groupId>
+							<artifactId>javacc</artifactId>
+							<version>7.0.9</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>pl.project13.maven</groupId>
+					<artifactId>git-commit-id-plugin</artifactId>
+					<version>4.0.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.2.4</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.ow2.asm</groupId>
+							<artifactId>asm</artifactId>
+							<version>9.2</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 	<dependencyManagement>

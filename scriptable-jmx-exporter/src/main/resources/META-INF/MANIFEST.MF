@@ -1,0 +1,2 @@
+Premain-Class: net.thisptr.jmx.exporter.agent.Agent
+Multi-Release: true
