@@ -9,13 +9,7 @@ import java.util.function.Consumer;
  */
 public class MetricRegistry {
 
-	private static final MetricRegistry INSTANCE = new MetricRegistry();
-
 	public List<Instrumented> instrumentedObjects = new ArrayList<>();
-
-	public static MetricRegistry getInstance() {
-		return INSTANCE;
-	}
 
 	public void forEach(final Consumer<Instrumented> fn) {
 		instrumentedObjects.forEach(fn);
