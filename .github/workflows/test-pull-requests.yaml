@@ -1,0 +1,19 @@
+name: 'test-pull-requests'
+on:
+  pull_request:
+    branches:
+    - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3.0.2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v3.5.1
+      with:
+        java-version: '8'
+        distribution: 'temurin'
+
+    - name: Build & Package
+      run: 'mvn clean package'
