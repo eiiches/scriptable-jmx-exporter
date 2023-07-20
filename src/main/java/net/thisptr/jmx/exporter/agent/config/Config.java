@@ -6,17 +6,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.net.HostAndPort;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import net.thisptr.jmx.exporter.agent.config.deserializers.AttributeNamePatternDeserializer;
 import net.thisptr.jmx.exporter.agent.config.deserializers.HostAndPortDeserializer;
 import net.thisptr.jmx.exporter.agent.config.deserializers.ScriptTextDeserializer;

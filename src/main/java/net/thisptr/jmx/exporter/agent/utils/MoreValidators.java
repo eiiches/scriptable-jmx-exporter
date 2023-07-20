@@ -1,12 +1,12 @@
 package net.thisptr.jmx.exporter.agent.utils;
 
-import java.util.Set;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import java.util.Set;
 
 public class MoreValidators {
 	public static <T> void validate(final T obj) {

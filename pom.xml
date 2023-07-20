@@ -63,9 +63,9 @@
 			<version>3.1.10</version>
 		</dependency>
 		<dependency>
-			<groupId>org.hibernate</groupId>
+			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>6.1.5.Final</version>
+			<version>7.0.5.Final</version> <!-- 8.x requires java 11 -->
 		</dependency>
 		<dependency>
 			<groupId>io.undertow</groupId>
@@ -79,8 +79,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish</groupId>
-			<artifactId>javax.el</artifactId>
-			<version>3.0.1-b12</version>
+			<artifactId>jakarta.el</artifactId>
+			<version>4.0.2</version> <!-- Hibernate Validator 7 is compatible with Jakarta EE 9 -->
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -189,8 +189,8 @@
 									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.org.jboss</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>javax.validation</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.validation</shadedPattern>
+									<pattern>jakarta.validation</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.jakarta.validation</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.annotation</pattern>
@@ -205,8 +205,8 @@
 									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.com.sun.el</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>javax.el</pattern>
-									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.javax.el</shadedPattern>
+									<pattern>jakarta.el</pattern>
+									<shadedPattern>net.thisptr.jmx.exporter.agent.shade.jakarta.el</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.codehaus.mojo.animal_sniffer</pattern>
