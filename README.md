@@ -38,18 +38,18 @@ I needed something that can scrape many MBeans with a small number of rules. Wri
 Quick Start
 ------------
 
-*If you don't want to run the agent now, download [scriptable-jmx-exporter-1.0.0-alpha3.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha3/scriptable-jmx-exporter-1.0.0-alpha3.jar) and skip to [Usage](#usage).*
+*If you don't want to run the agent now, download [scriptable-jmx-exporter-1.0.0-alpha4.jar](https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha4/scriptable-jmx-exporter-1.0.0-alpha4.jar) and skip to [Usage](#usage).*
 
 You can quickly try out this exporter by copy-and-pasting the following snippet to your shell (or by manually running one by one).
 This will download the agent jar and a default configuration file, and then start the exporter using `-javaagent` option.
 
 ```sh
 # Download the agent jar and a default configuration file.
-curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha3/scriptable-jmx-exporter-1.0.0-alpha3.jar
-curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v1.0.0-alpha3/src/main/resources/scriptable-jmx-exporter.yaml
+curl -LO https://repo1.maven.org/maven2/net/thisptr/scriptable-jmx-exporter/1.0.0-alpha4/scriptable-jmx-exporter-1.0.0-alpha4.jar
+curl -LO https://raw.githubusercontent.com/eiiches/scriptable-jmx-exporter/v1.0.0-alpha4/src/main/resources/scriptable-jmx-exporter.yaml
 
 # Finally, run JVM with the exporter enabled.
-java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
+java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar=@scriptable-jmx-exporter.yaml net.thisptr.jmx.exporter.tools.Pause
 ```
 
 Now, open [http://localhost:9639/metrics](http://localhost:9639/metrics) in your browser to see the exposed metrics.
@@ -76,16 +76,16 @@ Configurations can be passed as a javaagent argument. See Configuration section 
 java -javaagent:<PATH_TO_AGENT_JAR>=<CONFIG_JSON> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar='{"rules":[{"pattern":["com.sun.management:type=HotSpotDiagnostic:DiagnosticOptions","java.lang:type=Threading:AllThreadIds","jdk.management.jfr"],"skip":true},{"transform":"!java V1.transform(in, out, \"type\")"}]}' ...
 
 # ---
 # Load configurations from PATH_TO_CONFIG_YAML file
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar=@/etc/foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar=@foo.yaml ...
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar=@classpath:foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar=@/etc/foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar=@foo.yaml ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar=@classpath:foo.yaml ...
 ```
 
 If multiple comma-separated configurations are specified, former configurations are overriden by (or merged with) the latter ones.
@@ -94,7 +94,7 @@ If multiple comma-separated configurations are specified, former configurations 
 java -javaagent:<PATH_TO_AGENT_JAR>=@<PATH_TO_CONFIG_YAML>,<CONFIG_JSON> ...
 
 # e.g.
-# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha3.jar=@/etc/foo.yaml,'{"server":{"bind_address":":19639"}}' ...
+# java -javaagent:scriptable-jmx-exporter-1.0.0-alpha4.jar=@/etc/foo.yaml,'{"server":{"bind_address":":19639"}}' ...
 ```
 
 Configuration
