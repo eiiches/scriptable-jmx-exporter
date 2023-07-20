@@ -54,7 +54,7 @@ jobs:
     - name: Build & Deploy
       run: |
         set -euo pipefail
-        git checkout main
+        git checkout master
         mvn -Prelease clean deploy
 
     - name: Git Push
