@@ -260,7 +260,8 @@ public class ValueTransformations {
 		case "java.lang.Integer": /* fall through */
 		case "java.lang.Long": /* fall through */
 		case "java.lang.Short": /* fall through */
-		case "java.lang.Byte":
+		case "java.lang.Byte": /* fall through */
+		case "java.lang.Number":
 			if (value == null)
 				break;
 			emit(namer, labels, output, ((Number) value).doubleValue());
