@@ -29,8 +29,15 @@ public class Agent {
 
 	static final String DEFAULT_CLASSPATH_CONFIG_FILE = "scriptable-jmx-exporter.yaml";
 
-	private static Undertow SERVER;
-	private static volatile ExporterHttpHandler HANDLER;
+	private Undertow server;
+	private volatile ExporterHttpHandler handler;
+
+	private final MetricRegistry metricRegistry;
+
+	public Agent() {
+		metricRegistry = new MetricRegistry();
+		metricRegistry.add(BuildInfo.getInstance());
+	}
 
 	static {
 		final ScriptEngineRegistry registry = ScriptEngineRegistry.getInstance();
@@ -47,8 +54,6 @@ public class Agent {
 	 * To avoid leaking a {@link java.net.ServerSocket} instance.
 	 *
 	 * @param server
-	 * @param b
-	 * @param timeout
 	 * @throws Throwable
 	 */
 	private static void safeStart(final Undertow server) throws Throwable {
@@ -64,8 +69,8 @@ public class Agent {
 		}
 	}
 
-	private static Undertow newServer(final HostAndPort hostAndPort) {
-		final HttpHandler thisHandler = exchange -> HANDLER.handleRequest(exchange);
+	private Undertow newServer(final HostAndPort hostAndPort) {
+		final HttpHandler thisHandler = exchange -> handler.handleRequest(exchange);
 		final EncodingHandler encodingHandler = new EncodingHandler(new ContentEncodingRepository()
 				.addEncodingHandler("gzip", new GzipEncodingProvider(), 50))
 						.setNext(thisHandler);
@@ -77,39 +82,43 @@ public class Agent {
 				.build();
 	}
 
-	public static void premain(final String args) throws Throwable {
-		final BuildInfo buildInfo = BuildInfo.getInstance();
-		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter Version {0} (Commit: {1})", new String[] { buildInfo.buildVersion, buildInfo.commitId.substring(0, Math.min(7, buildInfo.commitId.length())) });
-
-		MetricRegistry.getInstance().add(buildInfo);
+	private void start(final String args) throws Throwable {
 		try {
 			final ConfigWatcher watcher = newConfigWatcher(args, (oldConfig, newConfig) -> {
 				LOG.log(Level.FINE, "Detected configuration change. Reconfiguring Scriptable JMX Exporter...");
-				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, MetricRegistry.getInstance());
+				final ExporterHttpHandler handler = new ExporterHttpHandler(newConfig.rules, newConfig.options, metricRegistry);
 				if (!oldConfig.server.bindAddress.equals(newConfig.server.bindAddress)) {
 					try {
-						SERVER.stop();
+						server.stop();
 					} catch (final Throwable th) {
 						LOG.log(Level.WARNING, "Failed to stop Scriptable JMX Exporter server for reconfiguration.", th);
 					}
-					SERVER = newServer(newConfig.server.bindAddress);
-					safeStart(SERVER);
+					server = newServer(newConfig.server.bindAddress);
+					safeStart(server);
 				}
-				HANDLER = handler;
+				this.handler = handler;
 				LOG.log(Level.INFO, "Successfully reconfigured Scriptable JMX Exporter on {0}.", newConfig.server.bindAddress);
 			});
 			if (watcher instanceof Instrumented)
-				MetricRegistry.getInstance().add((Instrumented) watcher);
+				metricRegistry.add((Instrumented) watcher);
 
 			final Config initialConfig = watcher.config();
-			HANDLER = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, MetricRegistry.getInstance());
-			SERVER = newServer(initialConfig.server.bindAddress);
-			safeStart(SERVER);
+			handler = new ExporterHttpHandler(initialConfig.rules, initialConfig.options, metricRegistry);
+			server = newServer(initialConfig.server.bindAddress);
+			safeStart(server);
 			watcher.start();
 			LOG.log(Level.INFO, "Successfully started Scriptable JMX Exporter on {0}.", initialConfig.server.bindAddress);
 		} catch (final Throwable th) {
 			LOG.log(Level.SEVERE, "Failed to start Scriptable JMX Exporter.", th);
 			System.exit(1);
 		}
+	}
+
+	public static void premain(final String args) throws Throwable {
+		final BuildInfo buildInfo = BuildInfo.getInstance();
+		LOG.log(Level.INFO, "Starting Scriptable JMX Exporter Version {0} (Commit: {1})", new String[] { buildInfo.buildVersion, buildInfo.commitId.substring(0, Math.min(7, buildInfo.commitId.length())) });
+
+		final Agent agent = new Agent();
+		agent.start(args);
 	}
 }

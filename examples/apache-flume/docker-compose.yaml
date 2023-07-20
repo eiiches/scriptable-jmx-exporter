@@ -18,7 +18,7 @@ services:
       target: /etc/scriptable-jmx-exporter.yaml
     - type: bind
       source: ./flume-conf.properties
-      target: /opt/apache-flume-1.9.0-bin/conf/flume-conf.properties
+      target: /opt/apache-flume-1.11.0-bin/conf/flume-conf.properties
     environment:
     - JAVA_OPTS=
       -javaagent:/opt/java-agents/scriptable-jmx-exporter.jar=@/etc/scriptable-jmx-exporter.yaml

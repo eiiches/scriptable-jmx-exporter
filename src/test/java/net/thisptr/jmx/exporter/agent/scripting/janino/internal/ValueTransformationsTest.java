@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -48,5 +49,13 @@ public class ValueTransformationsTest {
 		assertThat(metrics.get(0).labels.get("key")).isEqualTo("a");
 		assertThat(metrics.get(1).value).isEqualTo(1.0);
 		assertThat(metrics.get(1).labels.get("key")).isEqualTo("b");
+	}
+
+	@Test
+	void testNumber() {
+		final List<MetricValue> metrics = new ArrayList<>();
+		ValueTransformations.unfold(new MetricNamer(0), new Labels(0), Long.valueOf(10), "java.lang.Number", metrics::add);
+		assertThat(metrics).hasSize(1);
+		assertThat(metrics.get(0).value).isEqualTo(10.0);
 	}
 }
