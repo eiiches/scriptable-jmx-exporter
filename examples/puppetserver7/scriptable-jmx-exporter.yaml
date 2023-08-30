@@ -1,0 +1,104 @@
+declarations: |
+  public static V1.Builder puppet(AttributeValue in) {
+    String truncatedName = ((String) in.keyProperties.get("name")).replace("puppetlabs.localhost", "");
+    return V1.name(in.domain + truncatedName)
+      .timestamp(in.timestamp);
+  }
+
+server:
+  bind_address: 0.0.0.0:9101
+options:
+  include_timestamp: false
+rules:
+## HTTP metrics with JmxReporter$JmxCounter
+- pattern:
+  - puppetserver:name=.*http.active-requests
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - 'com\\.sun\\.management:type=HotSpotDiagnostic:DiagnosticOptions'
+  - 'java\\.lang:type=Threading:AllThreadIds'
+  - 'java.lang:type=(ClassLoading|Compilation|GarbageCollector|Memory.*|OperatingSystem|Runtime|Threading)'
+  - 'jdk\\.management\\.jfr'
+  - 'java.nio'
+  - 'org.eclipse.jetty.*'
+  - 'com.puppetlabs.trapperkeeper.services.webserver.jetty9.utils'
+  - 'jboss.threads'
+  - 'jmx4perl'
+  - 'jolokia'
+  - 'puppetlabs.trapperkeeper.*'
+  - 'net.thisptr.jmx.exporter.*'
+  - '::.*(50thPercentile|75thPercentile|95thPercentile|98thPercentile|99thPercentile|999thPercentile|Count|DurationUnit|FifteenMinuteRate|FiveMinuteRate|MeanRate|Min|Max|OneMinuteRate|RateUnit|SnapshotSize|StdDev)'
+  - 'puppetserver:name=.*http\\.puppet-v4.*'
+  - 'puppetserver:name=puppetlabs.*http.other-percentage'
+  - 'puppetserver:name=puppetlabs.*compiler'
+  - 'puppetserver:name=puppetlabs.*compiler.compile.production.*'
+  - 'puppetserver:name=puppetlabs.*compiler.(create_settings_scope|evaluate_|finish|init|iterate|set|validate).*'
+  - 'puppetserver:name=puppetlabs.*functions\\..*'
+  - 'puppetserver:name=.*http\\.puppet.*(compile|environment|facts|file_bucket_file|static_file_content|plans|tasks).*'
+  - 'puppetserver:name=puppetlabs.*puppetdb.(aliases|catalog|edges|events|facts|keys|logs|name|meta|metrics|parameters|payload|report|resource|titles).*'
+  - 'puppetserver:name=puppetlabs.*indirector.*'
+  - 'puppetserver:name=puppetlabs.*puppetdb$'
+  - 'puppetserver:name=puppetlabs.*puppetdb.command$'
+  - 'puppetserver:name=puppetlabs.*puppetdb.command.submit.*'
+  skip: true
+## HTTP/Compiler/PuppetDB metrics
+- pattern:
+  - puppetserver:name=.*\\.http\\.(.*)-percentage
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - puppetserver:name=.*\\.((compiler|http|puppetdb|http.*puppet)\\..*)
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .addLabel("measurement", (String) in.attributeName)
+      .transform(in.value, in.attributeType, out).done();
+## JRuby metrics
+- pattern:
+  - puppetserver:name=.*\\.jruby\\.(borrow-timer|free-jrubies-histo|lock-held-timer|lock-wait-timer|requested-jrubies-histo|wait-timer)
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .addLabel("measurement", (String) in.attributeName)
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - puppetserver:name=.*\\.jruby\\..*
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+## Other metrics
+- pattern:
+  - puppetserver:name=.*\\.functions
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .addLabel("measurement", (String) in.attributeName)
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - puppetserver:name=puppetlabs.localhost.uptime
+  transform: |
+    puppet(in)
+      .type("counter")
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - puppetserver:name=.*num-cpus
+  transform: |
+    puppet(in)
+      .type("gauge")
+      .transform(in.value, in.attributeType, out).done();
+- pattern:
+  - puppetserver:name=.*\\.memory\\.(?<area>.*)\\.(?<stat>.*)
+  transform: |
+    V1.name("puppetserver_memory_bytes_" + (String) match.get("stat"))
+      .type("gauge")
+      .addLabel("area", (String) match.get("area"))
+      .transform(in.value, in.attributeType, out).done();
+- transform: |
+    !java
+    V1.transform(in, out, "type");

@@ -1,0 +1,120 @@
+Example: Puppet Server 7
+========================
+
+### Response Example
+```console
+puppetserver_compiler_compile{measurement="Mean",} 987.8554021219284
+# TYPE puppetserver_compiler_compile_qa gauge
+puppetserver_compiler_compile_qa{measurement="Mean",} 987.8554021215373
+# TYPE puppetserver_compiler_compile_tier0 gauge
+puppetserver_compiler_compile_tier0{measurement="Mean",} 2136.4298601821924
+# TYPE puppetserver_compiler_find_facts gauge
+puppetserver_compiler_find_facts{measurement="Mean",} 0.12783544798324867
+# TYPE puppetserver_compiler_find_node gauge
+puppetserver_compiler_find_node{measurement="Mean",} 0.8807753518322093
+# TYPE puppetserver_functions gauge
+puppetserver_functions{measurement="Mean",} 5.104899333240575
+# TYPE puppetserver_compiler_compile_qa_redacted_hostname gauge
+puppetserver_compiler_compile_qa_redacted_hostname{measurement="Mean",} 1034
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppet_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppet_full_response{measurement="Mean",} 39.2260825021646
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppet_report_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppet_report_full_response{measurement="Mean",} 39.23303853471776
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppet_report_http_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppet_report_http_full_response{measurement="Mean",} 39.237697767804875
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppetdb_command_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppetdb_command_full_response{measurement="Mean",} 19.219170000906015
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppetdb_command_replace_catalog_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppetdb_command_replace_catalog_full_response{measurement="Mean",} 37.7201363348765
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppetdb_command_replace_facts_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppetdb_command_replace_facts_full_response{measurement="Mean",} 13.365577192224539
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppetdb_command_store_report_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppetdb_command_store_report_full_response{measurement="Mean",} 32.515352145896934
+# TYPE puppetserver_http_client_experimental_with_metric_id_puppetdb_full_response gauge
+puppetserver_http_client_experimental_with_metric_id_puppetdb_full_response{measurement="Mean",} 19.213127272082993
+# TYPE puppetserver_http_active_histo gauge
+puppetserver_http_active_histo{measurement="Mean",} 0.5162710505174376
+# TYPE puppetserver_http_active_requests gauge
+puppetserver_http_active_requests 1
+# TYPE puppetserver_http_other_requests gauge
+puppetserver_http_other_requests{measurement="Mean",} 0
+# TYPE puppetserver_http_puppet_v3_catalog_____percentage gauge
+puppetserver_http_puppet_v3_catalog_____percentage 0.023216117472531318
+# TYPE puppetserver_http_puppet_v3_catalog_____requests gauge
+puppetserver_http_puppet_v3_catalog_____requests{measurement="Mean",} 1246.1076915283384
+# TYPE puppetserver_http_puppet_v3_file_content_____percentage gauge
+puppetserver_http_puppet_v3_file_content_____percentage 2.826965481405298E-4
+# TYPE puppetserver_http_puppet_v3_file_content_____requests gauge
+puppetserver_http_puppet_v3_file_content_____requests{measurement="Mean",} 3.2685768265479487
+# TYPE puppetserver_http_puppet_v3_file_metadata_____percentage gauge
+puppetserver_http_puppet_v3_file_metadata_____percentage 0.8834509440718534
+# TYPE puppetserver_http_puppet_v3_file_metadata_____requests gauge
+puppetserver_http_puppet_v3_file_metadata_____requests{measurement="Mean",} 20.578468877970916
+# TYPE puppetserver_http_puppet_v3_file_metadatas_____percentage gauge
+puppetserver_http_puppet_v3_file_metadatas_____percentage 0.06966450650605913
+# TYPE puppetserver_http_puppet_v3_file_metadatas_____requests gauge
+puppetserver_http_puppet_v3_file_metadatas_____requests{measurement="Mean",} 32.017635304225514
+# TYPE puppetserver_http_puppet_v3_node_____percentage gauge
+puppetserver_http_puppet_v3_node_____percentage 0
+# TYPE puppetserver_http_puppet_v3_node_____requests gauge
+puppetserver_http_puppet_v3_node_____requests{measurement="Mean",} 0
+# TYPE puppetserver_http_puppet_v3_report_____percentage gauge
+puppetserver_http_puppet_v3_report_____percentage 0.023221502168686375
+# TYPE puppetserver_http_puppet_v3_report_____requests gauge
+puppetserver_http_puppet_v3_report_____requests{measurement="Mean",} 544.7734155697085
+# TYPE puppetserver_http_total_requests gauge
+puppetserver_http_total_requests{measurement="Mean",} 44.01000719477643
+# TYPE puppetserver_jruby_borrow_timer gauge
+puppetserver_jruby_borrow_timer{measurement="Mean",} 42.39033843867773
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_catalog gauge
+puppetserver_jruby_borrow_timer_puppet_v3_catalog 1244.8327995141751
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_file_bucket_file gauge
+puppetserver_jruby_borrow_timer_puppet_v3_file_bucket_file 2.0003974674371103
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_file_content gauge
+puppetserver_jruby_borrow_timer_puppet_v3_file_content 2
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_file_metadata gauge
+puppetserver_jruby_borrow_timer_puppet_v3_file_metadata 19.00108072276027
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_file_metadatas gauge
+puppetserver_jruby_borrow_timer_puppet_v3_file_metadatas 30.209464941537064
+# TYPE puppetserver_jruby_borrow_timer_puppet_v3_report gauge
+puppetserver_jruby_borrow_timer_puppet_v3_report 543.514497850334
+# TYPE puppetserver_jruby_free_jrubies_histo gauge
+puppetserver_jruby_free_jrubies_histo{measurement="Mean",} 3.998470935123934
+# TYPE puppetserver_jruby_lock_held_timer gauge
+puppetserver_jruby_lock_held_timer{measurement="Mean",} 0
+# TYPE puppetserver_jruby_lock_wait_timer gauge
+puppetserver_jruby_lock_wait_timer{measurement="Mean",} 0
+# TYPE puppetserver_jruby_num_free_jrubies gauge
+puppetserver_jruby_num_free_jrubies 3
+# TYPE puppetserver_jruby_num_jrubies gauge
+puppetserver_jruby_num_jrubies 4
+# TYPE puppetserver_jruby_requested_jrubies_histo gauge
+puppetserver_jruby_requested_jrubies_histo{measurement="Mean",} 0
+# TYPE puppetserver_jruby_wait_timer gauge
+puppetserver_jruby_wait_timer{measurement="Mean",} 0.0915541803377084
+# TYPE puppetserver_num_cpus gauge
+puppetserver_num_cpus 4
+# TYPE puppetserver_uptime counter
+puppetserver_uptime 1199784378
+# TYPE puppetserver_memory_bytes_committed gauge
+puppetserver_memory_bytes_committed{area="heap",} 7516192768
+puppetserver_memory_bytes_committed{area="total",} 9019514880
+puppetserver_memory_bytes_committed{area="non-heap",} 1503322112
+# TYPE puppetserver_memory_bytes_init gauge
+puppetserver_memory_bytes_init{area="total",} 7523860480
+puppetserver_memory_bytes_init{area="heap",} 7516192768
+puppetserver_memory_bytes_init{area="non-heap",} 7667712
+# TYPE puppetserver_memory_bytes_max gauge
+puppetserver_memory_bytes_max{area="heap",} 7516192768
+puppetserver_memory_bytes_max{area="non-heap",} -1
+puppetserver_memory_bytes_max{area="total",} 7516192767
+# TYPE puppetserver_memory_bytes_used gauge
+puppetserver_memory_bytes_used{area="non-heap",} 1165583496
+puppetserver_memory_bytes_used{area="heap",} 4766020608
+puppetserver_memory_bytes_used{area="total",} 5933701256
+scriptable_jmx_exporter_build_info{commit="N/A",version="N/A",} 1
+# TYPE scriptable_jmx_exporter_config_reload_success_total counter
+scriptable_jmx_exporter_config_reload_success_total 0
+# TYPE scriptable_jmx_exporter_config_success gauge
+scriptable_jmx_exporter_config_success 1
+```
