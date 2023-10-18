@@ -70,7 +70,7 @@
 		<dependency>
 			<groupId>io.undertow</groupId>
 			<artifactId>undertow-core</artifactId>
-			<version>2.2.25.Final</version> <!-- 2.3.x requires java 11 -->
+			<version>2.3.10.Final</version> <!-- 2.3.x requires java 11 -->
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
