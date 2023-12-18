@@ -1,5 +1,6 @@
 package net.thisptr.jmx.exporter.agent.scraper;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,12 +25,11 @@ import javax.management.ObjectName;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
 import net.thisptr.jmx.exporter.agent.misc.AttributeNamePattern;
 import net.thisptr.jmx.exporter.agent.misc.FastObjectName;
+import net.thisptr.jmx.exporter.agent.misc.Pacemaker;
 import net.thisptr.jmx.exporter.agent.misc.Pair;
-import net.thisptr.jmx.exporter.agent.utils.MoreCollections;
 
 public class Scraper {
 	private static final Logger LOG = Logger.getLogger(Scraper.class.getName());
@@ -48,7 +48,7 @@ public class Scraper {
 	 * of this behavior.
 	 * </p>
 	 *
-	 * @see https://docs.oracle.com/javase/8/docs/technotes/guides/jmx/JMX_1_4_specification.pdf
+	 * @see <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/jmx/JMX_1_4_specification.pdf">JMX Specification 1.4</a>
 	 */
 	private final LoadingCache<ObjectName, CachedMBeanInfo> mbeanInfoCache = CacheBuilder.newBuilder()
 			.refreshAfterWrite(60, TimeUnit.SECONDS)
@@ -101,6 +101,7 @@ public class Scraper {
 	}
 
 	private static final RuleMatch DEFAULT_RULE;
+
 	static {
 		final ScrapeRule skipRule = new ScrapeRule();
 		skipRule.skip = true;
@@ -219,7 +220,7 @@ public class Scraper {
 	}
 
 	public void scrape(final ScrapeOutput output) throws InterruptedException {
-		scrape(output, 0L, TimeUnit.MILLISECONDS);
+		scrape(output, Duration.ZERO);
 	}
 
 	/**
@@ -311,32 +312,29 @@ public class Scraper {
 		return new CachedMBeanInfo(name, info, requests, attributes.toArray(new String[0]));
 	}
 
-	public void scrape(final ScrapeOutput output, final long duration, final TimeUnit unit) throws InterruptedException {
+	public void scrape(final ScrapeOutput output, final Duration duration) throws InterruptedException {
 		// We use server.queryNames() here, instead of server.queryMBeans(), to avoid costly server.getMBeanInfo() invoked internally.
-		final Set<ObjectName> names;
-		try {
-			names = server.queryNames(null, null);
-		} catch (final Throwable th) {
-			if (LOG.isLoggable(Level.SEVERE))
-				LOG.log(Level.SEVERE, String.format("MBeanServer#queryNames(null, null) #=> %s. This is bad. We can't do anything but to return an empty response.", th.getClass().getSimpleName()), th);
-			return;
-		}
-		if (names == null) {
-			LOG.log(Level.SEVERE, "MBeanServer#queryNames(null, null) #=> null. This is bad. We can't do anything but to return an empty response.");
-			return;
-		}
+		final Set<ObjectName> names = server.queryNames(null, null);
 
-		MoreCollections.forEachSlowlyOverDuration(names, duration, unit, (_name) -> {
+		Pacemaker pacemaker = new Pacemaker(duration, names.size());
+		for (ObjectName name : names) {
 			try {
-				scrape(output, _name);
+				scrape(output, name);
 			} catch (final InstanceNotFoundException e) {
 				if (LOG.isLoggable(Level.FINE))
-					LOG.log(Level.FINE, String.format("MBeanServer#getMBeanInfo(%s) #=> %s. This can happen when the MBean is unregistered after queryNames() and is just a temporary thing.", _name, e.getClass().getSimpleName()), e);
+					LOG.log(Level.FINE, String.format("MBeanServer#getMBeanInfo(%s) #=> %s. This can happen when the MBean is unregistered after queryNames() and is just a temporary thing.", name, e.getClass().getSimpleName()), e);
 			} catch (final Throwable th) {
 				if (LOG.isLoggable(Level.WARNING))
-					LOG.log(Level.WARNING, String.format("Got an unexpected exception while processing the MBean \"%s\". This is likely a bug in scriptable-jmx-exporter. Please report an issue on GitHub.", _name), th);
+					LOG.log(Level.WARNING, String.format("Got an unexpected exception while processing the MBean \"%s\". This is likely a bug in scriptable-jmx-exporter. Please report an issue on GitHub.", name), th);
 			}
-		});
+			pacemaker.yield();
+		}
+
+		evictMBeanInfoCacheExcluding(names);
+	}
+
+	private void evictMBeanInfoCacheExcluding(final Set<ObjectName> keepNames) {
+		mbeanInfoCache.asMap().keySet().retainAll(keepNames);
 	}
 
 	private void fallbackAndHandleNonAttributeList(final ScrapeOutput output, final CachedMBeanInfo info, final AttributeList obtainedAttributes, final long timestamp) {
@@ -349,7 +347,7 @@ public class Scraper {
 			final AttributeRule request = info.requests.get(info.attributeNamesToGet[i]);
 			if (request == null) {
 				if (LOG.isLoggable(Level.WARNING))
-					LOG.log(Level.WARNING, String.format("This is not expected happen. The attribute \"{}\" could not be found in requests.", info.attributeNamesToGet[i]));
+					LOG.log(Level.WARNING, String.format("This is not expected happen. The attribute \"%s\" could not be found in requests.", info.attributeNamesToGet[i]));
 				continue;
 			}
 			Object value = obtainedAttributes.get(i);
@@ -408,7 +406,7 @@ public class Scraper {
 			final AttributeRule request = info.requests.get(attribute.getName());
 			if (request == null) {
 				if (LOG.isLoggable(Level.FINE))
-					LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an attribute named \"%s\" which we didn't request. This indicates a bug in the MBean. Ignored.", _name, info.attributeNamesToGet, attribute.getName()));
+					LOG.log(Level.FINE, String.format("MBeanServer#getAttributes(%s, %s) returned an attribute named \"%s\" which we didn't request. This indicates a bug in the MBean. Ignored.", _name, Arrays.toString(info.attributeNamesToGet), attribute.getName()));
 				continue;
 			}
 			++successfulAttributes;
