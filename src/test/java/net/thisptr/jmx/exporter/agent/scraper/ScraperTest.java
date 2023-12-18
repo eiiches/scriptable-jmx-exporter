@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import net.thisptr.jmx.exporter.agent.misc.Pacemaker;
 import org.junit.jupiter.api.Test;
 
 import net.thisptr.jmx.exporter.agent.config.Config.ScrapeRule;
@@ -51,9 +53,9 @@ public class ScraperTest {
 		final Set<Sample> actual = new HashSet<>();
 		scraper.scrape((sample) -> {
 			actual.add(sample);
-		}, 3, TimeUnit.SECONDS);
+		}, Duration.ofSeconds(3));
 
-		assertTrue(3000L <= System.currentTimeMillis() - start);
+		assertTrue(3000L - Pacemaker.DEFAULT_PRECISION.toMillis() <= System.currentTimeMillis() - start);
 		assertTrue(10 < actual.size());
 	}
 }
