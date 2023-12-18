@@ -2,19 +2,19 @@ package net.thisptr.jmx.exporter.agent;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.xnio.channels.StreamSinkChannel;
 
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
@@ -34,6 +34,7 @@ import net.thisptr.jmx.exporter.agent.scripting.ScriptEngine.ScriptCompileExcept
 import net.thisptr.jmx.exporter.agent.scripting.ScriptEngineRegistry;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter;
 import net.thisptr.jmx.exporter.agent.writer.PrometheusMetricWriter.WritableByteChannelController;
+import org.xnio.channels.StreamSinkChannel;
 
 public class ExporterHttpHandler implements HttpHandler {
 	private static final Logger LOG = Logger.getLogger(ExporterHttpHandler.class.getName());
@@ -119,21 +120,38 @@ public class ExporterHttpHandler implements HttpHandler {
 		}
 	}
 
-	private void handleGetMetrics(final HttpServerExchange exchange) throws InterruptedException, IOException {
+	private void handleGetMetrics(final HttpServerExchange exchange) throws IOException {
 		final OptionsConfig options = getOptions(exchange);
 
 		final Map<String, List<PrometheusMetric>> allMetrics = new TreeMap<>();
-		// Exporter metrics
-		metricRegistry.forEach((instrumented) -> {
-			instrumented.toPrometheus((metric) -> {
-				allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
-			});
-		});
-		// User metrics
-		scraper.scrape(new PrometheusScrapeOutput((metric) -> {
-			allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
-		}), options.minimumResponseTime, TimeUnit.MILLISECONDS);
 
+		try {
+			// Exporter metrics
+			metricRegistry.forEach((instrumented) -> {
+				instrumented.toPrometheus((metric) -> {
+					allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
+				});
+			});
+			// User metrics
+			scraper.scrape(new PrometheusScrapeOutput((metric) -> {
+				allMetrics.computeIfAbsent(metric.name, (name) -> new ArrayList<>()).add(metric);
+			}), Duration.ofMillis(options.minimumResponseTime));
+		} catch (Exception e) {
+			sendErrorResponse(exchange, StatusCodes.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + ": " + e.getMessage());
+			return;
+		}
+
+		sendResponse(exchange, allMetrics, options);
+	}
+
+	private void sendErrorResponse(final HttpServerExchange exchange, int statusCode, String message) throws IOException {
+		exchange.setStatusCode(statusCode);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain");
+		final StreamSinkChannel channel = exchange.getResponseChannel();
+		channel.write(ByteBuffer.wrap(message.getBytes(StandardCharsets.UTF_8)));
+	}
+
+	private void sendResponse(final HttpServerExchange exchange, final Map<String, List<PrometheusMetric>> allMetrics, final OptionsConfig options) throws IOException {
 		exchange.setStatusCode(StatusCodes.OK);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8");
 
@@ -186,16 +204,16 @@ public class ExporterHttpHandler implements HttpHandler {
 			return;
 		}
 		switch (exchange.getRequestPath()) {
-		case "/metrics":
-			if (!exchange.getRequestMethod().equalToString("GET")) {
-				exchange.setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
-				return;
-			}
-			handleGetMetrics(exchange);
-			break;
-		default:
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			break;
+			case "/metrics":
+				if (!exchange.getRequestMethod().equalToString("GET")) {
+					exchange.setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
+					return;
+				}
+				handleGetMetrics(exchange);
+				break;
+			default:
+				exchange.setStatusCode(StatusCodes.NOT_FOUND);
+				break;
 		}
 	}
 }
