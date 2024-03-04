@@ -198,10 +198,31 @@ Rules are searched in order and a first match is used for each attribute.
 
 #### Pattern Matching
 
-Pattern matches are done against *unquoted* key properties. For example, `.*:name=foo` matches an ObjectName `domain:name=\"foo\"`.
+You can use pattern matching to efficiently filter MBeans and their attributes. The general syntax is as follows:
 
-TBD
+> DOMAIN_REGEX`:`KEY_REGEX_1`=`VALUE_REGEX_1`,`...`:`ATTRIBUTE_REGEX
 
+The last two parts separated by `:` can be omitted.
+
+Examples
+* `jdk\.management\.jfr` matches all MBeans within `jdk.management.jfr` domain.
+* `kafka:type=kafka\.Log4jController` matches MBeans within `kafka` domain that have `type=kafka.Log4jController` key property. Additional key properties are simply ignored and don't affect the match result.
+* `kafka.*::MeanRate|.*MinuteRate` matches if the attribute name matches `MeanRate|.*MinuteRate` and the domain name matches `kafka.*`.
+* `java.lang:type=Threading:AllThreadIds`
+
+Notes
+* `:`, `,`, and `=` inside regex need to be escaped with `\`. They are special characters that constructs the pattern.
+* Pattern matches are done against *unquoted* key properties. For example, `domain:name=foo` matches an ObjectName `domain:name=\"foo\"`.
+
+##### Using Captures
+
+Just like normal regex, named capturing groups can be used to extract substrings from ObjectName and attribute names.
+
+Example:
+
+https://github.com/eiiches/scriptable-jmx-exporter/blob/6d3dfeccd3d1d95e7643d342ec8f772150721600/examples/apache-hbase/scriptable-jmx-exporter.yaml#L18-L20
+
+The captured groups are made available as `match` object (`Map<String, String>`) inside transform scripts.
 
 #### Condition Expression
 
