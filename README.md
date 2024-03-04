@@ -510,6 +510,8 @@ See [examples/benchmark-kafka](examples/benchmark-kafka) for the setup details. 
 (\*) Benchmarked on Intel Core i5-9600K (with Turbo Boost disabled), Linux 5.7.4. (\*1) kafka-2_0_0.yml seems to be missing a number of metrics, such as `kafka.server:type=socket-server-metrics`.
 We excluded such metrics as well. The difference in the number of metrics mostly comes from how we treat JVM metrics.
 
+NOTE: This benchmark result is quite old. I am aware of many performance improvement efforts in recent jmx_exporter and this benchmark has to be updated when I have time.
+
 References
 ----------
 
